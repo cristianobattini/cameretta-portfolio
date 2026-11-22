@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · La cameretta</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--ink:#1d1d1f;--mut:#6b6b70;--line:#e3e3e0;--acc:#2f5bd3;--acc-ink:#fff;--bad:#c4372c;--ok:#1f7a45;color-scheme:light}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:16px}
+header nav{display:flex;gap:4px;flex-wrap:wrap}
+.tab{border:0;background:none;padding:8px 12px;border-radius:6px;font:inherit;color:var(--mut);cursor:pointer}
+.tab[aria-selected=true]{background:var(--bg);color:var(--ink);font-weight:600}
+main{max-width:1100px;margin:0 auto;padding:20px}
+h2{font-size:18px;margin:0 0 12px}h3{font-size:15px;margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px 16px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mut)}
+label.inline{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:14px}
+input,textarea,select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);width:100%}
+input[type=checkbox]{width:auto}input[type=color]{padding:2px;height:38px}
+textarea{min-height:80px;resize:vertical}
+.btn{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);font:inherit;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+.btn.danger{color:var(--bad)}.btn.sm{min-height:30px;padding:0 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.muted{color:var(--mut);font-size:13px}
+.pick{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px;border:1px dashed var(--line);border-radius:8px}
+.pick audio{width:260px}
+.bi{margin:10px 0}.bi .bl{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}
+.bp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.bp label{flex-direction:row;align-items:flex-start;gap:6px}
+.flag{flex:none;width:26px;margin-top:9px;font-size:11px;font-weight:700;color:var(--mut)}
+@media(max-width:760px){.bp{grid-template-columns:1fr}}
+.pick img{width:120px;height:75px;object-fit:cover;border-radius:4px;background:#ddd;image-rendering:pixelated}
+.pick .ph{width:120px;height:75px;border-radius:4px;background:#eceae6;display:grid;place-items:center;color:var(--mut);font-size:12px;text-align:center}
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px}
+.slist{display:flex;flex-direction:column;gap:4px}
+.slist button{display:flex;justify-content:space-between;text-align:left;padding:10px 12px;border:1px solid transparent;border-radius:8px;background:none;font:inherit;cursor:pointer}
+.slist button[aria-current=true]{background:var(--card);border-color:var(--line);font-weight:600}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--mut);font-weight:600}
+td.act{white-space:nowrap;text-align:right}
+tr.off td{opacity:.5}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:22px;text-align:center;color:var(--mut)}
+.drop.on{border-color:var(--acc);background:#eef2fd}
+.media{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.m{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+.m .th{height:100px;background:#eceae6;display:grid;place-items:center;color:var(--mut);font-size:12px}
+.m .th img{width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+.m .b{padding:8px;display:flex;flex-direction:column;gap:6px;font-size:12px}
+.m .n{overflow-wrap:anywhere;font-weight:600;font-size:13px}
+.m.sel{outline:3px solid var(--acc)}
+dialog{border:0;border-radius:12px;padding:0;width:min(760px,94vw);max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(0,0,0,.35)}
+dialog .dh{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+dialog .db{padding:18px;overflow:auto;max-height:calc(90vh - 130px)}
+dialog .df{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
+#toast{position:fixed;right:16px;bottom:16px;background:var(--ink);color:#fff;padding:10px 14px;border-radius:8px;z-index:50}
+#toast.err{background:var(--bad)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.slist{flex-direction:row;overflow-x:auto}.hide-s{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>La cameretta · admin</h1>
+  <nav role="tablist">
+    <button class="tab" role="tab" data-tab="general" aria-selected="true">Generale</button>
+    <button class="tab" role="tab" data-tab="sections" aria-selected="false">Sezioni e voci</button>
+    <button class="tab" role="tab" data-tab="bubbles" aria-selected="false">Strada</button>
+    <button class="tab" role="tab" data-tab="media" aria-selected="false">File</button>
+    <button class="tab" role="tab" data-tab="backup" aria-selected="false">Backup</button>
+  </nav>
+  <a class="btn" href="/game/" target="_blank" rel="noopener">Apri il sito ↗</a>
+</header>
+<main id="view"></main>
+
+<dialog id="dlg"><form method="dialog" id="dlgForm"><div class="dh"><strong id="dlgTitle"></strong><button class="btn sm" value="cancel" formnovalidate>Chiudi</button></div><div class="db" id="dlgBody"></div><div class="df" id="dlgFoot"></div></form></dialog>
+<dialog id="libDlg"><div class="dh"><strong>Scegli un file</strong><button type="button" class="btn sm" id="libClose">Chiudi</button></div><div class="db"><div class="row" style="margin-bottom:12px"><input id="libQ" type="search" placeholder="Cerca per nome…" style="flex:1"><button type="button" class="btn" id="libUp">Carica dal PC…</button></div><div class="media" id="libGrid"></div></div><div class="df"><button type="button" class="btn pri" id="libUse">Usa questo file</button></div></dialog>
+<div id="toast" hidden></div>
+
+<script>
+{
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let token = sessionStorage.getItem('cam_token') || '';
+function toast(msg, err){ const t = $('#toast'); t.textContent = msg; t.className = err ? 'err' : ''; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2600); }
+
+async function api(path, opt = {}){
+  const headers = Object.assign({}, opt.headers || {});
+  if(token) headers['X-Admin-Token'] = token;
+  if(opt.json !== undefined){ headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(opt.json); }
+  const r = await fetch(path, {...opt, headers});
+  if(r.status === 401){
+    const p = await askToken(); if(p){ token = p; sessionStorage.setItem('cam_token', p); return api(path, opt); }
+    throw new Error('Password richiesta');
+  }
+  if(!r.ok){ let m = r.statusText; try{ m = (await r.json()).detail || m; }catch(e){} throw new Error(m); }
+  return r.json();
+}
+function askToken(){
+  return new Promise(res => {
+    openDialog('Password admin', `<label>Password<input id="tok" type="password" autocomplete="current-password"></label>`,
+      [{label:'Entra', pri:true, run: () => res($('#tok').value)}], () => res(''));
+  });
+}
+
+/* ---------------- dialog ---------------- */
+let dlgCancel = null;
+function openDialog(title, body, actions, onCancel){
+  $('#dlgTitle').textContent = title; $('#dlgBody').innerHTML = body;
+  $('#dlgFoot').innerHTML = '';
+  dlgCancel = onCancel || null;
+  for(const a of actions){
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (a.pri ? ' pri' : '') + (a.danger ? ' danger' : ''); b.textContent = a.label;
+    b.onclick = async () => { try{ const keep = await a.run(); if(keep !== true){ dlgCancel = null; $('#dlg').close(); } }catch(e){ toast(e.message, true); } };
+    $('#dlgFoot').append(b);
+  }
+  $('#dlg').showModal();
+  const f = $('#dlgBody input, #dlgBody textarea, #dlgBody select'); if(f) f.focus();
+}
+$('#dlg').addEventListener('close', () => { if(dlgCancel){ const c = dlgCancel; dlgCancel = null; c(); } });
+
+/* ---------------- file: caricamento e scelta ---------------- */
+async function uploadFiles(fileList){
+  const fd = new FormData(); for(const f of fileList) fd.append('files', f);
+  const out = await api('/api/assets', {method:'POST', body: fd});
+  toast(out.length === 1 ? 'File caricato' : `${out.length} file caricati`);
+  return out;
+}
+function pickFromPC(accept){
+  return new Promise(res => {
+    const i = document.createElement('input'); i.type = 'file'; i.accept = accept || '';
+    i.onchange = async () => { if(!i.files.length) return res(null); try{ const [a] = await uploadFiles(i.files); res(a.url); }catch(e){ toast(e.message, true); res(null); } };
+    i.click();
+  });
+}
+function pickFromLibrary(kind){
+  return new Promise(async res => {
+    const dlg = $('#libDlg'); let chosen = null, done = false;
+    const finish = v => { if(done) return; done = true; dlg.close(); res(v); };
+    const markSel = () => document.querySelectorAll('#libGrid .m').forEach(m => m.classList.toggle('sel', m.dataset.url === chosen));
+    const draw = async q => {
+      const list = await api('/api/assets?' + new URLSearchParams({q: q || '', kind: kind || ''}));
+      $('#libGrid').innerHTML = list.length ? list.map(a => `<button type="button" class="m" data-url="${esc(a.url)}" style="cursor:pointer;text-align:left;padding:0">
+        <div class="th">${a.mime.startsWith('image/') ? `<img src="${esc(a.url)}" alt="">` : esc(a.original_name.split('.').pop().toUpperCase())}</div>
+        <div class="b"><span class="n">${esc(a.label || a.original_name)}</span></div></button>`).join('') : '<p class="muted">Nessun file. Caricane uno dal PC.</p>';
+      markSel();
+    };
+    $('#libQ').value = '';
+    $('#libQ').oninput = e => draw(e.target.value);
+    $('#libUp').onclick = async () => { const u = await pickFromPC(kind === 'image' ? 'image/*' : kind === 'pdf' ? 'application/pdf' : kind === 'audio' ? 'audio/*' : ''); if(u){ chosen = u; await draw($('#libQ').value); } };
+    $('#libGrid').onclick = e => { const m = e.target.closest('.m'); if(m){ chosen = m.dataset.url; markSel(); } };
+    $('#libGrid').ondblclick = e => { const m = e.target.closest('.m'); if(m) finish(m.dataset.url); };
+    $('#libUse').onclick = () => chosen ? finish(chosen) : toast('Seleziona un file', true);
+    $('#libClose').onclick = () => finish(null);
+    dlg.onclose = () => finish(null);
+    dlg.onkeydown = e => { if(e.key === 'Escape'){ e.preventDefault(); finish(null); } };
+    dlg.showModal();
+    await draw('');
+    $('#libQ').focus();
+  });
+}
+function filePicker(key, value, {kind='image', defLabel='Predefinito', accept='image/*'} = {}){
+  const isImg = kind === 'image';
+  const prev = value ? (isImg ? `<img src="${esc(value)}" alt="">` : kind === 'audio' ? `<audio controls preload="none" src="${esc(value)}"></audio>` : `<div class="ph">${esc(value.split('/').pop())}</div>`) : `<div class="ph">${esc(defLabel)}</div>`;
+  return `<div class="pick" data-key="${key}" data-kind="${kind}" data-accept="${accept}">${prev}
+    <div class="row"><button type="button" class="btn sm" data-p="pc">Scegli dal PC…</button><button type="button" class="btn sm" data-p="lib">Dalla libreria…</button>${value ? `<button type="button" class="btn sm danger" data-p="reset">Togli</button>` : ''}</div>
+    <input type="hidden" name="${key}" value="${esc(value)}"></div>`;
+}
+function wirePickers(root, onChange){
+  root.querySelectorAll('.pick').forEach(p => {
+    p.onclick = async e => {
+      const b = e.target.closest('button[data-p]'); if(!b) return;
+      let url = null;
+      if(b.dataset.p === 'pc') url = await pickFromPC(p.dataset.accept);
+      else if(b.dataset.p === 'lib') url = await pickFromLibrary(p.dataset.kind);
+      else url = '';
+      if(url === null) return;
+      p.querySelector('input').value = url;
+      await onChange(p.dataset.key, url);
+    };
+  });
+}
+
+/* ---------------- campi bilingui ---------------- */
+const fields = root => new Proxy({}, {get: (_, n) => root.querySelector(`[name="${n}"]`)});
+// un testo con la versione italiana e quella inglese affiancate
+function bi(name, label, vIt, vEn, {area=false, req=false, ph=''} = {}){
+  const f = (n, v, l) => area ? `<textarea name="${n}" data-l="${l}" placeholder="${esc(ph)}">${esc(v)}</textarea>` : `<input name="${n}" data-l="${l}" value="${esc(v)}" placeholder="${esc(ph)}" ${req && l === 'it' ? 'required' : ''}>`;
+  return `<div class="bi"><span class="bl">${label}</span><div class="bp"><label><span class="flag">IT</span>${f(name, vIt, 'it')}</label><label><span class="flag">EN</span>${f(name + '_en', vEn, 'en')}</label></div></div>`;
+}
+
+/* ---------------- tab: generale ---------------- */
+const TEXTS = [
+  ['menu_kicker','Riga sopra il titolo'],['menu_subtitle','Sottotitolo'],['menu_tagline','Riga sotto il sottotitolo'],
+  ['menu_enter_label','Voce "inizia"'],['press_text','Testo lampeggiante in basso'],['footer_text','Piè di pagina'],['room_crumb','Nome della cameretta']
+];
+async function viewGeneral(){
+  const s = await api('/api/settings');
+  $('#view').innerHTML = `
+  <form id="gForm">
+  <div class="card"><h2>Schermata iniziale</h2>
+    <label style="max-width:360px;margin-bottom:12px">Nome (titolo grande, uguale nelle due lingue)<input name="site_name" value="${esc(s.site_name)}"></label>
+    ${TEXTS.map(([k, l]) => bi(k, l, s[k], s[k + '_en'])).join('')}</div>
+  <div class="card"><h2>Lingua e percorso</h2><div class="row" style="gap:24px">
+    <label style="width:220px">Lingua predefinita<select name="default_lang"><option value="en" ${s.default_lang !== 'it' ? 'selected' : ''}>Inglese</option><option value="it" ${s.default_lang === 'it' ? 'selected' : ''}>Italiano</option></select></label>
+    <label class="inline"><input type="checkbox" name="skip_intro" ${s.skip_intro === '1' ? 'checked' : ''}> "Inizia" porta direttamente in cameretta (salta strada e salotto)</label></div>
+    <p class="muted" style="margin-top:8px">Il visitatore può sempre cambiare lingua dal menu o dal pulsante EN/IT; la sua scelta viene ricordata nel suo browser.</p></div>
+  <div class="card"><h2>Sfondo del menu</h2>
+    <p class="muted">Vuoto = il cielo stellato animato con la casa (cliccando la finestra si entra). Lo stesso sfondo, sfocato, fa da schermata di caricamento.</p>
+    ${filePicker('menu_background', s.menu_background, {defLabel:'Cielo animato'})}
+    <div class="row" style="margin-top:12px;gap:20px">
+      <label class="inline"><input type="checkbox" name="menu_background_pixelated" ${s.menu_background_pixelated !== '0' ? 'checked' : ''}> Ingrandisci a pixel netti</label>
+      <label class="inline"><input type="checkbox" name="menu_shooting_stars" ${s.menu_shooting_stars !== '0' ? 'checked' : ''}> Stelle cadenti</label>
+    </div></div>
+  <div class="card"><h2>Cameretta</h2>
+    <p class="muted">L'immagine della stanza deve essere 320×200 (o in proporzione). La maschera dice quale pixel appartiene a quale oggetto: canale rosso 1 letto, 2 scrivania, 3 lavagna, 4 libreria, 5 finestra. Se cambi la stanza, cambia anche la maschera; le animazioni (lucine, vapore, stelle) restano solo sulla stanza predefinita.</p>
+    <div class="grid"><div><h3>Immagine</h3>${filePicker('room_image', s.room_image, {defLabel:'Stanza predefinita'})}</div><div><h3>Maschera</h3>${filePicker('room_mask', s.room_mask, {defLabel:'Maschera predefinita'})}</div></div></div>
+  <div class="card"><h2>Contatti e CV</h2><div class="grid">
+    <label>GitHub (progetti personali)<input name="github_url" value="${esc(s.github_url)}" placeholder="https://github.com/…"></label>
+    <label>GitHub (progetti di fisica)<input name="github_physics_url" value="${esc(s.github_physics_url)}" placeholder="https://github.com/…"></label>
+    <label>Email<input name="email" type="email" value="${esc(s.email)}"></label></div>
+    ${bi('location', 'Dove sono', s.location, s.location_en)}
+    <h3 style="margin-top:14px">CV</h3>${filePicker('cv_url', s.cv_url, {kind:'pdf', accept:'application/pdf', defLabel:'Nessun CV'})}</div>
+  <div class="card"><h2>Aspetto e audio</h2><div class="row" style="gap:24px">
+    <label style="width:160px">Colore di accento<input type="color" name="accent_color" value="${esc(s.accent_color || '#f2b85b')}"></label>
+    <label class="inline"><input type="checkbox" name="audio_default" ${s.audio_default !== '0' ? 'checked' : ''}> Suoni accesi di default (passi, tastiera, camino, TV…)</label></div>
+    <h3 style="margin-top:16px">Effetti sonori</h3>
+    <p class="muted">L'ambiente comprende vento, camino, TV e orologio. Mettilo a 0% per toglierlo del tutto.</p>
+    <div class="row" style="gap:28px;align-items:flex-start"><label style="max-width:320px">Volume ambiente: <output id="avOut">${Math.round((parseFloat(s.ambience_volume ?? '0.5')) * 100)}%</output><input type="range" name="ambience_volume" min="0" max="1" step="0.05" value="${esc(s.ambience_volume ?? '0.5')}" oninput="document.getElementById('avOut').textContent = Math.round(this.value*100) + '%'"></label><label style="max-width:320px">Volume dei passi: <output id="svOut">${Math.round((parseFloat(s.steps_volume ?? '0.7')) * 100)}%</output><input type="range" name="steps_volume" min="0" max="1" step="0.05" value="${esc(s.steps_volume ?? '0.7')}" oninput="document.getElementById('svOut').textContent = Math.round(this.value*100) + '%'"></label></div>
+    <h3 style="margin-top:16px">Musica di sottofondo</h3>
+    <p class="muted">Un brano mp3 o ogg che suona in loop, sotto gli effetti sonori. Parte al primo clic del visitatore (i browser bloccano l'audio automatico). Usa brani di cui hai i diritti, per esempio con licenza CC0.</p>
+    ${filePicker('music_url', s.music_url, {kind:'audio', accept:'audio/*', defLabel:'Nessuna musica'})}
+    <label style="margin-top:12px;max-width:320px">Volume della musica: <output id="mvOut">${Math.round((parseFloat(s.music_volume) || .35)*100)}%</output><input type="range" name="music_volume" min="0" max="1" step="0.05" value="${esc(s.music_volume || '0.35')}" oninput="document.getElementById('mvOut').textContent = Math.round(this.value*100) + '%'"></label></div>
+  <div class="row"><button class="btn pri">Salva</button><span class="muted">Le immagini e i file scelti vengono salvati subito.</span></div>
+  </form>`;
+  const f = $('#gForm');
+  wirePickers(f, async (k, url) => { await api('/api/settings', {method:'PUT', json:{[k]: url}}); toast('Salvato'); viewGeneral(); });
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const data = {};
+    for(const el of f.elements){ if(!el.name) continue; data[el.name] = el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value; }
+    try{ await api('/api/settings', {method:'PUT', json:data}); toast('Impostazioni salvate'); }catch(err){ toast(err.message, true); }
+  };
+}
+
+/* ---------------- tab: sezioni ---------------- */
+let curSection = 'finestra', itemQuery = '';
+async function viewSections(){
+  const secs = await api('/api/sections');
+  if(!secs.find(s => s.id === curSection)) curSection = secs[0]?.id;
+  const s = secs.find(x => x.id === curSection);
+  const items = await api('/api/items?' + new URLSearchParams(itemQuery ? {q:itemQuery} : {section:curSection}));
+  $('#view').innerHTML = `<div class="layout">
+    <div class="slist">${secs.map(x => `<button data-s="${x.id}" aria-current="${x.id===curSection && !itemQuery}"><span><span class="dot" style="background:${esc(x.color)}"></span>${esc(x.object_name)}</span><span class="muted">${x.count}</span></button>`).join('')}</div>
+    <div>
+      ${itemQuery ? '' : `<form class="card" id="sForm"><div class="spread"><h2>${esc(s.object_name)} → ${esc(s.title)}</h2><label class="inline"><input type="checkbox" name="visible" ${s.visible?'checked':''}> Visibile nel sito</label></div>
+        ${bi('object_name', "Nome dell'oggetto (cartello)", s.object_name, s.object_name_en, {req:true})}
+        ${bi('sign_label', 'Parola grande sul cartello', s.sign_label, s.sign_label_en, {req:true})}
+        ${bi('title', 'Titolo del pannello', s.title, s.title_en, {req:true})}
+        ${bi('intro', 'Introduzione', s.intro, s.intro_en, {area:true})}
+        <div class="grid" style="margin-top:6px">
+          <label>Link in fondo al pannello<input name="link_url" value="${esc(s.link_url)}" placeholder="https://github.com/…"></label>
+          <label>Colore della testata<input type="color" name="color" value="${esc(s.color)}"></label>
+        </div>
+        ${bi('link_label', 'Testo del link', s.link_label, s.link_label_en, {ph:'Tutti i progetti su GitHub ↗'})}
+        <div class="row" style="margin-top:12px"><button class="btn pri">Salva sezione</button></div></form>`}
+      <div class="card">
+        <div class="spread" style="margin-bottom:10px"><h2 style="margin:0">${itemQuery ? `Risultati per “${esc(itemQuery)}”` : 'Voci'}</h2>
+          <div class="row"><input id="iq" type="search" placeholder="Cerca in tutte le voci…" value="${esc(itemQuery)}" style="width:220px">${itemQuery ? '' : '<button class="btn pri" id="newItem">+ Nuova voce</button>'}</div></div>
+        ${items.length ? `<table><thead><tr><th>Titolo</th><th class="hide-s">Gruppo</th><th class="hide-s">${itemQuery?'Sezione':'EN'}</th><th></th></tr></thead><tbody>
+          ${items.map((it,i) => `<tr class="${it.visible?'':'off'}" data-id="${it.id}"><td><strong>${esc(it.title)}</strong>${it.status?` <span class="muted">· ${esc(it.status)}</span>`:''}</td><td class="hide-s">${esc(it.grp)}</td><td class="hide-s muted">${itemQuery ? esc(it.section_id) : (it.title_en ? '✓' : '<span style="color:var(--bad)">manca</span>')}</td>
+          <td class="act">${itemQuery ? '' : `<button class="btn sm" data-a="up" ${i===0?'disabled':''} aria-label="Sposta su">↑</button><button class="btn sm" data-a="down" ${i===items.length-1?'disabled':''} aria-label="Sposta giù">↓</button>`}
+            <button class="btn sm" data-a="vis">${it.visible?'Nascondi':'Mostra'}</button><button class="btn sm" data-a="edit">Modifica</button><button class="btn sm danger" data-a="del">Elimina</button></td></tr>`).join('')}
+        </tbody></table>` : '<p class="muted">Nessuna voce.</p>'}
+      </div>
+    </div></div>`;
+  document.querySelectorAll('.slist button').forEach(b => b.onclick = () => { curSection = b.dataset.s; itemQuery = ''; viewSections(); });
+  let qt; $('#iq').oninput = e => { clearTimeout(qt); qt = setTimeout(() => { itemQuery = e.target.value.trim(); viewSections().then(() => { const q = $('#iq'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }); }, 300); };
+  if($('#newItem')) $('#newItem').onclick = () => editItem({section_id: curSection, visible: true, tags: []}, secs, items);
+  if($('#sForm')) $('#sForm').onsubmit = async e => {
+    e.preventDefault(); const f = e.target;
+    const v = n => f.elements[n].value;
+    try{ await api('/api/sections/' + curSection, {method:'PUT', json:{object_name:v('object_name'), object_name_en:v('object_name_en'), sign_label:v('sign_label'), sign_label_en:v('sign_label_en'), title:v('title'), title_en:v('title_en'), intro:v('intro'), intro_en:v('intro_en'), link_url:v('link_url'), link_label:v('link_label'), link_label_en:v('link_label_en'), color:v('color'), visible:f.elements.visible.checked, sort:s.sort}}); toast('Sezione salvata'); viewSections(); }catch(err){ toast(err.message, true); }
+  };
+  $('#view').querySelector('tbody')?.addEventListener('click', async e => {
+    const b = e.target.closest('button[data-a]'); if(!b) return;
+    const id = +b.closest('tr').dataset.id, it = items.find(x => x.id === id), k = items.indexOf(it);
+    try{
+      if(b.dataset.a === 'edit') return editItem(it, secs, items);
+      if(b.dataset.a === 'del'){ openDialog('Eliminare la voce?', `<p>“${esc(it.title)}” verrà eliminata dal database. Non si può annullare.</p>`, [{label:'Elimina', danger:true, run: async () => { await api('/api/items/' + id, {method:'DELETE'}); toast('Voce eliminata'); viewSections(); }}]); return; }
+      if(b.dataset.a === 'vis'){ await api('/api/items/' + id, {method:'PUT', json:{...it, visible:!it.visible}}); }
+      if(b.dataset.a === 'up' || b.dataset.a === 'down'){
+        const ids = items.map(x => x.id), j = k + (b.dataset.a === 'up' ? -1 : 1); [ids[k], ids[j]] = [ids[j], ids[k]];
+        await api('/api/items/reorder', {method:'POST', json:{ids}});
+      }
+      viewSections();
+    }catch(err){ toast(err.message, true); }
+  });
+}
+function editItem(it, secs, items){
+  const groups = [...new Set(items.map(x => x.grp).filter(Boolean))];
+  const isNew = !it.id;
+  openDialog(isNew ? 'Nuova voce' : 'Modifica voce', `
+    <div class="grid" style="margin-bottom:6px">
+      <label>Sezione<select id="fSec">${secs.map(s => `<option value="${s.id}" ${s.id===it.section_id?'selected':''}>${esc(s.object_name)}</option>`).join('')}</select></label>
+      <label class="inline" style="align-self:end"><input type="checkbox" id="fVis" ${it.visible!==false?'checked':''}> Visibile nel sito</label>
+    </div>
+    <div id="iForm">
+    ${bi('title', 'Titolo', it.title, it.title_en, {req:true})}
+    ${bi('grp', 'Gruppo (es. Progetti, Corsi, Attestati)', it.grp, it.grp_en)}
+    ${bi('kicker', 'Riga piccola (data, autore, tipo)', it.kicker, it.kicker_en)}
+    ${bi('description', 'Descrizione', it.description, it.description_en, {area:true})}
+    ${bi('status', 'Etichetta (es. "in arrivo")', it.status, it.status_en)}
+    <div class="grid" style="margin-top:6px">
+      <label>Tag (separati da virgola, uguali nelle due lingue)<input name="tags" value="${esc((it.tags||[]).join(', '))}"></label>
+      <label>Link<input name="url" value="${esc(it.url)}" placeholder="https://… oppure un file caricato"></label>
+    </div>
+    <div class="row" style="margin-top:8px"><button type="button" class="btn sm" id="fUrlFile">Collega un file (PDF, ecc.)…</button></div>
+    ${bi('link_label', 'Testo del link', it.link_label, it.link_label_en, {ph:'apri ↗'})}
+    </div>
+    <datalist id="grpList">${groups.map(g => `<option value="${esc(g)}">`).join('')}</datalist>
+    <h3 style="margin-top:16px">Immagine (copertina, anteprima)</h3>${filePicker('image', it.image, {defLabel:'Nessuna'})}`,
+    [{label: isNew ? 'Aggiungi' : 'Salva', pri:true, run: async () => {
+      const f = fields($('#iForm')), v = n => f[n].value.trim();
+      const body = {section_id:$('#fSec').value, visible:$('#fVis').checked, image:$('#dlgBody input[name=image]').value, tags:v('tags'), url:v('url')};
+      for(const k of ['title','grp','kicker','description','status','link_label']){ body[k] = v(k); body[k + '_en'] = v(k + '_en'); }
+      if(!body.title){ toast('Il titolo (IT) è obbligatorio', true); return true; }
+      if(isNew) await api('/api/items', {method:'POST', json:body}); else await api('/api/items/' + it.id, {method:'PUT', json:{...body, sort:it.sort}});
+      toast(isNew ? 'Voce aggiunta' : 'Voce salvata'); viewSections();
+    }}]);
+  fields($('#iForm')).grp.setAttribute('list', 'grpList');
+  wirePickers($('#dlgBody'), (k, url) => {
+    const p = $('#dlgBody .pick'); const ph = p.querySelector('img,.ph');
+    const n = document.createElement(url ? 'img' : 'div'); if(url){ n.src = url; n.alt = ''; } else { n.className = 'ph'; n.textContent = 'Nessuna'; }
+    ph.replaceWith(n);
+  });
+  $('#fUrlFile').onclick = async () => { const u = await pickFromLibrary(''); const f = fields($('#iForm')); if(u){ f.url.value = u; if(!f.link_label.value) f.link_label.value = 'scarica ↗'; if(!f.link_label_en.value) f.link_label_en.value = 'download ↗'; } };
+}
+
+/* ---------------- tab: strada (bolle) ---------------- */
+async function viewBubbles(){
+  const list = await api('/api/bubbles');
+  $('#view').innerHTML = `<div class="card"><div class="spread"><h2 style="margin:0">Bolle della strada</h2><button class="btn pri" id="newB">+ Nuova bolla</button></div>
+    <p class="muted">Compaiono una dopo l'altra mentre l'omino cammina verso casa, scritte lettera per lettera con il suono della tastiera. Le citazioni hanno uno stile diverso e mostrano l'autore alla fine.</p>
+    ${list.length ? `<table><thead><tr><th>Testo</th><th class="hide-s">Tipo</th><th class="hide-s">EN</th><th></th></tr></thead><tbody>
+    ${list.map((b, i) => `<tr class="${b.visible ? '' : 'off'}" data-id="${b.id}"><td>${esc(b.text)}${b.author ? ` <span class="muted">— ${esc(b.author)}</span>` : ''}</td><td class="hide-s muted">${b.kind === 'quote' ? 'citazione' : 'presentazione'}</td><td class="hide-s muted">${b.text_en ? '✓' : '<span style="color:var(--bad)">manca</span>'}</td>
+      <td class="act"><button class="btn sm" data-a="up" ${i === 0 ? 'disabled' : ''} aria-label="Sposta su">↑</button><button class="btn sm" data-a="down" ${i === list.length - 1 ? 'disabled' : ''} aria-label="Sposta giù">↓</button><button class="btn sm" data-a="vis">${b.visible ? 'Nascondi' : 'Mostra'}</button><button class="btn sm" data-a="edit">Modifica</button><button class="btn sm danger" data-a="del">Elimina</button></td></tr>`).join('')}
+    </tbody></table>` : '<p class="muted">Nessuna bolla: la strada sarà silenziosa.</p>'}</div>`;
+  const edit = b => openDialog(b.id ? 'Modifica bolla' : 'Nuova bolla', `
+    <div class="grid"><label>Tipo<select id="bKind"><option value="intro" ${b.kind !== 'quote' ? 'selected' : ''}>Presentazione</option><option value="quote" ${b.kind === 'quote' ? 'selected' : ''}>Citazione</option></select></label>
+    <label>Autore (solo per le citazioni)<input id="bAuth" value="${esc(b.author)}"></label></div>
+    <div id="bForm">${bi('text', 'Testo', b.text, b.text_en, {area:true, req:true})}</div>
+    <label class="inline" style="margin-top:10px"><input type="checkbox" id="bVis" ${b.visible !== false ? 'checked' : ''}> Visibile</label>`,
+    [{label: b.id ? 'Salva' : 'Aggiungi', pri:true, run: async () => {
+      const f = fields($('#bForm'));
+      const body = {kind:$('#bKind').value, author:$('#bAuth').value.trim(), text:f.text.value.trim(), text_en:f.text_en.value.trim(), visible:$('#bVis').checked};
+      if(!body.text){ toast('Il testo (IT) è obbligatorio', true); return true; }
+      if(b.id) await api('/api/bubbles/' + b.id, {method:'PUT', json:body}); else await api('/api/bubbles', {method:'POST', json:body});
+      toast('Bolla salvata'); viewBubbles();
+    }}]);
+  $('#newB').onclick = () => edit({kind:'intro', visible:true});
+  $('#view').querySelector('tbody')?.addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-a]'); if(!btn) return;
+    const id = +btn.closest('tr').dataset.id, b = list.find(x => x.id === id), k = list.indexOf(b);
+    try{
+      if(btn.dataset.a === 'edit') return edit(b);
+      if(btn.dataset.a === 'del'){ openDialog('Eliminare la bolla?', `<p>“${esc(b.text)}” verrà eliminata.</p>`, [{label:'Elimina', danger:true, run: async () => { await api('/api/bubbles/' + id, {method:'DELETE'}); viewBubbles(); }}]); return; }
+      if(btn.dataset.a === 'vis') await api('/api/bubbles/' + id, {method:'PUT', json:{...b, visible:!b.visible}});
+      if(btn.dataset.a === 'up' || btn.dataset.a === 'down'){ const ids = list.map(x => x.id), j = k + (btn.dataset.a === 'up' ? -1 : 1); [ids[k], ids[j]] = [ids[j], ids[k]]; await api('/api/bubbles/reorder', {method:'POST', json:{ids}}); }
+      viewBubbles();
+    }catch(err){ toast(err.message, true); }
+  });
+}
+
+/* ---------------- tab: file ---------------- */
+let mediaQ = '';
+async function viewMedia(){
+  const list = await api('/api/assets?' + new URLSearchParams({q: mediaQ}));
+  $('#view').innerHTML = `<div class="card"><div class="drop" id="drop"><p style="margin:0 0 10px">Trascina qui i file, oppure</p><button class="btn pri" id="upBtn">Scegli dal PC…</button><p class="muted" style="margin:10px 0 0">Immagini, PDF, audio, fino a 25 MB ciascuno.</p></div></div>
+    <div class="card"><div class="spread" style="margin-bottom:12px"><h2 style="margin:0">Libreria (${list.length})</h2><input id="mq" type="search" placeholder="Cerca per nome…" value="${esc(mediaQ)}" style="width:240px"></div>
+    <div class="media">${list.map(a => `<div class="m" data-id="${a.id}">
+      <div class="th">${a.mime.startsWith('image/') ? `<img src="${esc(a.url)}" alt="" loading="lazy">` : esc(a.original_name.split('.').pop().toUpperCase())}</div>
+      <div class="b"><span class="n">${esc(a.label || a.original_name)}</span><span class="muted">${(a.size/1024).toFixed(0)} KB · ${new Date(a.created_at*1000).toLocaleDateString('it-IT')}</span>
+      <div class="row"><button class="btn sm" data-a="copy" data-url="${esc(a.url)}">Copia link</button><button class="btn sm" data-a="ren">Rinomina</button><button class="btn sm danger" data-a="del">Elimina</button></div></div></div>`).join('') || '<p class="muted">Ancora nessun file.</p>'}</div></div>`;
+  const drop = $('#drop');
+  $('#upBtn').onclick = () => { const i = document.createElement('input'); i.type = 'file'; i.multiple = true; i.onchange = async () => { try{ await uploadFiles(i.files); viewMedia(); }catch(e){ toast(e.message, true); } }; i.click(); };
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('on'); };
+  drop.ondragleave = () => drop.classList.remove('on');
+  drop.ondrop = async e => { e.preventDefault(); drop.classList.remove('on'); try{ await uploadFiles(e.dataTransfer.files); viewMedia(); }catch(err){ toast(err.message, true); } };
+  let qt; $('#mq').oninput = e => { clearTimeout(qt); qt = setTimeout(() => { mediaQ = e.target.value.trim(); viewMedia().then(() => { const q = $('#mq'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }); }, 250); };
+  $('#view').querySelector('.media').onclick = async e => {
+    const b = e.target.closest('button[data-a]'); if(!b) return;
+    const id = +b.closest('.m').dataset.id, a = list.find(x => x.id === id);
+    if(b.dataset.a === 'copy'){ try{ await navigator.clipboard.writeText(location.origin + b.dataset.url); toast('Link copiato'); }catch(err){ toast(b.dataset.url); } }
+    if(b.dataset.a === 'ren') openDialog('Rinomina', `<label>Nome visibile in admin<input id="rn" value="${esc(a.label || a.original_name)}"></label>`, [{label:'Salva', pri:true, run: async () => { await api('/api/assets/' + id, {method:'PUT', json:{label: $('#rn').value}}); viewMedia(); }}]);
+    if(b.dataset.a === 'del') openDialog('Eliminare il file?', `<p>“${esc(a.original_name)}” verrà cancellato dal disco. Non si può annullare.</p>`, [{label:'Elimina', danger:true, run: async () => { await api('/api/assets/' + id, {method:'DELETE'}); toast('File eliminato'); viewMedia(); }}]);
+  };
+}
+
+/* ---------------- tab: backup ---------------- */
+async function viewBackup(){
+  $('#view').innerHTML = `<div class="card"><h2>Backup</h2><p class="muted">Il database è il file <code>data/cameretta.db</code> e i file caricati sono in <code>data/uploads/</code>: copiare la cartella <code>data</code> basta a salvare tutto. Qui sotto puoi anche scaricare i contenuti in JSON (testi, sezioni, voci).</p>
+    <div class="row"><button class="btn pri" id="exp">Scarica JSON</button><button class="btn" id="pub">Esporta data.json per il sito statico</button></div>
+    <p class="muted" style="margin-top:14px"><code>data.json</code> va messo in <code>public/game/</code>: il gioco lo usa quando non trova il server (per esempio se pubblichi solo i file statici).</p></div>`;
+  const dl = (obj, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'})); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+  $('#exp').onclick = async () => { try{ dl(await api('/api/export'), 'cameretta-backup.json'); }catch(e){ toast(e.message, true); } };
+  $('#pub').onclick = async () => { try{ dl(await (await fetch('/api/public')).json(), 'data.json'); }catch(e){ toast(e.message, true); } };
+}
+
+/* ---------------- navigazione ---------------- */
+const VIEWS = {general: viewGeneral, sections: viewSections, bubbles: viewBubbles, media: viewMedia, backup: viewBackup};
+async function go(tab){
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab === tab));
+  try{ await VIEWS[tab](); }catch(e){ $('#view').innerHTML = `<div class="card"><p>${esc(e.message)}</p><button class="btn" onclick="location.reload()">Riprova</button></div>`; }
+  try{ history.replaceState(null, '', '#' + tab); }catch(e){}
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => go(t.dataset.tab));
+go(VIEWS[location.hash.slice(1)] ? location.hash.slice(1) : 'general');
+}
+</script>
+</body>
+</html>

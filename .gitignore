@@ -1,0 +1,22 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Database e file caricati (creati al primo avvio)
+data/
+
+# Output degli script in tools/ (si copiano a mano in public/game/assets/)
+tools/*.png
+tools/*.json
+
+# Segreti e configurazione locale
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
