@@ -3,7 +3,10 @@
 # Il dominio senza www rimanda a www.
 
 www.cristianobattini.com {
-	encode zstd gzip
+	# Le risposte /api/ restano non compresse: il gioco Godot nel browser
+	# fallisce con le risposte gzip e mostrerebbe i contenuti offline vecchi.
+	@compress not path /api/*
+	encode @compress zstd gzip
 	reverse_proxy 127.0.0.1:8000
 }
 

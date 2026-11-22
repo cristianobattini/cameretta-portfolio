@@ -238,6 +238,9 @@ func _step(n: int) -> void:
 func _request(path: String) -> Array:
 	var http := HTTPRequest.new()
 	http.timeout = 8.0
+	# Sul web il browser decomprime già le risposte gzip ma lascia l'header Content-Encoding:
+	# se Godot provasse a decomprimere di nuovo fallirebbe (corpo vuoto → copia offline).
+	http.accept_gzip = not is_web
 	add_child(http)
 	var err := http.request(abs_url(path) if path.begins_with("/") else path)
 	if err != OK:
