@@ -25,15 +25,13 @@ func _ready() -> void:
 			var i := AudioServer.bus_count - 1
 			AudioServer.set_bus_name(i, b)
 			AudioServer.set_bus_send(i, "Master")
-	var lpf := AudioEffectLowPassFilter.new()
-	lpf.cutoff_hz = 9000
-	AudioServer.add_bus_effect(AudioServer.get_bus_index("Ambience"), lpf)
 	var dir := DirAccess.open("res://sounds")
 	if dir:
 		for f in dir.get_files():
 			f = f.trim_suffix(".import").trim_suffix(".remap")
 			if f.ends_with(".ogg"):
 				_snd[f.get_basename()] = load("res://sounds/" + f)
+	print("Sfx: %d suoni caricati, bus: %d" % [_snd.size(), AudioServer.bus_count])
 	for i in 14:
 		var p := AudioStreamPlayer.new()
 		p.bus = "SFX"

@@ -53,7 +53,7 @@ func build_bubbles() -> void:
 	var x1 := float(s.stop) - 200.0
 	var step := (x1 - x0) / (n - 1) if n > 1 else 0.0
 	for i in n:
-		bub.append({"x": x0 + i * step, "top": 136.0 if i % 2 else 84.0, "data": G.bubbles[i], "state": "idle", "shown": 0, "t": 0.26})
+		bub.append({"x": x0 + i * step, "top": 196.0 if i % 2 else 128.0, "data": G.bubbles[i], "state": "idle", "shown": 0, "t": 0.26})
 
 func update(dt: float) -> void:
 	time += dt

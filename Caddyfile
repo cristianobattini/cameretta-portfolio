@@ -1,0 +1,12 @@
+# Caddy: HTTPS automatico per www.cristianobattini.com
+# Avvio di prova:  caddy run --config Caddyfile
+# Il dominio senza www rimanda a www.
+
+www.cristianobattini.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8000
+}
+
+cristianobattini.com {
+	redir https://www.cristianobattini.com{uri} permanent
+}

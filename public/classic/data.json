@@ -1,6 +1,6 @@
 {
  "settings": {
-  "site_name": "ERACUL",
+  "site_name": "CRI's CAMERETTA",
   "menu_kicker": "PORTFOLIO · 2026",
   "menu_kicker_en": "PORTFOLIO · 2026",
   "menu_subtitle": "~ la cameretta ~",
@@ -33,7 +33,8 @@
   "steps_volume": "0.7",
   "accent_color": "#f2b85b",
   "default_lang": "en",
-  "skip_intro": "0"
+  "skip_intro": "0",
+  "site_url": "https://www.cristianobattini.com"
  },
  "sections": [
   {
@@ -759,8 +760,8 @@
   {
    "id": 1,
    "kind": "intro",
-   "text": "Ciao! Sono Eracul. Benvenuto nel mio piccolo angolo di internet.",
-   "text_en": "Hi! I'm Eracul. Welcome to my little corner of the internet.",
+   "text": "Ciao! Benvenuto in CRI's CAMERETTA, il mio piccolo angolo di internet.",
+   "text_en": "Hi! Welcome to CRI's CAMERETTA, my little corner of the internet.",
    "author": ""
   },
   {

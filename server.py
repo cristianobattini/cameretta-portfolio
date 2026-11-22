@@ -11,6 +11,7 @@ Variabili d'ambiente opzionali:
 Ogni testo visibile ha due versioni: il campo normale (italiano) e quello con
 suffisso _en (inglese). Se il campo _en è vuoto, il sito mostra l'italiano.
 """
+import mimetypes
 import os
 import re
 import sqlite3
@@ -24,6 +25,11 @@ from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+# Windows non sempre conosce questi tipi: il gioco Godot (WebAssembly) non partirebbe
+mimetypes.add_type("application/wasm", ".wasm")
+mimetypes.add_type("application/octet-stream", ".pck")
+mimetypes.add_type("text/javascript", ".js")
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
@@ -75,7 +81,8 @@ EXTRA_COLUMNS = {
 # ---------------------------------------------------------------- contenuti iniziali
 
 DEFAULT_SETTINGS = {
-    "site_name": "ERACUL",
+    "site_name": "CRI's CAMERETTA",
+    "site_url": "https://www.cristianobattini.com",
     "menu_kicker": "PORTFOLIO · 2026", "menu_kicker_en": "PORTFOLIO · 2026",
     "menu_subtitle": "~ la cameretta ~", "menu_subtitle_en": "~ the little room ~",
     "menu_tagline": "sviluppo · fisica · appunti · libri", "menu_tagline_en": "code · physics · notes · books",
@@ -105,8 +112,8 @@ SEED_SECTIONS = [
          intro_en="From the window you can see the sea. This is the road so far, and the one ahead."),
     dict(id="scrivania", object_name="Scrivania", object_name_en="Desk", sign_label="Progetti", sign_label_en="Projects",
          title="Progetti di programmazione", title_en="Programming projects", color="#23406e", sort=2,
-         intro="Qui sopra c'è tutto quello che ho scritto, rotto e rimesso in piedi. Dal web all'hardware.",
-         intro_en="Everything I've written, broken and put back together lives on this desk. From the web to hardware.",
+         intro="Qui sopra c'è tutto quello che ho scritto, rotto e rimesso in piedi. Dal web al telefono, dalle stelle ai mercati.",
+         intro_en="Everything I've written, broken and put back together lives on this desk. From the web to your phone, from the stars to the markets.",
          link_url="https://github.com/cristianobattini", link_label="Tutti i progetti su GitHub ↗", link_label_en="All projects on GitHub ↗"),
     dict(id="lavagna", object_name="Lavagna", object_name_en="Blackboard", sign_label="Fisica", sign_label_en="Physics",
          title="Appunti di fisica e materiale", title_en="Physics notes and material", color="#2f5d48", sort=3,
@@ -131,61 +138,43 @@ def it(section, grp, grp_en, kicker, kicker_en, title, title_en, desc, desc_en, 
 
 
 SEED_ITEMS = [
-    it("finestra", "Il percorso", "The journey", "Adesso", "Now", "Studente di fisica all'Università di Pisa", "Physics student at the University of Pisa",
-       "Fisica 1, Analisi Matematica, Geometria e Algebra Lineare, Laboratorio 1 ed Elementi di Computazione.",
-       "Physics 1, Calculus, Geometry and Linear Algebra, Lab 1 and Elements of Computing."),
+    # --- dal CV di cristianobattini.com
+    it("finestra", "Il percorso", "The journey", "2026 — in corso", "2026 — now", "Studente di Fisica · Università di Pisa", "Physics student · University of Pisa",
+       "Immatricolato al corso di laurea in Fisica: Fisica 1, Analisi Matematica, Geometria e Algebra Lineare, Laboratorio 1.",
+       "Enrolled in the Physics degree: Physics 1, Calculus, Geometry and Linear Algebra, Lab 1."),
+    it("finestra", "Il percorso", "The journey", "Diploma", "High school", "Diploma di Maturità", "High-school diploma",
+       "Conseguito con votazione 100/100.", "Graduated with full marks, 100/100."),
     it("finestra", "Il percorso", "The journey", "Lavoro", "Work", "Sviluppatore full-stack", "Full-stack developer",
        "Esperienza in ruoli di R&D e frontend: interfacce in Angular e React, servizi in Python e FastAPI.",
        "Experience in R&D and frontend roles: interfaces in Angular and React, services in Python and FastAPI."),
-    it("finestra", "Il percorso", "The journey", "Sempre", "Always", "Progetti indipendenti", "Independent projects",
-       "App per studenti, strumenti con AI, algoritmi di trading, simulazioni di fisica, un logger su Arduino. Sono tutti sulla scrivania.",
-       "Apps for students, AI tools, trading algorithms, physics simulations, an Arduino logger. They're all on the desk."),
     it("finestra", "Strumenti", "Toolbox", "Stack", "Stack", "Con cosa lavoro", "What I work with", "", "",
-       "Angular, React, React Native, Expo, TypeScript, Next.js, NestJS, Python, FastAPI, Supabase, C++"),
+       "Angular, React, React Native, Expo, TypeScript, NestJS, Python, FastAPI, Supabase, C#, C++"),
 
-    it("scrivania", "In evidenza", "Featured", "App mobile · Expo", "Mobile app · Expo", "Provia", "Provia",
-       "Per studenti universitari: carriera, voti, CFU, medie, tasse, orari e appelli in un posto solo. Privacy by design, nessuna password d'ateneo.",
-       "For university students: career, grades, credits, averages, fees, timetables and exams in one place. Privacy by design, no university passwords.",
-       "React Native, Expo, Supabase", GH + "Provia"),
-    it("scrivania", "In evidenza", "Featured", "Monorepo · NestJS", "Monorepo · NestJS", "UniTrend", "UniTrend",
-       "Collega l'ateneo con login ufficiale OAuth2 e analizza l'andamento universitario. Architettura a connettori (ESSE3, GOMP).",
-       "Connects to your university via official OAuth2 login and analyses your progress. Connector-based architecture (ESSE3, GOMP).",
-       "NestJS, Prisma, Expo, PostgreSQL, Redis", GH + "universita_app"),
-    it("scrivania", "In evidenza", "Featured", "Terminale · Astropy", "Terminal · Astropy", "Astro Assistant", "Astro Assistant",
-       "App da terminale a schermo intero per pianificare osservazioni e astrofotografia: catalogo Messier, meteo e la notte giusta.",
-       "A full-screen terminal app to plan observations and astrophotography: Messier catalogue, conditions and the right night.",
-       "Python, Textual, Astropy, SQLite", GH + "astro_assistant"),
-    it("scrivania", "In evidenza", "Featured", "Fisica · simulazione", "Physics · simulation", "Linee di forza del campo elettrico", "Electric field lines simulator",
-       "Simulatore delle linee di forza del campo elettrico generato da cariche puntiformi.",
-       "Simulates the field lines of the electric field generated by point charges.",
-       "Python", GH + "electric_field_force_lines_sim"),
-    it("scrivania", "In evidenza", "Featured", "Trading · cTrader", "Trading · cTrader", "Anakin cAlgo", "Anakin cAlgo",
-       "Algoritmo per cTrader: ingressi precisi, doppio take profit, break-even e gestione del rischio.",
-       "A cTrader algorithm: precise entries, dual take profit, break-even and risk management.",
-       "C#, cTrader", GH + "Anakin-cAlgo"),
-    it("scrivania", "In evidenza", "Featured", "App mobile · Expo", "Mobile app · Expo", "GalleryClean", "GalleryClean",
-       "Pulisci la galleria con uno swipe: a destra elimini, a sinistra tieni.",
-       "Clean up your photo gallery with a swipe: right to delete, left to keep.",
-       "React Native, Expo", GH + "GalleryClean"),
-    it("scrivania", "Altri progetti", "More projects", "Next.js · Supabase", "Next.js · Supabase", "anakin/", "anakin/",
-       "Il mio forum personale, \"pensare ad alta voce\": sezioni, thread, bacheca file e pannello admin.",
-       "My personal forum, \"thinking out loud\": sections, threads, a file board and an admin panel.", "Next.js, Supabase"),
-    it("scrivania", "Altri progetti", "More projects", "AI · trading", "AI · trading", "Anakin Next", "Anakin Next",
-       "Copilota di trading con AI: un transformer in PyTorch affiancato dalla Claude API.",
-       "An AI trading copilot: a PyTorch transformer working alongside the Claude API.", "React, FastAPI, PyTorch"),
-    it("scrivania", "Altri progetti", "More projects", "Web · mobile", "Web · mobile", "biblio", "biblio",
-       "La mia libreria digitale: scansiono il codice a barre e i dati arrivano da Open Library.",
-       "My digital library: scan the barcode and the details come from Open Library.", "Next.js, Expo, Supabase"),
-    it("scrivania", "Altri progetti", "More projects", "AI · email", "AI · email", "Mail AI", "Mail AI",
-       "Gestione email con AI per Gmail e Outlook. Token solo in locale, ogni azione la approvo io.",
-       "AI email management for Gmail and Outlook. Tokens stay local, I approve every action.", "React, FastAPI, Claude API"),
-    it("scrivania", "Altri progetti", "More projects", "Hardware", "Hardware", "Motion Logger", "Motion Logger",
-       "Arduino Nano + MPU6050: registra il movimento a 50 Hz su scheda SD, in CSV.",
-       "Arduino Nano + MPU6050: logs motion at 50 Hz to an SD card, as CSV.", "C++, PlatformIO, Arduino"),
-    it("scrivania", "Altri progetti", "More projects", "Questo sito", "This site", "La cameretta", "The little room",
-       "Questo portfolio: la stanza è renderizzata da un mini raycaster in Python, i suoni sono sintetizzati nel browser.",
-       "This portfolio: the room is rendered by a tiny Python raycaster, every sound is synthesised in the browser.",
-       "Python, FastAPI, SQLite, Canvas, Web Audio"),
+    # --- progetti da cristianobattini.com (in evidenza come sul sito)
+    it("scrivania", "In evidenza", "Featured", "2026 · terminale", "2026 · terminal", "Astro Assistant", "Astro Assistant",
+       "App da terminale a schermo intero per pianificare le notti di astrofotografia: punteggio dei soggetti, finestre di ripresa e un vero registro delle osservazioni. Basata su Astropy/Astroplan, con tutto il catalogo Messier già pronto.",
+       "A full-screen terminal app for planning astrophotography nights: target scoring, shooting windows and a real observation log. Built on Astropy/Astroplan, with the whole Messier catalogue ready on first launch.",
+       "Python, Textual, Rich, Astropy, Astroplan, SQLModel, SQLite", GH + "astro_assistant", status="Open source", status_en="Open source"),
+    it("scrivania", "In evidenza", "Featured", "2026 · mobile", "2026 · mobile", "Provia", "Provia",
+       "Compagna per gli studenti universitari italiani: voti, CFU, medie, orario e appelli, inseriti da te e privati. Nessun login d'ateneo, abbonamento Pro con paywall animato su misura.",
+       "A companion for Italian university students: grades, credits, averages, timetable and exam sessions, all self-tracked and private. No university login, Pro subscription with a custom animated paywall.",
+       "React Native, Expo, TypeScript, Supabase, Zustand, TanStack Query", GH + "Provia", status="Open source", status_en="Open source"),
+    it("scrivania", "In evidenza", "Featured", "2026 · full stack", "2026 · full stack", "UniTrend", "UniTrend",
+       "Si collega al tuo ateneo con OAuth2/OIDC e tiene sincronizzati voti, CFU, orario e appelli. Monorepo NestJS + Prisma con connettori per ESSE3/CINECA e GOMP, token cifrati lato server.",
+       "Connects to your university via OAuth2/OIDC and keeps grades, credits, timetable and exams in sync. NestJS + Prisma monorepo with connectors for ESSE3/CINECA and GOMP, tokens encrypted server-side.",
+       "NestJS, Prisma, PostgreSQL, Redis, React Native, Expo, TypeScript", GH + "universita_app", status="Open source", status_en="Open source"),
+    it("scrivania", "Altri progetti", "More projects", "2025 · mobile", "2025 · mobile", "YouVault", "YouVault",
+       "Una cassaforte privata e cifrata per le credenziali: tutto resta sul telefono, si sblocca solo con Face ID o impronta.",
+       "A private, encrypted vault for your credentials: everything stays on the phone, unlocked only with Face ID or fingerprint.",
+       "React Native, Expo, Realm, TypeScript, Crypto-JS", GH + "YouVault", status="Open source", status_en="Open source"),
+    it("scrivania", "Altri progetti", "More projects", "2026 · mobile", "2026 · mobile", "GalleryClean", "GalleryClean",
+       "Svuota il rullino in fretta con uno swipe: a destra elimini, a sinistra tieni, con annulla, anteprima dei video e una griglia di controllo prima di cancellare.",
+       "Clear out your camera roll fast with a swipe: right to delete, left to keep, with undo, video preview and a review grid before anything is removed.",
+       "React Native, Expo, Kotlin", GH + "GalleryClean", status="Open source", status_en="Open source"),
+    it("scrivania", "Altri progetti", "More projects", "2025 · trading", "2025 · trading", "Anakin cTrader Algo", "Anakin cTrader Algo",
+       "Bot di trading algoritmico per cTrader: ingressi precisi, due take profit indipendenti, break-even automatico e dimensionamento a rischio percentuale.",
+       "An algorithmic trading bot for cTrader: precise entries, two independent take-profit levels, automatic break-even and risk-percent position sizing.",
+       "C#, cTrader, cAlgo", GH + "Anakin-cAlgo", status="Open source", status_en="Open source"),
 
     it("lavagna", "Corsi", "Courses", "Università di Pisa", "University of Pisa", "Fisica 1", "Physics 1",
        "Appunti in LaTeX, un file per argomento con uno stile condiviso.", "Notes in LaTeX, one file per topic with a shared style.", "LaTeX"),
@@ -200,6 +189,10 @@ SEED_ITEMS = [
        "Appunti completi in PDF.", "Complete notes as a PDF.", status="in arrivo", status_en="coming soon"),
     it("lavagna", "Materiale", "Material", "GAL", "Linear Algebra", "Parte 1", "Part 1",
        "Appunti completi in PDF.", "Complete notes as a PDF.", status="in arrivo", status_en="coming soon"),
+    it("lavagna", "Progetti di fisica", "Physics projects", "2025 · simulazione", "2025 · simulation", "Simulatore delle linee di forza", "Electric Field Force Lines Simulator",
+       "App desktop che disegna campo elettrico e linee di forza per configurazioni di cariche puntiformi a scelta. Nata come strumento didattico e di visualizzazione.",
+       "A desktop app that draws electric field and force lines around any point-charge configuration. Built as a teaching and visualisation aid.",
+       "Python, NumPy, Matplotlib, PyQt5", GH + "electric_field_force_lines_sim", status="Open source", status_en="Open source"),
     it("lavagna", "Progetti di fisica", "Physics projects", "GitHub", "GitHub", "cbattini", "cbattini",
        "Il profilo dove tengo codice e materiale di fisica.", "The profile where I keep my physics code and material.",
        url="https://github.com/cbattini", ll="apri il profilo ↗", ll_en="open profile ↗"),
@@ -219,11 +212,11 @@ SEED_ITEMS = [
 ]
 
 SEED_BUBBLES = [
-    ("intro", "Ciao! Sono Eracul. Benvenuto nel mio piccolo angolo di internet.", "Hi! I'm Eracul. Welcome to my little corner of the internet.", ""),
+    ("intro", "Ciao! Benvenuto in CRI's CAMERETTA, il mio piccolo angolo di internet.", "Hi! Welcome to CRI's CAMERETTA, my little corner of the internet.", ""),
     ("intro", "Sono uno sviluppatore full-stack di Rosignano Solvay, un paese sul mare vicino a Pisa.", "I'm a full-stack developer from Rosignano Solvay, a small town by the sea near Pisa.", ""),
-    ("intro", "Studio fisica all'Università di Pisa. Il mio preferito? L'elettromagnetismo.", "I study physics at the University of Pisa. My favourite part? Electromagnetism.", ""),
+    ("intro", "Dal 2026 studio Fisica all'Università di Pisa. Il mio preferito? L'elettromagnetismo.", "Since 2026 I've been studying Physics at the University of Pisa. My favourite part? Electromagnetism.", ""),
     ("quote", "Ciò che non so creare, non lo capisco.", "What I cannot create, I do not understand.", "Richard Feynman"),
-    ("intro", "Ho costruito app per studenti, strumenti con AI, algoritmi di trading e un logger su Arduino.", "I've built apps for students, AI tools, trading algorithms and an Arduino logger.", ""),
+    ("intro", "Ho costruito app per studenti, un assistente per l'astrofotografia, una cassaforte per password e un bot di trading.", "I've built apps for students, an astrophotography planner, a password vault and a trading bot.", ""),
     ("quote", "I suoi errori sono volontari e sono i portali della scoperta.", "His errors are volitional and are the portals of discovery.", "James Joyce, Ulisse"),
     ("quote", "È dentro noi un fanciullino.", "Within us there is a little child.", "Giovanni Pascoli"),
     ("intro", "La casa in fondo alla strada è la mia. Entra pure, dentro fa caldo.", "That house at the end of the street is mine. Come in, it's warm inside.", ""),
@@ -596,10 +589,80 @@ def export_all():
         }
 
 
+# ---------------------------------------------------------------- importazione
+
+TABLE_COLS = {}
+
+
+def table_cols(con, table):
+    if table not in TABLE_COLS:
+        TABLE_COLS[table] = [r["name"] for r in con.execute(f"PRAGMA table_info({table})")]
+    return TABLE_COLS[table]
+
+
+@app.post("/api/import", dependencies=[Depends(require_admin)])
+def import_all(data: dict):
+    """Ripristina un backup (Esporta tutto / data.json / contenuti.json).
+    settings: aggiornate chiave per chiave. sections, items, bubbles: se presenti nel file SOSTITUISCONO quelle attuali.
+    Prima di toccare qualcosa salva una copia del database in data/backup-AAAAMMGG-HHMMSS.db."""
+    import shutil
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    backup = DATA / f"backup-{stamp}.db"
+    n = 1
+    while backup.exists():
+        n += 1
+        backup = DATA / f"backup-{stamp}-{n}.db"
+    with db() as con:
+        con.execute("VACUUM INTO ?", (str(backup),)) if sqlite3.sqlite_version_info >= (3, 27) else shutil.copy(DB_PATH, backup)
+    counts = {}
+    with db() as con:
+        settings = data.get("settings") or {}
+        for k, v in settings.items():
+            if re.fullmatch(r"[a-z0-9_]{1,64}", k):
+                con.execute("INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                            (k, "" if v is None else str(v)))
+        counts["settings"] = len(settings)
+        sections = data.get("sections")
+        items = data.get("items")
+        if items is None and sections and any("items" in s for s in sections):   # formato di /api/public e data.json
+            items = [it for s in sections for it in s.get("items", [])]
+        if sections is not None:
+            con.execute("DELETE FROM items")
+            con.execute("DELETE FROM sections")
+            cols = table_cols(con, "sections")
+            for s in sections:
+                row = {k: (int(v) if isinstance(v, bool) else v) for k, v in s.items() if k in cols}
+                con.execute(f"INSERT INTO sections({', '.join(row)}) VALUES ({', '.join('?' * len(row))})", tuple(row.values()))
+            counts["sections"] = len(sections)
+        if items is not None:
+            if sections is None:
+                con.execute("DELETE FROM items")
+            cols = table_cols(con, "items")
+            now = int(time.time())
+            for it in items:
+                row = {k: v for k, v in it.items() if k in cols and k != "id"}
+                if isinstance(row.get("tags"), list):
+                    row["tags"] = ", ".join(row["tags"])
+                row = {k: (int(v) if isinstance(v, bool) else v) for k, v in row.items()}
+                row.setdefault("updated_at", now)
+                con.execute(f"INSERT INTO items({', '.join(row)}) VALUES ({', '.join('?' * len(row))})", tuple(row.values()))
+            counts["items"] = len(items)
+        bubbles = data.get("bubbles")
+        if bubbles is not None:
+            con.execute("DELETE FROM bubbles")
+            cols = table_cols(con, "bubbles")
+            for b in bubbles:
+                row = {k: (int(v) if isinstance(v, bool) else v) for k, v in b.items() if k in cols and k != "id"}
+                con.execute(f"INSERT INTO bubbles({', '.join(row)}) VALUES ({', '.join('?' * len(row))})", tuple(row.values()))
+            counts["bubbles"] = len(bubbles)
+    return {"ok": True, "imported": counts, "backup": backup.name}
+
+
 # ---------------------------------------------------------------- statici
 
 app.mount("/uploads", StaticFiles(directory=UPLOADS), name="uploads")
-app.mount("/game", StaticFiles(directory=PUBLIC / "game", html=True), name="game")
+app.mount("/game", StaticFiles(directory=PUBLIC / "game", html=True), name="game")          # versione Godot
+app.mount("/classic", StaticFiles(directory=PUBLIC / "classic", html=True), name="classic")  # versione HTML/JS
 app.mount("/admin", StaticFiles(directory=PUBLIC / "admin", html=True), name="admin")
 
 

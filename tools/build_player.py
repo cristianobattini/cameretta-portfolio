@@ -2,11 +2,14 @@
 Output: player.png (sprite sheet orizzontale: 4 idle + 6 walk, frame 24x40, guarda a destra)
         player.json (metadati dei frame)
 """
-import json, math
+import json, math, sys
 import numpy as np
 from PIL import Image
 
-FW, FH = 24, 42
+# S = scala del disegno (1 = 24x42). I blocchi vengono riempiti senza buchi e il contorno resta di 1 pixel.
+S = float(sys.argv[1]) if len(sys.argv) > 1 else 1.25
+BW, BH = 24, 42
+FW, FH = math.ceil(BW * S), math.ceil(BH * S)
 OUT = (24, 18, 30)
 SKIN, SKIN_SH = (240, 200, 166), (212, 162, 130)
 HAIR, HAIR_HI = (54, 38, 32), (88, 62, 48)
@@ -24,8 +27,10 @@ class F:
 
     def p(self, x, y, c):
         x, y = int(round(x)), int(round(y))
-        if 0 <= x < FW and 0 <= y < FH:
-            self.a[y, x] = (*c, 255)
+        if 0 <= x < BW and 0 <= y < BH:
+            x0, x1 = int(math.floor(x * S)), max(int(math.floor(x * S)) + 1, int(math.floor((x + 1) * S)))
+            y0, y1 = int(math.floor(y * S)), max(int(math.floor(y * S)) + 1, int(math.floor((y + 1) * S)))
+            self.a[y0:y1, x0:x1] = (*c, 255)
 
     def r(self, x0, y0, x1, y1, c):
         for y in range(int(y0), int(y1) + 1):
@@ -145,7 +150,7 @@ def frame(kind, i):
     f.p(14 + (1 if tail > 0 else 0), sy + 8, SCARF_SH)
     # --- braccio vicino
     arm(f, 15, 15 + bob, sw[0], True)
-    a = np.zeros_like(f.a); a[1:] = f.a[:-1]; f.a = a   # un pixel di margine sopra
+    a = np.zeros_like(f.a); a[1:] = f.a[:-1]; f.a = a   # un pixel di margine sopra (per il contorno)
     f.outline()
     return f.a
 
@@ -154,5 +159,5 @@ frames = [frame("idle", i) for i in range(4)] + [frame("walk", i) for i in range
 sheet = np.concatenate(frames, axis=1)
 Image.fromarray(sheet, "RGBA").save("player.png")
 Image.fromarray(sheet, "RGBA").resize((sheet.shape[1] * 6, sheet.shape[0] * 6), Image.NEAREST).save("player_x6.png")
-json.dump({"fw": FW, "fh": FH, "idle": [0, 1, 2, 3], "walk": [4, 5, 6, 7, 8, 9], "footY": 39}, open("player.json", "w"))
+json.dump({"fw": FW, "fh": FH, "idle": [0, 1, 2, 3], "walk": [4, 5, 6, 7, 8, 9], "footY": math.floor(38 * S) + 1, "scale": S}, open("player.json", "w"))
 print("ok", sheet.shape)

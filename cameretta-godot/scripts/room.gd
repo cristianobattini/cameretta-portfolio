@@ -101,9 +101,9 @@ static func floor_x(y: float) -> Vector2:
 	var t := clampf((y - FY0) / (FY1 - FY0), 0, 1)
 	return Vector2(lerpf(128, 66, t), lerpf(190, 202, t))
 
-static func depth(y: float) -> float:
-	# l'omino è già più grande (sprite x1.25): in cameretta resta discreto per non coprire gli oggetti
-	return lerpf(0.56, 0.86, clampf((y - FY0) / (FY1 - FY0), 0, 1))
+static func depth(_y: float) -> float:
+	# stessa misura dappertutto (sprite x1.5), anche in cameretta
+	return 1.0
 
 func stand_point(g: String) -> Vector2:
 	var b: Dictionary = boxes[g]

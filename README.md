@@ -1,13 +1,18 @@
-# La cameretta — portfolio
+# CRI's CAMERETTA — portfolio
 
 Un portfolio a forma di videogioco 2D in pixel art, in inglese e in italiano (inglese di default, si cambia dal menu o dal pulsante EN/IT).
 
 1. **Menu** sul cielo stellato, con la schermata di caricamento sfocata.
 2. **La strada innevata**: muovi l'omino (frecce o A/D, SHIFT per correre, sul telefono le frecce a schermo o un tocco). Lungo la strada compaiono le bolle con la presentazione e le citazioni, scritte lettera per lettera con il suono della tastiera. In fondo c'è casa: **E** per entrare.
 3. **Il salotto**: camino acceso, TV (con **E** cambi canale), orologio a pendolo, gatto sul divano. La porta luminosa porta in cameretta.
-4. **La cameretta**: punta e clicca sugli oggetti.
+4. **La cameretta**: due modalità, *cammina* (l'omino si muove nella stanza) o *punta e clicca*; si sceglie all'inizio, si cambia nelle Impostazioni ed è sempre indicata a schermo.
 
-Tutti i suoni sono sintetizzati nel browser (Web Audio): passi sulla neve e sul parquet, vento, scoppiettio del camino, TV, tic-tac, porta che cigola, tastiera, clic meccanici dei menu. Niente file audio, niente licenze. La musica di sottofondo invece si carica dall'admin.
+**Due versioni del gioco**, stessi contenuti:
+
+- `/game/` — **versione Godot** (principale). Il progetto sorgente è la cartella `cameretta-godot` (vedi il suo README); in `public/game/` c'è l'export Web. Suoni registrati CC0.
+- `/classic/` — la versione HTML/JS precedente, con i suoni sintetizzati nel browser.
+
+La musica di sottofondo si carica dall'admin e vale per entrambe.
 
 | Oggetto   | Sezione                          |
 |-----------|----------------------------------|
@@ -87,13 +92,21 @@ CAMERETTA_ADMIN_TOKEN=lamiapassword python server.py
 ## Pubblicare il sito
 
 - **Con il server** (VPS, Render, Railway…): carica tutta la cartella e avvia `server.py` con `CAMERETTA_HOST=0.0.0.0` e una `CAMERETTA_ADMIN_TOKEN`.
-- **Solo statico** (GitHub Pages, Netlify): esporta `data.json` dall'admin (Backup), mettilo in `public/game/` e pubblica la cartella `public/game`. Se il server non risponde, il gioco legge `data.json`. I file caricati vanno copiati accanto, con lo stesso percorso.
+- **Windows + Caddy**: il sito è **www.cristianobattini.com**; il `Caddyfile` incluso fa già HTTPS, rimanda `cristianobattini.com` → `www` e usa `encode zstd gzip` nel blocco del sito, così il file `index.wasm` del gioco Godot (~40 MB) viaggia compresso (~9 MB). `server.py` registra già i tipi `.wasm` e `.pck`, che Windows a volte non conosce.
+- **Solo statico**: esporta `data.json` dall'admin (Backup), mettilo in `cameretta-godot/assets/data/` prima dell'export (o in `public/classic/` per la versione HTML). Se il server non risponde, il gioco usa quella copia.
+
+## Ripristinare i contenuti
+
+- **`importa-backup.bat`** (sul server, con il servizio acceso): senza argomenti importa `contenuti.json`, cioè progetti, elaborati, appunti, libri, percorso e bolle originali. Puoi anche trascinarci sopra un backup scaricato dall'admin. Chiede se importare tutto o solo le impostazioni.
+- Oppure dall'admin: scheda **Backup → Importa un backup**.
+- Ogni importazione salva prima una copia del database in `data/backup-AAAAMMGG-HHMMSS.db`.
 
 ## Struttura
 
 ```
 server.py              API + database (FastAPI, SQLite)
-public/game/           il gioco (HTML/CSS/JS, nessuna build)
+public/game/           il gioco Godot esportato per il Web (index.html, .wasm, .pck…)
+public/classic/        la versione HTML/CSS/JS precedente (nessuna build)
   game.js              scene, omino, bolle, pannelli, lingue
   audio.js             tutti gli effetti sonori sintetizzati
   assets/street_*.png  strada a tre livelli di parallasse (+ street.json)

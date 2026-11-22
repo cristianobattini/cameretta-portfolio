@@ -24,4 +24,4 @@ Le licenze sono in `licenses/`.
 
 ## Grafica e codice
 
-Pixel art e codice: fatti per Eracul (generatori in `cameretta-portfolio/tools/`).
+Pixel art e codice: fatti per CRI's CAMERETTA (generatori in `cameretta-portfolio/tools/`).

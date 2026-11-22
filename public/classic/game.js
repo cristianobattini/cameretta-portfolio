@@ -122,7 +122,7 @@ function applyTexts(){
   set('#bBack', t('back')); set('#bSkip', t('skip')); set('#mSkip', t('skip')); set('#rotate', t('rotate'));
   for(const b of [$('#bLang'), $('#mLang')]){ b.textContent = lang.toUpperCase(); b.setAttribute('aria-label', t('language') + ': ' + t('langName')); }
   const git = $('#tGit'); if(safeUrl(S.github_url)){ git.href = S.github_url; git.textContent = S.github_url.replace(/^https?:\/\//, ''); } else git.hidden = true;
-  document.title = (S.site_name || 'Eracul') + ' · ' + (L(S, 'room_crumb') || 'the little room');
+  document.title = (S.site_name || "CRI's CAMERETTA") + ' · ' + (L(S, 'room_crumb') || 'the little room');
   if(S.accent_color && /^#[0-9a-f]{3,8}$/i.test(S.accent_color)) document.documentElement.style.setProperty('--gold', S.accent_color);
   if(scene !== 'menu') hudFor(scene);
   refreshBubbles();

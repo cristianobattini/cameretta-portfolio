@@ -420,7 +420,11 @@ func _rebuild_menu() -> void:
 	back.add_child(col)
 	var kick := UI.label(G.L(S, "menu_kicker"), 22, G.C_SKY, UI.f_ui)
 	col.add_child(kick)
-	var nm := UI.label(str(S.get("site_name", "ERACUL")), 96 if not portrait else 64, G.C_CREAM, UI.f_head)
+	var site := str(S.get("site_name", "CRI's CAMERETTA"))
+	var avail := (size.x - 48) if portrait else 520.0
+	var fs := 96 if not portrait else 64
+	while fs > 28 and UI.f_head.get_string_size(site, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > avail - 8: fs -= 2
+	var nm := UI.label(site, fs, G.C_CREAM, UI.f_head)
 	nm.add_theme_color_override("font_shadow_color", G.C_TERRA)
 	nm.add_theme_constant_override("shadow_offset_x", 6)
 	nm.add_theme_constant_override("shadow_offset_y", 6)
@@ -526,7 +530,7 @@ func _layout_menu() -> void:
 
 # ================================================================== HUD
 func _mode_button() -> Button:
-	var b := UI.button("", func(): _toggle_mode(), "ghost", 18)
+	var b := UI.button("", func(): _toggle_mode(), "tool", 18)
 	b.name = "Mode"
 	_update_mode_button(b)
 	return b
@@ -656,12 +660,11 @@ func _layout() -> void:
 		world_rect = Rect2(Vector2(world_rect.position.x if world_rect.size.x > 0 else 0.0, 64), Vector2(320, 200) * s2)
 		_follow(1.0)
 	else:
-		var s3 := minf(sz.x / 320.0, sz.y / 200.0)
-		var real := s3 * content_scale()
-		var fl := floorf(real)
-		if fl >= 2 and fl / real >= 0.88: s3 = fl / content_scale()
+		# riempie tutta la finestra (niente bande): il mondo può uscire un po' dai bordi
+		var s3 := maxf(sz.x / 320.0, sz.y / 200.0)
 		var wsz3 := Vector2(320, 200) * s3
 		world_rect = Rect2((sz - wsz3) / 2, wsz3)
+		_follow(1.0)
 	view.position = world_rect.position
 	view.size = world_rect.size
 	view.pivot_offset = Vector2.ZERO
@@ -673,7 +676,17 @@ func _layout() -> void:
 
 ## Verticale: sposta la vista in orizzontale per tenere al centro l'omino (o l'oggetto scelto).
 func _follow(k: float) -> void:
-	if not portrait or scene == "menu" or scene == "loading": return
+	if scene == "menu" or scene == "loading": return
+	if world_rect.size.x <= size.x + 1:
+		# lo schermo è più largo che alto rispetto al 16:10: si taglia sopra e sotto, tenendo i piedi in vista
+		world_rect.position.x = (size.x - world_rect.size.x) / 2
+		var over := world_rect.size.y - size.y
+		world_rect.position.y = -over * 0.7 if not portrait else 64.0
+		view.position = world_rect.position
+		view.size = world_rect.size
+		stage.position = world_rect.position
+		stage.scale = Vector2.ONE * (world_rect.size.x / 1280.0)
+		return
 	var fx := 160.0
 	match scene:
 		"street": fx = worlds.street.P.x - worlds.street.cam
@@ -685,6 +698,7 @@ func _follow(k: float) -> void:
 	var s := world_rect.size.x / 320.0
 	var tx := clampf(size.x / 2 - fx * s, size.x - world_rect.size.x, 0)
 	world_rect.position.x = lerpf(world_rect.position.x, tx, k)
+	if not portrait: world_rect.position.y = (size.y - world_rect.size.y) / 2
 	view.position = world_rect.position
 	view.size = world_rect.size
 	stage.position = world_rect.position
@@ -721,7 +735,7 @@ func _layout_hud() -> void:
 		pad_a.position = Vector2(sz.x - 124, pad_y)
 		sheet.visible = scene == "room"
 		sheet.position = Vector2(10, below)
-		sheet.size = Vector2(sz.x - 20, maxf(160, (pad_y - 14 if walk else sz.y - 10) - below))
+		sheet.size = Vector2(sz.x - 20, maxf(160, (pad_y - 26 if walk else sz.y - 10) - below))
 		sheet.custom_minimum_size = sheet.size
 	else:
 		if mode_badge.get_parent() != left:
@@ -757,9 +771,10 @@ func _apply_texts() -> void:
 	if loading and ld_text: ld_text.text = G.t("loading")
 	if G.S.is_empty(): return
 	_rebuild_menu()
-	var name := str(G.S.get("site_name", "ERACUL"))
+	var name := str(G.S.get("site_name", "CRI's CAMERETTA"))
 	var sc: String = G.t("street") if scene == "street" else G.t("living") if scene == "living" else G.L(G.S, "room_crumb")
-	crumb.text = name if portrait else name + " · " + sc
+	crumb.text = name + " · " + sc
+	crumb.get_parent().visible = not portrait
 	b_back.text = "◀" if portrait else G.t("back")
 	b_skip.text = G.t("skip")
 	b_lang.text = G.lang.to_upper()
@@ -877,6 +892,8 @@ func _transition(fn: Callable, door := false) -> void:
 	if door: get_tree().create_timer(0.25).timeout.connect(Sfx.door_close)
 	busy = false
 
+var _zoom_tw: Tween
+
 func _start_game(direct: bool) -> void:
 	if busy or scene != "menu": return
 	if G.room_mode == "":
@@ -891,13 +908,16 @@ func _start_game(direct: bool) -> void:
 		var w: Array = G.J.menu.window
 		var c := Vector2((float(w[0]) + float(w[2])) / 2, (float(w[1]) + float(w[3])) / 2) / Vector2(320, 200) * view.size
 		view.pivot_offset = c
-		var tz := create_tween()
-		tz.tween_property(view, "scale", Vector2(1.8, 1.8), 0.9).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		_zoom_tw = create_tween()
+		_zoom_tw.tween_property(view, "scale", Vector2(1.8, 1.8), 0.9).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	await get_tree().create_timer(0.45).timeout
 	var tw := create_tween()
 	tw.tween_property(fade_rect, "color:a", 1.0, 0.45)
 	await tw.finished
+	if _zoom_tw: _zoom_tw.kill()
+	_zoom_tw = null
 	view.scale = Vector2.ONE
+	view.pivot_offset = Vector2.ZERO
 	if to_room: _enter_room()
 	else: _enter_street()
 	await get_tree().create_timer(0.1).timeout

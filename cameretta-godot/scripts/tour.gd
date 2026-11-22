@@ -29,6 +29,14 @@ func _run() -> void:
 		get_window().size = Vector2i(int(p[0]), int(p[1]))
 	while m.loading != null: await get_tree().process_frame
 	await wait(0.6)
+	if OS.get_environment("CAMERETTA_DIRECT") != "":
+		G.room_mode = "point"
+		m._menu_act("room")
+		for i in 8:
+			await wait(0.25)
+			await shot("direct_%d" % i)
+		get_tree().quit()
+		return
 	await shot("menu")
 	m.open_settings()
 	await wait(0.3)

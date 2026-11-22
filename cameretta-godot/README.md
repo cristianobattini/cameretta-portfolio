@@ -1,6 +1,6 @@
 # La cameretta — versione Godot
 
-Il portfolio di Eracul come gioco in pixel art, rifatto in **Godot 4.7** (GDScript, renderer *Compatibility*, export Web).
+CRI's CAMERETTA, il portfolio di Cristiano Battini come gioco in pixel art, rifatto in **Godot 4.7** (GDScript, renderer *Compatibility*, export Web).
 I contenuti arrivano sempre dal server FastAPI del portfolio (`/api/public`): la dashboard admin resta quella di prima.
 
 ## Cosa c'è
