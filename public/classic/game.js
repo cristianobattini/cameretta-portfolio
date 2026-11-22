@@ -221,7 +221,7 @@ function updatePlayer(dt, minX, maxX, stepSound){
 function drawPlayer(ctx, sx, feet, shadow = 'rgba(20,24,60,.35)'){
   const fw = J.player.fw, fh = J.player.fh;
   ctx.fillStyle = shadow;
-  ctx.beginPath(); ctx.ellipse(Math.round(sx), feet + 1, 8, 2, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(Math.round(sx), feet + 1, 8 * (J.player.scale || 1), 2, 0, 0, Math.PI * 2); ctx.fill();
   const x = Math.round(sx - fw / 2), y = feet - J.player.footY;
   if(P.dir < 0){ ctx.save(); ctx.translate(x + fw, y); ctx.scale(-1, 1); ctx.drawImage(IMG.player, P.frame * fw, 0, fw, fh, 0, 0, fw, fh); ctx.restore(); }
   else ctx.drawImage(IMG.player, P.frame * fw, 0, fw, fh, x, y, fw, fh);
@@ -306,7 +306,7 @@ function updateStreet(dt){
   ST.smoke = ST.smoke.filter(p => p.a > 0);
   // respiro nel freddo
   P.breath -= dt;
-  if(P.breath <= 0){ P.breath = rnd(2.2, 3.4); for(let k = 0; k < 4; k++) ST.puffs.push({x: P.x + P.dir * 7, y: J.street.feet - 31, vx: P.dir * rnd(5, 10), vy: rnd(-5, -2), a: .55, d: k * .06}); }
+  if(P.breath <= 0){ P.breath = rnd(2.2, 3.4); for(let k = 0; k < 4; k++) ST.puffs.push({x: P.x + P.dir * 7 * (J.player.scale || 1), y: J.street.feet - 31 * (J.player.scale || 1), vx: P.dir * rnd(5, 10), vy: rnd(-5, -2), a: .55, d: k * .06}); }
   for(const p of ST.puffs){ if(p.d > 0){ p.d -= dt; continue; } p.x += p.vx * dt; p.y += p.vy * dt; p.a -= dt * .5; }
   ST.puffs = ST.puffs.filter(p => p.a > 0);
 }

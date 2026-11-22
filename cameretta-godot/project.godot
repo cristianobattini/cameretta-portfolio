@@ -1,0 +1,36 @@
+; La cameretta — porting in Godot 4 del portfolio di Eracul.
+config_version=5
+
+[application]
+
+config/name="La cameretta"
+config/description="Il portfolio di Eracul come piccolo gioco in pixel art."
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+boot_splash/show_image=false
+boot_splash/bg_color=Color(0.0588, 0.0588, 0.149, 1)
+config/icon="res://assets/img/icon.png"
+
+[autoload]
+
+G="*res://scripts/g.gd"
+Sfx="*res://scripts/sfx.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=800
+window/stretch/mode="disabled"
+window/dpi/allow_hidpi=true
+window/handheld/orientation=6
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=true
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
+environment/defaults/default_clear_color=Color(0.0588, 0.0588, 0.149, 1)
