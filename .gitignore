@@ -20,3 +20,7 @@ tools/*.json
 Thumbs.db
 .vscode/
 .idea/
+
+# Godot: cache e build locali
+cameretta-godot/.godot/
+cameretta-godot/build/
