@@ -113,7 +113,7 @@ static func cards(items: Array, chalk: bool, narrow: bool) -> Control:
 			tr.mouse_filter = Control.MOUSE_FILTER_PASS
 			v.add_child(tr)
 			_load_into(tr, str(it.image))
-		if G.L(it, "kicker") != "": v.add_child(UI.label(G.L(it, "kicker"), 18, G.C_DIM if not chalk else Color("b9cdb5")))
+		if G.L(it, "kicker") != "": v.add_child(UI.label(G.L(it, "kicker"), 18, G.C_DIM if not chalk else Color("b9cdb5"), null, true))
 		v.add_child(UI.label(G.L(it, "title"), 22, G.C_CREAM if not chalk else Color("f4f7ef"), UI.f_head, true))
 		if G.L(it, "status") != "":
 			var bp := PanelContainer.new()

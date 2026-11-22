@@ -102,6 +102,7 @@ func _ready() -> void:
 	prefs.load(PREFS)
 	for g in prefs.get_value("p", "explored", []): explored[g] = true
 	room_mode = prefs.get_value("p", "room_mode", "")
+	if touch: room_mode = "point"   # su telefono e tablet solo punta e clicca
 	music_user = prefs.get_value("p", "music_user", 1.0)
 	effects_user = prefs.get_value("p", "effects_user", 1.0)
 	tv_channel = prefs.get_value("p", "tv", 0)
@@ -137,7 +138,7 @@ func set_lang(l: String) -> void:
 	lang_changed.emit()
 
 func set_room_mode(m: String) -> void:
-	room_mode = m
+	room_mode = "point" if touch else m
 	save_prefs()
 	settings_changed.emit()
 

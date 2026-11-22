@@ -547,6 +547,7 @@ func _update_mode_button(b: Button) -> void:
 	b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
 func _toggle_mode() -> void:
+	if G.touch: return
 	Sfx.toggle()
 	G.set_room_mode("point" if G.room_mode == "walk" else "walk")
 	if scene == "room": worlds.room.enter()
@@ -1251,8 +1252,9 @@ func open_settings(silent := false) -> void:
 	var v := UI.vbox(20)
 	v.add_child(_row(G.t("language"), _seg([["en", "ENGLISH"], ["it", "ITALIANO"]], G.lang, func(x): Sfx.select(); G.set_lang(x))))
 	v.add_child(_row(G.t("audio"), _seg([["on", G.t("on")], ["off", G.t("off")]], "on" if G.audio_on else "off", func(x): Sfx.set_enabled(x == "on"); Sfx.select(); open_settings(true))))
-	var mode := _seg([["walk", G.t("walk")], ["point", G.t("point")]], G.room_mode, func(x): _set_mode(x))
-	v.add_child(_row(G.t("roomMode"), mode))
+	if not G.touch:
+		var mode := _seg([["walk", G.t("walk")], ["point", G.t("point")]], G.room_mode, func(x): _set_mode(x))
+		v.add_child(_row(G.t("roomMode"), mode))
 	v.add_child(_row(G.t("music"), _slider(G.music_user, func(x): G.music_user = x; G.save_prefs(); Sfx.apply_volumes())))
 	v.add_child(_row(G.t("effects"), _slider(G.effects_user, func(x): G.effects_user = x; G.save_prefs(); Sfx.apply_volumes())))
 	_open_modal("settings", v, null, _title_row("", "", G.t("settings").capitalize()), 760)

@@ -74,6 +74,7 @@ func _run() -> void:
 	await shot("living_tv")
 	m.worlds.living.P.x = float(G.J.living.spots.door)
 	await wait(0.4)
+	await shot("living_door")
 	m._do_action()
 	await wait(1.8)
 	await shot("room_walk")

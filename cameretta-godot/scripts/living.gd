@@ -44,7 +44,7 @@ func update(dt: float) -> void:
 	P.update(dt, input_dir, run, 12, l.stop, Sfx.step_wood, locked)
 	Sfx.proximity(clampf(1 - absf(P.x - float(l.spots.fire)) / 120, 0, 1), clampf(1 - absf(P.x - float(l.spots.tv)) / 110, 0, 1))
 	var spots := [
-		["door", float(l.spots.door), float(l.door[1]) - 20, G.t("door"), func(): go_room.emit()],
+		["door", float(l.spots.door), float(l.door[1]) - 2, G.t("door"), func(): go_room.emit()],
 		["tv", float(l.spots.tv), float(l.tv[1]) - 22, G.t("tv"), change_channel],
 		["fire", float(l.spots.fire), 46.0, G.t("warm") if warm > 0 else G.t("fire"), warm_hands],
 	]
