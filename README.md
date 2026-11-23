@@ -32,20 +32,22 @@ Senza password chiunque raggiunga `/admin/` può modificare il sito. Il server l
 
 ```
 C:\nssm\win64\nssm.exe get Cameretta AppEnvironmentExtra
-C:\nssm\win64\nssm.exe set Cameretta AppEnvironmentExtra CAMERETTA_ADMIN_TOKEN=una-password-lunga CAMERETTA_BMC_SECRET=segreto-del-webhook
+C:\nssm\win64\nssm.exe set Cameretta AppEnvironmentExtra CAMERETTA_ADMIN_TOKEN=una-password-lunga CAMERETTA_KOFI_TOKEN=token-di-ko-fi
 ```
 
 `set` sostituisce tutte le variabili: se `get` ne mostra altre, riscrivile nella stessa riga. Poi `riavvia-server.bat`.
 
 ## Il negozio
 
-Le monete si guadagnano giocando oppure donando su Buy Me a Coffee; servono per temi, vestiti, Vespa, arredi e potenziamenti. Il catalogo (nomi, prezzi, colori) è `cameretta-godot/store/catalog.json`: lo leggono sia il gioco sia il server, quindi dopo averlo cambiato si riesporta il gioco e si riavvia il server.
+Le monete si guadagnano giocando oppure donando su Ko-fi; servono per temi, vestiti, Vespa, arredi e potenziamenti. Il catalogo (nomi, prezzi, colori) è `cameretta-godot/store/catalog.json`: lo leggono sia il gioco sia il server, quindi dopo averlo cambiato si riesporta il gioco e si riavvia il server.
 
 Per attivare le donazioni:
 
-1. In **Admin → Negozio** incolla l'indirizzo della tua pagina Buy Me a Coffee.
-2. Su Buy Me a Coffee crea un webhook (`donation.created`, `donation.refunded`) verso `https://www.cristianobattini.com/api/bmc/webhook`.
-3. Avvia il server con `CAMERETTA_BMC_SECRET` uguale al segreto del webhook (mai nelle impostazioni: quelle sono pubbliche).
+1. In **Admin → Negozio** controlla l'indirizzo della pagina Ko-fi.
+2. Su Ko-fi → *More → API → Webhooks* incolla `https://www.cristianobattini.com/api/kofi/webhook` e copia il *Verification Token* (sotto *Advanced*).
+3. Avvia il server con `CAMERETTA_KOFI_TOKEN` uguale a quel token (mai nelle impostazioni: quelle sono pubbliche).
+
+Finché manca il token il gioco mostra il link a Ko-fi senza promettere monete. Ko-fi non avvisa dei rimborsi: si stornano a mano da Admin → Negozio.
 
 Ogni visitatore ha un portafoglio anonimo (`CRI-XXXX-XXXX`): chi dona incolla il codice nel messaggio. Non si salvano nomi né email.
 

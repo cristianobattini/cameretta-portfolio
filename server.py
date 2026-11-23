@@ -7,12 +7,11 @@ Variabili d'ambiente opzionali:
   CAMERETTA_PORT        porta (default 8000)
   CAMERETTA_HOST        host (default 127.0.0.1, solo questo computer)
   CAMERETTA_ADMIN_TOKEN se impostata, l'admin chiede questa password per salvare
-  CAMERETTA_BMC_SECRET  segreto del webhook di Buy Me a Coffee (senza, le donazioni non accreditano monete)
+  CAMERETTA_KOFI_TOKEN  token di verifica del webhook di Ko-fi (senza, le donazioni non accreditano monete)
 
 Ogni testo visibile ha due versioni: il campo normale (italiano) e quello con
 suffisso _en (inglese). Se il campo _en è vuoto, il sito mostra l'italiano.
 """
-import hashlib
 import hmac
 import json
 import mimetypes
@@ -45,7 +44,8 @@ DATA.mkdir(exist_ok=True)
 UPLOADS.mkdir(exist_ok=True)
 
 ADMIN_TOKEN = os.environ.get("CAMERETTA_ADMIN_TOKEN", "")
-BMC_SECRET = os.environ.get("CAMERETTA_BMC_SECRET", "")
+KOFI_TOKEN = os.environ.get("CAMERETTA_KOFI_TOKEN", "").strip()
+KOFI_TEST_TX = "00000000-1111-2222-3333-444444444444"   # transazione finta del pulsante di prova di Ko-fi
 CATALOG_PATH = ROOT / "cameretta-godot" / "store" / "catalog.json"
 MAX_UPLOAD = 25 * 1024 * 1024
 ALLOWED_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".pdf", ".mp3", ".ogg", ".wav", ".m4a", ".json", ".txt", ".md", ".zip"}
@@ -122,7 +122,7 @@ DEFAULT_SETTINGS = {
     "accent_color": "#f2b85b",
     "default_lang": "en",
     "skip_intro": "0",
-    "store_enabled": "1", "bmc_url": "", "coins_per_unit": "100",
+    "store_enabled": "1", "donate_url": "https://ko-fi.com/cristianob", "coins_per_unit": "100",
 }
 
 GH = "https://github.com/cristianobattini/"
@@ -321,6 +321,7 @@ def public_data():
             s["items"] = [item_out(r) for r in con.execute(
                 "SELECT * FROM items WHERE section_id = ? AND visible = 1 ORDER BY sort, id", (s["id"],))]
         bubbles = rows(con.execute("SELECT id, kind, text, text_en, author FROM bubbles WHERE visible = 1 ORDER BY sort, id"))
+    settings["donations_ready"] = "1" if KOFI_TOKEN else "0"     # il gioco promette monete solo se arrivano davvero
     return {"settings": settings, "sections": sections, "bubbles": bubbles}
 
 
@@ -614,7 +615,7 @@ def export_all():
 
 
 # ---------------------------------------------------------------- negozio
-# Le monete si guadagnano giocando (premi fissi, una volta sola) o donando su Buy Me a Coffee:
+# Le monete si guadagnano giocando (premi fissi, una volta sola) o donando su Ko-fi:
 # chi dona incolla nel messaggio il codice del suo portafoglio e il webhook accredita le monete.
 
 CATALOG = json.loads(CATALOG_PATH.read_text(encoding="utf-8")) if CATALOG_PATH.exists() else {"categories": [], "items": [], "earn": {}}
@@ -743,49 +744,40 @@ def find_code(x):
     return None
 
 
-@app.post("/api/bmc/webhook")
-async def bmc_webhook(request: Request):
-    if not BMC_SECRET:
+@app.post("/api/kofi/webhook")
+async def kofi_webhook(request: Request):
+    """Ko-fi manda un modulo con un campo "data" che contiene un JSON; lo si riconosce dal token di verifica."""
+    if not KOFI_TOKEN:
         raise HTTPException(503, "Webhook non configurato")
-    raw = await request.body()
-    sig = (request.headers.get("x-signature-sha256") or request.headers.get("x-bmc-signature") or "").strip().lower().removeprefix("sha256=")
-    good = hmac.new(BMC_SECRET.encode(), raw, hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(good.encode(), sig.encode()):
-        raise HTTPException(401, "Firma non valida")
+    limit(request, "kofi", 120, 60)
     try:
-        ev = json.loads(raw)
-        data = ev.get("data") or {}
-        kind = str(ev.get("type", ""))
+        data = json.loads(str((await request.form()).get("data") or ""))
+        token = str(data.get("verification_token") or "")
     except (ValueError, AttributeError):
         raise HTTPException(400, "Messaggio non valido")
-    tx = str(data.get("transaction_id") or data.get("id") or "")
-    if not tx:
+    if not hmac.compare_digest(token.encode(), KOFI_TOKEN.encode()):
+        raise HTTPException(401, "Token non valido")
+    kind = str(data.get("type", ""))
+    tx = str(data.get("kofi_transaction_id") or "")[:80]
+    if kind not in ("Donation", "Subscription") or not tx:
         return {"ok": True, "ignored": kind}
-    now = int(time.time())
     with db() as con:
         con.execute("BEGIN IMMEDIATE")
-        old = con.execute("SELECT * FROM donations WHERE tx = ?", (tx,)).fetchone()
-        if "refund" in kind:
-            if old and old["status"] != "rimborsata":
-                if old["wallet"] and old["status"] == "ok":
-                    ledger_add(con, old["wallet"], -old["coins"], "refund", tx)
-                con.execute("UPDATE donations SET status = 'rimborsata' WHERE tx = ?", (tx,))
-            return {"ok": True}
-        if kind != "donation.created" or old:
-            return {"ok": True, "ignored": kind}
+        if con.execute("SELECT 1 FROM donations WHERE tx = ?", (tx,)).fetchone():   # Ko-fi ripete l'avviso se non riceve risposta
+            return {"ok": True, "ignored": "già registrata"}
         try:
-            amount = float(data.get("amount") or 0)
+            amount = float(str(data.get("amount") or "0").replace(",", "."))
             rate = float((con.execute("SELECT value FROM settings WHERE key = 'coins_per_unit'").fetchone() or {"value": "100"})["value"])
         except ValueError:
             raise HTTPException(400, "Importo non valido")
-        if not 0 < amount < 100000 or str(data.get("status", "succeeded")) != "succeeded":
+        if not 0 < amount < 100000:
             return {"ok": True, "ignored": kind}
         coins = int(round(amount * max(0.0, rate)))
-        code = find_code(data)
+        code = find_code(data.get("message"))
         if code and not con.execute("SELECT 1 FROM wallets WHERE code = ?", (code,)).fetchone():
             code = None
-        status = "prova" if ev.get("live_mode") is False else "ok" if code else "da_assegnare"
-        con.execute("INSERT INTO donations VALUES (?,?,?,?,?,?,?)", (tx, amount, str(data.get("currency", ""))[:8], coins, code, status, now))
+        status = "prova" if tx == KOFI_TEST_TX else "ok" if code else "da_assegnare"
+        con.execute("INSERT INTO donations VALUES (?,?,?,?,?,?,?)", (tx, amount, str(data.get("currency", ""))[:8], coins, code, status, int(time.time())))
         if status == "ok":
             ledger_add(con, code, coins, "donation", tx)
     return {"ok": True}
@@ -794,7 +786,7 @@ async def bmc_webhook(request: Request):
 @app.get("/api/store/donations", dependencies=[Depends(require_admin)])
 def list_donations():
     with db() as con:
-        return {"configured": bool(BMC_SECRET), "wallets": con.execute("SELECT COUNT(*) FROM wallets").fetchone()[0],
+        return {"configured": bool(KOFI_TOKEN), "wallets": con.execute("SELECT COUNT(*) FROM wallets").fetchone()[0],
                 "donations": rows(con.execute("SELECT * FROM donations ORDER BY created_at DESC LIMIT 200"))}
 
 
@@ -816,6 +808,23 @@ def assign_donation(body: AssignIn):
         ledger_add(con, code, d["coins"], "donation", body.tx)
         con.execute("UPDATE donations SET wallet = ?, status = 'ok' WHERE tx = ?", (code, body.tx))
         return wallet_out(con, code)
+
+
+class RefundIn(BaseModel):
+    tx: str
+
+
+@app.post("/api/store/refund", dependencies=[Depends(require_admin)])
+def refund_donation(body: RefundIn):
+    """Ko-fi non avvisa dei rimborsi: le monete si tolgono da qui."""
+    with db() as con:
+        con.execute("BEGIN IMMEDIATE")
+        d = con.execute("SELECT * FROM donations WHERE tx = ? AND status = 'ok'", (body.tx,)).fetchone()
+        if not d:
+            raise HTTPException(404, "Donazione non trovata o già stornata")
+        ledger_add(con, d["wallet"], -d["coins"], "refund", body.tx)
+        con.execute("UPDATE donations SET status = 'rimborsata' WHERE tx = ?", (body.tx,))
+    return {"ok": True}
 
 
 class GiftIn(BaseModel):

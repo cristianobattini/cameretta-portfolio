@@ -193,12 +193,18 @@ static func _paint(c: Control, it: Dictionary, look: Dictionary, tp: Texture2D, 
 ## Come si ottengono le monete: giocando, oppure offrendo un caffè.
 static func _coins_page(m) -> Control:
 	var v := UI.vbox(14)
-	var url := str(G.S.get("bmc_url", ""))
+	var url := str(G.S.get("donate_url", ""))
 	var e: Dictionary = Shop.CAT.earn
 	v.add_child(UI.label(G.t("shopPlayT"), 26, G.gold, UI.f_head, true))
 	v.add_child(UI.rich(G.t("shopPlay") % [int(e.daily), int(e.stop), int(e.section), int(e.ride_end), int(e.pray), int(e.fish)], 24, G.C_CREAM))
 	v.add_child(UI.label(G.t("shopGiveT"), 26, G.gold, UI.f_head, true))
-	if url.begins_with("https://") and Shop.code != "":
+	var ready := str(G.S.get("donations_ready", "0")) == "1" and Shop.code != ""
+	if url.begins_with("https://") and not ready:
+		v.add_child(UI.rich(G.t("shopThanks"), 24, G.C_CREAM))
+		var b0 := UI.button(G.t("shopCoffee"), func(): G.open_url(url), "solid", 22)
+		b0.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		v.add_child(b0)
+	elif url.begins_with("https://"):
 		v.add_child(UI.rich(G.t("shopGive") % int(float(str(G.S.get("coins_per_unit", "100")))), 24, G.C_CREAM))
 		var row := HFlowContainer.new()
 		row.add_theme_constant_override("h_separation", 10)
