@@ -443,6 +443,12 @@ func _up_ride(dt: float) -> void:
 
 ## Quando la strada è libera e la voce tace, torna in mente una frase di un fisico.
 func _ride_quote(dt: float) -> void:
+	if Sfx.station == 4:           # alla radio ci sono le notizie di fisica
+		if narr.is_empty(): _news_t += dt
+		if _news_t > 3.0:
+			_news_t = 0.0
+			news()
+		return
 	if not narr.is_empty() or v < 24 or x > end_x - 420:
 		_quiet = 0.0
 		return
@@ -535,6 +541,19 @@ func _up_ending(_d: float) -> void:
 ## Da capo: si torna alla scalinata.
 func restart() -> void:
 	enter()
+
+## Passa alla stazione successiva.
+func next_station() -> void:
+	Sfx.tune((Sfx.station + 1) % 5)
+	narr = {}
+	if Sfx.station == 4: news()
+	_news_t = 0.0
+
+var _news_t := 0.0
+func news() -> void:
+	var a: Array = G.t("radioNews")
+	_quotes_n += 1
+	say("news_%d" % _quotes_n, ["%s: %s" % [G.t("radioNames")[4], a[(_quotes_n + int(dist)) % a.size()]]], 0.1)
 
 func horn() -> void:
 	if not (riding() and state in ["ride", "parking"]) or _horn_t > 0: return

@@ -10,6 +10,8 @@ var off := 0.0                 # ore spostate a mano
 var lines_on := true
 var sel: Dictionary = {}
 var tonight := false
+var galileo := false           # la notte del 7 gennaio 1610
+const G1610 := -11359896300.0  # 7 gennaio 1610, 17:15 TU (verso le 18 a Padova)
 var _v: PackedVector3Array = []
 var _lv: Array = []
 var _cv: PackedVector3Array = []
@@ -28,6 +30,7 @@ const COL := {"mercurio": "c8b8a8", "venere": "fff6d8", "marte": "ff9a6a", "giov
 func _enter() -> void:
 	if sky.is_empty(): sky = JSON.parse_string(FileAccess.get_file_as_string("res://store/sky.json"))
 	t0 = Time.get_unix_time_from_system()
+	galileo = false
 	off = 0.0; sel = {}
 	az = 180.0; alt = 35.0; fov = 95.0
 	# di giorno si aspetta il buio
@@ -50,6 +53,24 @@ func _enter() -> void:
 func _sun_alt(t: float) -> float:
 	var s := Astro.sun(t)
 	return Astro.horiz(s.x, s.y, Astro.lst(t)).y
+
+## Salta alla notte in cui Galileo vide le lune di Giove (e ritorno).
+func time_machine() -> void:
+	Sfx.toggle()
+	if galileo:
+		_enter()
+		bar_changed.emit()
+		return
+	galileo = true; tonight = false
+	t0 = G1610; off = 0.0; sel = {}
+	_built = -1e9
+	_compute()
+	for b in _bodies:
+		if b.id == "giove":
+			az = b.h.x; alt = clampf(b.h.y, 12, 70); fov = 60.0
+			sel = {"b": b, "n": G.t("skyBodies")["giove"]}
+	say(G.t("sky1610"))
+	bar_changed.emit()
 
 func now() -> float:
 	return t0 + off * 3600.0
@@ -117,6 +138,7 @@ func press(key: int) -> bool:
 		KEY_Q: shift(-1)
 		KEY_R: shift(1)
 		KEY_L: lines_on = not lines_on; Sfx.toggle()
+		KEY_T: time_machine()
 		KEY_PLUS, KEY_EQUAL, KEY_KP_ADD: zoom(1)
 		KEY_MINUS, KEY_KP_SUBTRACT: zoom(-1)
 		_: return false
@@ -159,7 +181,7 @@ func pick(p: Vector2) -> void:
 	say("%s. %s %s" % [sel.n, what, G.t("skyWhere") % [dirs[int(round(z / 45.0)) % 8], int(round(a))]])
 
 func bar() -> Array:
-	return [["◀ 1 h", shift.bind(-1)], [G.t("skyNow"), shift.bind(0)], ["1 h ▶", shift.bind(1)], ["+", zoom.bind(1)], ["−", zoom.bind(-1)], [G.t("skyLines"), func(): lines_on = not lines_on; Sfx.toggle()]]
+	return [["◀ 1 h", shift.bind(-1)], [G.t("skyNow"), shift.bind(0)], ["1 h ▶", shift.bind(1)], ["+", zoom.bind(1)], ["−", zoom.bind(-1)], [G.t("skyNowBack") if galileo else "1610", time_machine], [G.t("skyCoffee"), func(): goto.emit("coffee")], [G.t("skyLines"), func(): lines_on = not lines_on; Sfx.toggle()]]
 
 func clock() -> String:
 	var bias: int = Time.get_time_zone_from_system().bias
@@ -168,7 +190,7 @@ func clock() -> String:
 
 func labels() -> Array:
 	var o: Array = []
-	o.append({"x": 160 if tall else 206, "y": 34, "t": ("%s · " % G.t("skyTonight") if tonight and off == 0 else "") + clock() + " · Rosignano", "c": G.gold, "s": 26})
+	o.append({"x": 160 if tall else 206, "y": 34, "t": ("%s · " % G.t("skyTonight") if tonight and off == 0 else "") + clock() + (" · Padova" if galileo else " · Rosignano"), "c": G.gold, "s": 26})
 	var dirs: Array = G.t("skyDirs")
 	for i in 8:
 		var p := proj(vec(Vector2(i * 45.0, 0)))
@@ -185,7 +207,15 @@ func labels() -> Array:
 	if sel.has("i"):
 		var p4 := _pts[sel.i]
 		if _in(p4): o.append({"x": p4.x, "y": p4.y - 11, "t": sel.n, "c": Color.WHITE, "s": 24})
+	if _jup():
+		var ms := Astro.jupiter_moons(now())
+		for m in ms: o.append({"x": 262 + clampf(m[1], -27, 27) * 1.55, "y": 86 + (8 if ms.find(m) % 2 else -8), "t": m[0], "c": Color("ffe6c0"), "s": 18})
+		o.append({"x": 262, "y": 70, "t": G.t("skyScope"), "c": G.gold, "s": 20})
 	return o
+
+## Giove è scelto: il cannocchiale mostra le sue lune.
+func _jup() -> bool:
+	return sel.has("b") and sel.b.id == "giove"
 
 func _in(p: Vector2) -> bool:
 	return p.x > 12 and p.x < 308 and p.y > 42 and p.y < 160
@@ -248,6 +278,14 @@ func _draw_front(ci: CanvasItem) -> void:
 	if not sel.is_empty():
 		var ps: Vector2 = proj(sel.b.v) if sel.has("b") else _pts[sel.i]
 		ci.draw_arc(ps, 8 + sin(time * 4), 0, TAU, 20, Color(1, 0.8, 0.4, 0.8))
+	if _jup():
+		ci.draw_rect(Rect2(212, 64, 100, 34), Color("05070f"))
+		ci.draw_rect(Rect2(212, 64, 100, 34), Color("f2b85b"), false, 1.0)
+		ci.draw_circle(Vector2(262, 86), 2.2, Color("ffe6c0"))
+		# come in cielo: est a sinistra, ovest a destra
+		for m in Astro.jupiter_moons(now()):
+			if absf(m[1]) < 1.0 and m[2] < 0: continue         # dietro il pianeta
+			ci.draw_rect(Rect2(roundf(262 + clampf(m[1], -27, 27) * 1.55), 86, 1, 1), Color.WHITE)
 	# il telescopio e l'omino, in controluce sul terrazzo
 	ci.draw_rect(Rect2(0, 190, 320, 10), Color("05070f"))
 	Shop.spr(ci, "an_telescopio", Vector2(266, 126))

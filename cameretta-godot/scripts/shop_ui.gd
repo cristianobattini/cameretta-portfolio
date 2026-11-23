@@ -97,7 +97,7 @@ static func _card(m, it: Dictionary) -> Control:
 		ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(ic)
-	var l := UI.label(st if st != "" else str(int(it.price)), 20, G.C_SAGE if st != "" else G.gold)
+	var l := UI.label(st if st != "" else ("%d/10" % G.secrets.size() if it.has("prize") else str(int(it.price))), 20, G.C_SAGE if st != "" else G.gold)
 	row.add_child(l)
 	v.add_child(row)
 	b.add_child(v)
@@ -128,11 +128,13 @@ static func _preview(m, narrow: bool) -> Control:
 	if G.L(it, "desc") != "": box.add_child(UI.label(G.L(it, "desc"), 22, G.C_MUTED, null, true))
 	var has := Shop.has(sel)
 	var txt: String
-	if not has: txt = "%s  ·  %d" % [G.t("shopBuy"), int(it.price)]
+	var prize: bool = it.has("prize") and not has
+	if prize: txt = G.t("shopPrizeN") % G.secrets.size()
+	elif not has: txt = "%s  ·  %d" % [G.t("shopBuy"), int(it.price)]
 	elif it.cat == "up": txt = G.t("shopOff") if Shop.up(sel) else G.t("shopOn")
 	else: txt = G.t("shopWorn") if Shop.cur(it.cat).id == sel else G.t("shopWear")
 	var b := UI.button(txt, func(): act(m), "solid", 24)
-	b.disabled = has and it.cat != "up" and Shop.cur(it.cat).id == sel or (not has and not Shop.online)
+	b.disabled = has and it.cat != "up" and Shop.cur(it.cat).id == sel or (not has and not Shop.online) or (prize and G.secrets.size() < 10)
 	box.add_child(b)
 	return box
 
@@ -169,7 +171,13 @@ static func _paint(c: Control, it: Dictionary, look: Dictionary, tp: Texture2D, 
 	c.draw_rect(Rect2(Vector2.ZERO, sz), Color("2a3266"))
 	c.draw_rect(Rect2(0, sz.y - 46, sz.x, 46), Color("c9d4f2"))
 	c.draw_rect(Rect2(0, sz.y - 46, sz.x, 4), Color("eef3ff"))
-	if it.cat in ["hood", "pants", "scarf"]:
+	if it.cat == "pet":
+		var sp := 5.0
+		if it.has("pal"):
+			var r0 := Shop._rect(Shop._rects["pet3"])
+			c.draw_texture_rect_region(Shop.pet_texture(look), Rect2(sz.x / 2 - r0.size.x * sp / 2, sz.y - 24 - r0.size.y * sp, r0.size.x * sp, r0.size.y * sp), Rect2(r0))
+		c.draw_set_transform(Vector2.ZERO)
+	elif it.cat in ["hood", "pants", "scarf"]:
 		var s := 3.4
 		c.draw_set_transform(Vector2(sz.x / 2 - 18 * s, sz.y - 26 - 58 * s), 0, Vector2(s, s))
 		c.draw_texture_rect_region(tp, Rect2(0, 0, 36, 63), Rect2(0, 0, 36, 63))
@@ -198,7 +206,7 @@ static func _coins_page(m) -> Control:
 	v.add_child(UI.label(G.t("shopPlayT"), 26, G.gold, UI.f_head, true))
 	v.add_child(UI.rich(G.t("shopPlay") % [int(e.daily), int(e.stop), int(e.section), int(e.ride_end), int(e.pray), int(e.fish)], 24, G.C_CREAM))
 	v.add_child(UI.label(G.t("shopGiveT"), 26, G.gold, UI.f_head, true))
-	var ready := str(G.S.get("donations_ready", "0")) == "1" and Shop.code != ""
+	var ready := str(G.S.get("donations_ready", "0")) == "1" and Shop.deposit != ""
 	if url.begins_with("https://") and not ready:
 		v.add_child(UI.rich(G.t("shopThanks"), 24, G.C_CREAM))
 		var b0 := UI.button(G.t("shopCoffee"), func(): G.open_url(url), "solid", 22)
@@ -209,7 +217,7 @@ static func _coins_page(m) -> Control:
 		var row := HFlowContainer.new()
 		row.add_theme_constant_override("h_separation", 10)
 		row.add_theme_constant_override("v_separation", 10)
-		row.add_child(UI.button(G.t("shopCopy") % Shop.code, func(): Sfx.select(); DisplayServer.clipboard_set(Shop.code); msg = G.t("shopCopied"); m.open_shop(true), "ghost", 22))
+		row.add_child(UI.button(G.t("shopCopy") % Shop.deposit, func(): Sfx.select(); DisplayServer.clipboard_set(Shop.deposit); msg = G.t("shopCopied"); m.open_shop(true), "ghost", 22))
 		row.add_child(UI.button(G.t("shopCoffee"), func(): G.open_url(url), "solid", 22))
 		row.add_child(UI.button(G.t("shopCheck"), func(): check(m), "ghost", 22))
 		v.add_child(row)

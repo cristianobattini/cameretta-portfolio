@@ -117,3 +117,37 @@ static func precess(ra: float, dec: float, unix: float) -> Vector2:
 	var t := (unix / 86400.0 + 2440587.5 - 2451545.0) / 365.25
 	var r := deg_to_rad(ra)
 	return Vector2(ra + t * (46.124 + 20.043 * sin(r) * tan(deg_to_rad(clampf(dec, -85, 85)))) / 3600.0, dec + t * 20.043 * cos(r) / 3600.0)
+
+## Le quattro lune di Giove: distanza apparente dal pianeta in raggi gioviani (positiva = ovest). Formule di Meeus, cap. 44.
+static func jupiter_moons(unix: float) -> Array:
+	var d := unix / 86400.0 + 2440587.5 - 2451545.0
+	var r := func(x: float) -> float: return deg_to_rad(fposmod(x, 360.0))
+	var V: float = r.call(172.74 + 0.00111588 * d)
+	var M: float = r.call(357.529 + 0.9856003 * d)
+	var N: float = r.call(20.020 + 0.0830853 * d + 0.329 * sin(V))
+	var J: float = r.call(66.115 + 0.9025179 * d - 0.329 * sin(V))
+	var A: float = r.call(1.915 * sin(M) + 0.020 * sin(2 * M))
+	var B: float = r.call(5.555 * sin(N) + 0.168 * sin(2 * N))
+	var K: float = J + A - B
+	var R := 1.00014 - 0.01671 * cos(M) - 0.00014 * cos(2 * M)
+	var q := 5.20872 - 0.25208 * cos(N) - 0.00611 * cos(2 * N)
+	var D := sqrt(q * q + R * R - 2 * q * R * cos(K))
+	var psi := rad_to_deg(asin(R / D * sin(K)))
+	var l := d - D / 173.0
+	var b := rad_to_deg(B)
+	var u1 := 163.8069 + 203.4058646 * l + psi - b
+	var u2 := 358.4140 + 101.2916335 * l + psi - b
+	var u3 := 5.7176 + 50.2345180 * l + psi - b
+	var u4 := 224.8092 + 21.4879800 * l + psi - b
+	var g: float = r.call(331.18 + 50.310482 * l)
+	var h: float = r.call(87.45 + 21.569231 * l)
+	var c1 := 0.473 * sin(r.call(2 * (u1 - u2)))
+	var c2 := 1.065 * sin(r.call(2 * (u2 - u3)))
+	var c3 := 0.165 * sin(g)
+	var c4 := 0.843 * sin(h)
+	return [
+		["Io", (5.9057 - 0.0244 * cos(r.call(2 * (u1 - u2)))) * sin(r.call(u1 + c1)), cos(r.call(u1 + c1))],
+		["Europa", (9.3966 - 0.0882 * cos(r.call(2 * (u2 - u3)))) * sin(r.call(u2 + c2)), cos(r.call(u2 + c2))],
+		["Ganimede", (14.9883 - 0.0216 * cos(g)) * sin(r.call(u3 + c3)), cos(r.call(u3 + c3))],
+		["Callisto", (26.3627 - 0.1939 * cos(h)) * sin(r.call(u4 + c4)), cos(r.call(u4 + c4))],
+	]

@@ -36,6 +36,11 @@
    "name_en": "Scarf"
   },
   {
+   "id": "pet",
+   "name": "Compagno",
+   "name_en": "Companion"
+  },
+  {
    "id": "cargo",
    "name": "Portapacchi",
    "name_en": "Rack"
@@ -1214,6 +1219,88 @@
    "desc": "Esprimi parecchi desideri.",
    "desc_en": "Make plenty of wishes.",
    "toggle": true
+  },
+  {
+   "id": "pe_nessuno",
+   "cat": "pet",
+   "name": "Nessuno",
+   "name_en": "None",
+   "price": 0,
+   "desc": "",
+   "desc_en": ""
+  },
+  {
+   "id": "pe_arancio",
+   "cat": "pet",
+   "name": "Gatto rosso",
+   "name_en": "Ginger cat",
+   "price": 150,
+   "desc": "Cammina con te ovunque.",
+   "desc_en": "Walks with you everywhere.",
+   "pal": [
+    "d6883a",
+    "f0ac5c",
+    "a05c2c"
+   ]
+  },
+  {
+   "id": "pe_nero",
+   "cat": "pet",
+   "name": "Gatto nero",
+   "name_en": "Black cat",
+   "price": 150,
+   "desc": "Porta fortuna, dicano quel che vogliono.",
+   "desc_en": "Good luck, whatever they say.",
+   "pal": [
+    "3a3642",
+    "58525f",
+    "24222c"
+   ]
+  },
+  {
+   "id": "pe_bianco",
+   "cat": "pet",
+   "name": "Gatto bianco",
+   "name_en": "White cat",
+   "price": 150,
+   "desc": "Sulla neve si perde.",
+   "desc_en": "Gets lost in the snow.",
+   "pal": [
+    "e8e4e0",
+    "ffffff",
+    "b8b4b8"
+   ]
+  },
+  {
+   "id": "pe_grigio",
+   "cat": "pet",
+   "name": "Gatto di Schrödinger",
+   "name_en": "Schrödinger's cat",
+   "price": 250,
+   "desc": "C'è, e non c'è.",
+   "desc_en": "It's there, and it isn't.",
+   "pal": [
+    "8088a0",
+    "a8b0c8",
+    "586078"
+   ]
+  },
+  {
+   "id": "ve_galassia",
+   "cat": "vespa",
+   "name": "Galassia",
+   "name_en": "Galaxy",
+   "price": 0,
+   "prize": "secrets",
+   "desc": "Il premio per chi trova tutte le dieci gru di carta.",
+   "desc_en": "The prize for finding all ten paper cranes.",
+   "pal": [
+    "3a2a78",
+    "e8d8ff",
+    "6a4cc0",
+    "241a50",
+    "140e34"
+   ]
   }
  ],
  "earn": {
@@ -1222,6 +1309,19 @@
   "section": 3,
   "daily": 5,
   "pray": 3,
-  "fish": 2
- }
+  "fish": 2,
+  "secret": 5
+ },
+ "secrets": [
+  "street1",
+  "street2",
+  "living",
+  "room",
+  "grove",
+  "sea",
+  "train",
+  "arcade",
+  "lab",
+  "pier"
+ ]
 }

@@ -219,11 +219,24 @@ def sign():
     s.ell(36, 29, 41, 34, (226, 156, 92)); s.ell(37, 30, 40, 33, (60, 30, 40))
     s.r(4, 8, 40, 9, SNOW); s.r(8, 7, 30, 7, SNOW); s.r(9, 25, 42, 26, SNOW); s.ell(19, 50, 33, 58, SNOW); return s
 add("signgrove", sign())
-A = np.zeros((152, 520, 4), np.uint8); rects = {}; x = 0; small = 0
+def arrow(s, word, y, right, w, c):
+    """una tavola di legno a freccia, con la scritta"""
+    cx = 42; x0, x1 = cx - w // 2, cx + w // 2
+    s.poly([(x0, y), (x1, y), (x1 + 8, y + 6), (x1, y + 12), (x0, y + 12)] if right else [(x0, y), (x1, y), (x1, y + 12), (x0, y + 12), (x0 - 8, y + 6)], (138, 92, 58))
+    s.r(x0 + 1, y + 1, x1 - 1, y + 1, (172, 122, 80)); s.r(x0 + 1, y + 11, x1 - 1, y + 11, (100, 66, 46)); carve(s, word, cx, y + 4, c, (84, 54, 40)); s.r(x0 + 2, y - 1, x1 - 4, y, SNOW)
+def guide():
+    s = Spr(86, 70); s.r(40, 2, 44, 69, (104, 70, 48)); s.r(40, 2, 40, 69, (140, 98, 66)); s.r(39, 0, 45, 2, SNOW)
+    arrow(s, "STAR WARS", 5, False, 50, (255, 226, 140)); arrow(s, "HARRY POTTER", 21, True, 62, (214, 190, 255)); arrow(s, "DUNE", 37, True, 34, (150, 216, 255)); s.ell(34, 64, 50, 73, SNOW); return s
+add("guide", guide())
+def guide2():
+    s = Spr(86, 50); s.r(40, 2, 44, 49, (104, 70, 48)); s.r(40, 2, 40, 49, (140, 98, 66)); s.r(39, 0, 45, 2, SNOW); arrow(s, "DUNE", 6, True, 34, (150, 216, 255)); s.ell(34, 44, 50, 53, SNOW); return s
+add("guide2", guide2())
+A = np.zeros((164, 622, 4), np.uint8); rects = {}; x = 0; small = 0
 for n, s in P.items():
     h, w = s.a.shape[:2]
     if n.startswith("shrine"): x0, y = x, 0; x += w + 2
     elif n == "signgrove": x0, y = 440, 0
+    elif n.startswith("guide"): x0, y = 440 + (92 if n == "guide2" else 0), 90
     else: x0, y = 440 + small, 70; small += w + 2
     A[y:y + h, x0:x0 + w] = s.a; rects[n] = [x0, y, w, h]
 Image.fromarray(A).save(os.path.join(ROOT, "assets", "img", "grove_props.png"))

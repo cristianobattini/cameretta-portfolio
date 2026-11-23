@@ -29,11 +29,30 @@ const T := {
 		"tips": ["Tip: use [k]←[/k] [k]→[/k] to walk, hold [k]SHIFT[/k] to run.", "Tip: press [k]E[/k] near a door to go inside.", "Tip: in my room, click the objects to open them.", "Tip: the lit window on the menu takes you straight in."],
 		"loading": "LOADING", "start": "START", "room": "GO STRAIGHT TO MY ROOM", "settings": "SETTINGS", "help": "HOW TO PLAY",
 		"language": "Language", "langName": "English", "audio": "Audio", "on": "ON", "off": "OFF",
+		"backLab": "◀ Lab", "backSky": "◀ Observatory",
+		"labHello": "The lab. Four benches, four questions.",
+		"hintField": "click to place · drag to move · [k]E[/k] sign · [k]Q[/k] dipole · [k]V[/k] potential · [k]X[/k] clear · [k]ESC[/k] menu",
+		"hintFou": "[k]E[/k] change place · [k]Q[/k] speed · [k]X[/k] restart · [k]ESC[/k] menu",
+		"hintAur": "[k]E[/k] launch particles · [k]Q[/k] solar wind energy · [k]ESC[/k] menu",
+		"hintPho": "[k]E[/k] one · [k]Q[/k] a hundred · [k]R[/k] a thousand · [k]T[/k] slits · [k]V[/k] detector · [k]X[/k] clear · [k]ESC[/k] menu",
+		"hintCof": "[k]E[/k] next star · [k]ESC[/k] menu",
+		"fieldHello": "Place charges on the snow: the field lines draw themselves. Tap a charge to remove it.", "fieldFull": "Eight charges are enough: remove one.", "fieldPlus": "PLACING: +", "fieldMinus": "PLACING: −", "fieldDip": "DIPOLE", "fieldPot": "POTENTIAL", "fieldClear": "CLEAR",
+		"fouHello": "The pendulum always swings in the same plane: it's the floor that turns beneath it, together with the Earth.", "fouRos": "ROSIGNANO, 43.4° N", "fouPole": "NORTH POLE", "fouPisa": "PISA, 43.7° N", "fouEq": "EQUATOR", "fouSouth": "CAPE TOWN, 33.9° S", "fouSpeed": "TIME × %d", "fouReset": "RESTART", "fouTurn": "turned by %s°", "fouHours": "in %s hours", "fouPeriod": "one turn: %s hours", "fouNever": "here it never turns",
+		"aurHello": "Launch the Sun's particles: the Earth's field catches them and leads them to the poles. There the air lights up.", "aurFire": "LAUNCH", "aurEn": ["WEAK WIND", "NORMAL WIND", "SOLAR STORM"], "aurInfo": ["Weak wind: little light, close to the poles.", "Green: oxygen at 557.7 nanometres, between 100 and 150 kilometres.", "Storm: red above, violet below, and the aurora moves down towards us."], "aurLat": "aurora at %d° magnetic latitude",
+		"phoHello": "One photon at a time, and each leaves a single dot. Fire, and see what they draw together.", "phoOne": "One slit: a broad patch, no fringes.", "phoTwo": "Two slits: the fringes are back, even though photons go one by one.", "phoSpy": "Now someone is watching which way they go. And the fringes vanish.", "phoNoSpy": "Nobody is watching: the fringes are back.", "phoS1": "ONE SLIT", "phoS2": "TWO SLITS", "phoOn": "DETECTOR ON", "phoOff": "DETECTOR OFF", "phoCount": "%d photons",
+		"sky1610": "7 January 1610, Padua. Galileo points his telescope at Jupiter and sees three little stars: two to the east, one to the west. Go forward one day: they'll all be to the west.", "skyNowBack": "TODAY", "skyCoffee": "COFFEES", "skyScope": "TELESCOPE",
+		"cofHello": "Every star is a coffee someone bought me. There are %d. Thank you.", "cofNone": "A star lights up here for every coffee. The sky is still waiting.", "cofName": "NAME YOUR STAR", "cofNext": "NEXT ONE", "cofStar": "This one was lit by: %s. Thank you.", "starNone": "Stars are lit with a coffee: copy your donation code from the shop and paste it in the message.", "starAsk": "You lit a star. What should it be called? The name shows once Cristiano has read it.", "starSend": "GIVE IT THE NAME", "starOk": "Done. It will appear once approved.",
+		"weather": {"sereno": "clear", "nuvole": "cloudy", "nebbia": "fog", "pioggia": "rain", "neve": "snow", "temporale": "storm"}, "weatherOn": "REAL", "weatherT": "Weather", "ghostsT": "Other visitors",
+		"secretFound": "A paper crane: %d of 10", "secretAll": "You found all ten! There's a Vespa for you in the shop.", "shopPrize": "You need all ten paper cranes.", "shopPrizeN": "PRIZE · CRANES %d/10",
+		"photoTitle": "Photo", "photoShot": "SHOOT", "photoFilter": "FILTER", "photoNone": "none", "photoExit": "EXIT", "photoSaved": "Postcard saved",
+		"radioNames": ["RADIO OFF", "Tirreno Lo-fi 98.4", "Electric Wave 101.7", "Aurelia Bossa", "Radio Physics"],
+		"radioNews": ["a second is 9,192,631,770 oscillations of the light of a caesium atom.", "the Moon drifts away from us by almost four centimetres a year. No hard feelings.", "a teaspoon of neutron star holds the mass of a mountain.", "cosmic-ray muons reach the ground only because, for them, time runs slower.", "the sunlight you see now left eight minutes ago.", "a lightning bolt is hotter than the surface of the Sun, but lasts much less.", "the vacuum is never quite empty: the Casimir effect measures it.", "in Cascina, near Pisa, the Virgo detector listens to gravitational waves.", "Enrico Fermi studied in Pisa. They say he explored the city's rooftops too.", "traffic is light on the Aurelia, with some slowing down at the speed of light."],
+		"visit": "60-SECOND VISIT", "visitHello": "Who I am", "visitEnd": "What now?", "visitPause": "PAUSE", "visitPlay": "RESUME",
 		"map": "MAP", "mapTitle": "Where to?", "season": "Season", "seasonAuto": "REAL", "seasons": {"inverno": "WINTER", "primavera": "SPRING", "estate": "SUMMER", "autunno": "AUTUMN"},
 		"streetTitles": {"inverno": "A SNOWY NIGHT", "primavera": "A NIGHT OF PETALS", "estate": "A NIGHT OF FIREFLIES", "autunno": "A NIGHT OF LEAVES"},
-		"places": {"street": "The street", "room": "My little room", "ride": "The Vespa ride", "grove": "The temples", "sky": "The observatory", "train": "The night train", "arcade": "The arcade", "tower": "The Tower of Pisa", "light": "The Livorno lighthouse", "pier": "The Quercianella pier", "bottles": "Bottles in the sea"},
-		"placeInfo": {"street": "Where it all begins.", "room": "My projects, object by object.", "ride": "The seafront, from night to dawn.", "grove": "Star Wars, Harry Potter and Dune.", "sky": "The real sky over Rosignano, tonight.", "train": "My road, one carriage at a time.", "arcade": "One cabinet per project.", "tower": "Which one lands first?", "light": "Waves, lamps and fringes.", "pier": "Fish for something to read.", "bottles": "Leave a message for whoever comes next."},
-		"go": {"train": "Board the train", "sky": "Go up to the observatory", "arcade": "Enter the arcade", "light": "Climb the lighthouse", "pier": "Go fishing", "bottles": "Look at the bottles"},
+		"places": {"street": "The street", "room": "My little room", "ride": "The Vespa ride", "grove": "The temples", "sky": "The observatory", "train": "The night train", "arcade": "The arcade", "tower": "The Tower of Pisa", "light": "The Livorno lighthouse", "pier": "The Quercianella pier", "bottles": "Bottles in the sea", "lab": "The physics lab", "field": "Living fields", "foucault": "Foucault pendulum", "aurora": "Aurora on demand", "photon": "Double slit", "coffee": "The coffee sky"},
+		"placeInfo": {"street": "Where it all begins.", "room": "My projects, object by object.", "ride": "The seafront, from night to dawn.", "grove": "Star Wars, Harry Potter and Dune.", "sky": "The real sky over Rosignano, tonight.", "train": "My road, one carriage at a time.", "arcade": "One cabinet per project.", "tower": "Which one lands first?", "light": "Waves, lamps and fringes.", "pier": "Fish for something to read.", "bottles": "Leave a message for whoever comes next.", "lab": "Fields, pendulum, aurora, photons.", "coffee": "A star for every coffee."},
+		"go": {"lab": "Enter the lab", "train": "Board the train", "sky": "Go up to the observatory", "arcade": "Enter the arcade", "light": "Climb the lighthouse", "pier": "Go fishing", "bottles": "Look at the bottles"},
 		"backSea": "◀ Seafront", "towerGo": "To the Tower of Pisa",
 		"hintSky": "[k]←[/k][k]→[/k][k]W[/k][k]S[/k] look · [k]E[/k] what is it? · [k]Q[/k][k]R[/k] hours · [k]+[/k][k]−[/k] zoom · [k]L[/k] lines · [k]ESC[/k] menu",
 		"hintTower": "[k]E[/k] drop · [k]←[/k][k]→[/k] change object · [k]Q[/k] air or vacuum · [k]ESC[/k] menu",
@@ -53,7 +72,7 @@ const T := {
 		"trainRead": "Read", "trainEmpty": "The last carriage is still empty. We'll see.",
 		"arcadeHello": "One cabinet per project. Tokens are on the house.", "arcadePlay": "Play",
 		"bottleTitle": "Bottles in the sea", "bottleNone": "No bottles yet. The first one could be yours.", "bottleOther": "ANOTHER BOTTLE", "bottleWrite": "Write a message: whoever comes by may find it. Cristiano reads it before it sets off.", "bottleText": "Your message (200 characters at most)", "bottleName": "Your name (if you like)", "bottleSend": "THROW THE BOTTLE", "bottleSent": "The bottle is off. It will surface once it's been read.", "bottleErr": "The sea brought it back. Try again later.", "bottleShort": "Write at least a few words.", "bottleAnon": "no name", "bottleOff": "The sea isn't answering tonight: try again when you're online.",
-		"grove": "the temples", "toGrove": "Go to the temples", "pray": {"stelle": "Pray", "magia": "Pray", "dune": "Pray"},
+		"grove": "the temples", "toGrove": "Go to the temples", "templesHello": "Three temples: Star Wars to the left, Harry Potter to the right, and further on, at the end of the path, Dune.", "pray": {"stelle": "Pray", "magia": "Pray", "dune": "Pray"},
 		"temples": {
 			"stelle": "STAR WARS, the films. They've kept me company all my life: they made me look up, and wonder what lies beyond.",
 			"magia": "HARRY POTTER, the films. They've kept me company all my life: they taught me that wonder is a serious thing, and that friends are home.",
@@ -67,9 +86,9 @@ const T := {
 		"shop": "SHOP", "shopTitle": "The shop", "shopGet": "GET COINS", "shopBack": "◀ Items", "shopOffline": "The till can't be reached right now: you can look and try things on, but not buy.",
 		"shopWorn": "IN USE", "shopOwned": "YOURS", "shopBuy": "BUY", "shopWear": "USE", "shopOn": "TURN ON", "shopOff": "TURN OFF", "shopGot": "It's yours: %s.", "shopPoor": "Not enough coins for this one, yet.", "shopErr": "Something went wrong, no coins were taken. Try again.", "shopWait": "One moment…",
 		"shopPlayT": "Play", "shopPlay": "Every day you drop by: %d. Each new stop on the Vespa ride: %d. Each object in the room: %d. Dawn at the end of the road: %d. A prayer at each temple, once a day: %d. The first catch of the day: %d.",
-		"shopGiveT": "Support me on KO-FI", "shopGive": "1 unit donated = %d coins. Copy your wallet code and paste it in the donation message: the coins land here by themselves, usually within a minute.", "shopSoon": "Donations aren't open yet. In the meantime, coins are earned by playing.", "shopThanks": "If you like this place you can buy me a coffee. Coins for donations aren't active yet, so this one would be just a kind thought: thank you.",
+		"shopGiveT": "Support me on KO-FI", "shopGive": "1 unit donated = %d coins. Copy your donation code (it only receives, so it can be public) and paste it in the message: the coins land here by themselves, usually within a minute.", "shopSoon": "Donations aren't open yet. In the meantime, coins are earned by playing.", "shopThanks": "If you like this place you can buy me a coffee. Coins for donations aren't active yet, so this one would be just a kind thought: thank you.",
 		"shopCopy": "COPY %s", "shopCopied": "Code copied: paste it in the donation message.", "shopCoffee": "OPEN KO-FI ↗", "shopCheck": "CHECK MY COINS", "shopIn": "%d coins have arrived. Thank you!", "shopNotYet": "Nothing yet. It can take a minute.",
-		"shopCodeT": "Your wallet", "shopCode": "Your code is [color=#f2b85b]%s[/color]. Keep it: it brings coins and items to any other device. No name, no email.", "shopEnter": "USE A CODE", "shopCodeOk": "Wallet found.", "shopCodeBad": "No wallet with that code.", "coinsIn": "+%d coins",
+		"shopCodeT": "Your wallet", "shopCode": "Your code is [color=#f2b85b]%s[/color]. Keep it to yourself, like a password: it brings coins and items to any other device. No name, no email.", "shopEnter": "USE A CODE", "shopCodeOk": "Wallet found.", "shopCodeBad": "No wallet with that code.", "coinsIn": "+%d coins",
 		"full": "Full screen", "fullOn": "FULL SCREEN", "fullOff": "EXIT FULL SCREEN", "fullHint": "Press [k]F[/k] at any time to go full screen and back.",
 		"music": "Music", "effects": "Effects", "roomMode": "My room", "walk": "WALK", "point": "POINT & CLICK",
 		"modeWalk": "WALK MODE", "modePoint": "POINT & CLICK MODE", "modeHint": "change it any time in Settings",
@@ -83,7 +102,7 @@ const T := {
 		"enterHouse": "Go inside", "tv": "Change channel", "fire": "Warm your hands", "door": "Enter my room", "warm": "Ahh, much better.", "open": "Open",
 		"toSea": "Take the path to the sea", "sea": "the seafront", "backStreet": "◀ Street", "rideMenu": "VESPA RIDE",
 		"hintSeaWalk": "[k]←[/k][k]→[/k] walk · [k]E[/k] put on the helmet · [k]ESC[/k] menu",
-		"hintRide": "[k]→[/k] throttle · [k]←[/k] brake · [k]SHIFT[/k] faster · [k]E[/k] stop and look · [k]H[/k] horn · [k]ESC[/k] menu",
+		"hintRide": "[k]→[/k] throttle · [k]←[/k] brake · [k]SHIFT[/k] faster · [k]E[/k] stop and look · [k]H[/k] horn · [k]R[/k] radio · [k]ESC[/k] menu",
 		"rideHelmet": "Put on the helmet", "rideStop": "Stop and look", "rideDawn": "Look at the dawn", "rideStops": "STOPS", "rideStopN": "STOP %d OF %d", "rideGoOn": "Ride on ▶", "rideChapter": "CHAPTER %d",
 		"ridePlaces": {"libreria": "Rosignano", "letto": "Castiglioncello", "scrivania": "Quercianella", "lavagna": "Livorno", "finestra": "Marina di Pisa"},
 		"rideTitles": {"libreria": "THE BOOKS", "letto": "THE WORDS", "scrivania": "THE THINGS I BUILD", "lavagna": "THE QUESTIONS", "finestra": "THE ROAD"},
@@ -102,18 +121,37 @@ const T := {
 		"empty": "Nothing here yet. Come back soon.", "find": "Where to find me", "cv": "Open my CV", "openLink": "open ↗", "details": "details ↗", "physics": "physics",
 		"titles": {"grove": "THE TEMPLES", "sea": "BY THE SEA", "street": "A SNOWY NIGHT", "living": "HOME, SWEET HOME", "room": "MY LITTLE ROOM"},
 		"helpTitle": "How to play",
-		"helpItems": ["Walk down the snowy street with [k]←[/k] [k]→[/k] (or [k]A[/k] [k]D[/k]). Hold [k]SHIFT[/k] to run. On a phone, use the arrows or tap where you want to go.", "Read the bubbles along the way: they tell you who I am.", "Halfway down the street a lit path goes down to the sea. There's a Vespa: put on the helmet and ride, [k]→[/k] throttle, [k]←[/k] brake, [k]E[/k] to stop and look, [k]H[/k] for the horn.", "At the house, and near the TV, the fireplace and the glowing door, press [k]E[/k] (or the yellow button).", "In my room every object opens a part of my portfolio. You can walk around or point and click: the current mode is always shown at the top, and you can switch it in Settings.", "Another path, lit in violet, enters the woods: three temples where you can sit and pray with [k]E[/k].", "Playing earns coins to spend in the shop (the coin at the top): themes, clothes, Vespa, furniture.", "Press [k]F[/k] for full screen.", "[k]ESC[/k] goes back."],
+		"helpItems": ["Walk down the snowy street with [k]←[/k] [k]→[/k] (or [k]A[/k] [k]D[/k]). Hold [k]SHIFT[/k] to run. On a phone, use the arrows or tap where you want to go.", "Read the bubbles along the way: they tell you who I am.", "Halfway down the street a lit path goes down to the sea. There's a Vespa: put on the helmet and ride, [k]→[/k] throttle, [k]←[/k] brake, [k]E[/k] to stop and look, [k]H[/k] for the horn.", "At the house, and near the TV, the fireplace and the glowing door, press [k]E[/k] (or the yellow button).", "In my room every object opens a part of my portfolio. You can walk around or point and click: the current mode is always shown at the top, and you can switch it in Settings.", "Another path, lit in violet, enters the woods: three temples where you can sit and pray with [k]E[/k].", "Playing earns coins to spend in the shop (the coin at the top): themes, clothes, Vespa, furniture.", "[k]P[/k] takes a photo, [k]G[/k] waves to other visitors (the blue silhouettes). Ten paper cranes are hidden around: find them all.", "Press [k]F[/k] for full screen.", "[k]ESC[/k] goes back."],
 		"noServer": "Offline copy: start the server to load fresh content",
 	},
 	"it": {
 		"tips": ["Suggerimento: [k]←[/k] [k]→[/k] per camminare, tieni premuto [k]SHIFT[/k] per correre.", "Suggerimento: premi [k]E[/k] vicino a una porta per entrare.", "Suggerimento: in cameretta clicca gli oggetti per aprirli.", "Suggerimento: nel menu, la finestra accesa ti porta subito dentro."],
 		"loading": "CARICAMENTO", "start": "INIZIA", "room": "VAI SUBITO IN CAMERETTA", "settings": "IMPOSTAZIONI", "help": "COME SI GIOCA",
 		"language": "Lingua", "langName": "Italiano", "audio": "Audio", "on": "ON", "off": "OFF",
+		"backLab": "◀ Laboratorio", "backSky": "◀ Osservatorio",
+		"labHello": "Il laboratorio. Quattro banchi, quattro domande.",
+		"hintField": "clicca per posare · trascina per spostare · [k]E[/k] segno · [k]Q[/k] dipolo · [k]V[/k] potenziale · [k]X[/k] pulisci · [k]ESC[/k] menu",
+		"hintFou": "[k]E[/k] cambia posto · [k]Q[/k] velocità · [k]X[/k] da capo · [k]ESC[/k] menu",
+		"hintAur": "[k]E[/k] lancia particelle · [k]Q[/k] energia del vento solare · [k]ESC[/k] menu",
+		"hintPho": "[k]E[/k] uno · [k]Q[/k] cento · [k]R[/k] mille · [k]T[/k] fenditure · [k]V[/k] rivelatore · [k]X[/k] pulisci · [k]ESC[/k] menu",
+		"hintCof": "[k]E[/k] la prossima stella · [k]ESC[/k] menu",
+		"fieldHello": "Posa le cariche sulla neve: le linee di forza si disegnano da sole. Tocca una carica per toglierla.", "fieldFull": "Otto cariche bastano: togline una.", "fieldPlus": "POSO: +", "fieldMinus": "POSO: −", "fieldDip": "DIPOLO", "fieldPot": "POTENZIALE", "fieldClear": "PULISCI",
+		"fouHello": "Il pendolo oscilla sempre nello stesso piano: è il pavimento che gira sotto, insieme alla Terra.", "fouRos": "ROSIGNANO, 43,4° N", "fouPole": "POLO NORD", "fouPisa": "PISA, 43,7° N", "fouEq": "EQUATORE", "fouSouth": "CITTÀ DEL CAPO, 33,9° S", "fouSpeed": "TEMPO × %d", "fouReset": "DA CAPO", "fouTurn": "girato di %s°", "fouHours": "in %s ore", "fouPeriod": "un giro: %s ore", "fouNever": "qui non gira mai",
+		"aurHello": "Lancia le particelle del Sole: il campo della Terra le cattura e le accompagna ai poli. Lì l'aria si accende.", "aurFire": "LANCIA", "aurEn": ["VENTO DEBOLE", "VENTO NORMALE", "TEMPESTA SOLARE"], "aurInfo": ["Vento debole: poca luce, vicino ai poli.", "Verde: ossigeno a 557,7 nanometri, tra i 100 e i 150 chilometri.", "Tempesta: rosso in alto, viola in basso, e l'aurora scende verso di noi."], "aurLat": "aurora a %d° di latitudine magnetica",
+		"phoHello": "Un fotone alla volta, e ognuno lascia un puntino solo. Spara, e guarda che cosa viene fuori insieme.", "phoOne": "Una fenditura: una macchia larga, niente frange.", "phoTwo": "Due fenditure: le frange tornano, anche se i fotoni passano uno per volta.", "phoSpy": "Adesso qualcuno guarda da che parte passano. E le frange spariscono.", "phoNoSpy": "Nessuno guarda: le frange tornano.", "phoS1": "UNA FENDITURA", "phoS2": "DUE FENDITURE", "phoOn": "RIVELATORE ACCESO", "phoOff": "RIVELATORE SPENTO", "phoCount": "%d fotoni",
+		"sky1610": "7 gennaio 1610, Padova. Galileo punta il cannocchiale su Giove e vede tre stelline: due a est, una a ovest. Vai avanti di un giorno: saranno tutte a ovest.", "skyNowBack": "OGGI", "skyCoffee": "CAFFÈ", "skyScope": "CANNOCCHIALE",
+		"cofHello": "Ogni stella è un caffè che qualcuno mi ha offerto. Sono %d. Grazie.", "cofNone": "Qui si accende una stella per ogni caffè offerto. Il cielo è ancora tutto da accendere.", "cofName": "DAI UN NOME ALLA TUA STELLA", "cofNext": "LA PROSSIMA", "cofStar": "Questa l'ha accesa: %s. Grazie.", "starNone": "Le stelle si accendono con un caffè: copia il tuo codice per le donazioni dal negozio e incollalo nel messaggio.", "starAsk": "Hai acceso una stella. Come vuoi che si chiami? Il nome si vede dopo che Cristiano l'ha letto.", "starSend": "DAI IL NOME", "starOk": "Fatto. Comparirà appena approvato.",
+		"weather": {"sereno": "sereno", "nuvole": "nuvoloso", "nebbia": "nebbia", "pioggia": "pioggia", "neve": "neve", "temporale": "temporale"}, "weatherOn": "VERO", "weatherT": "Meteo", "ghostsT": "Altri visitatori",
+		"secretFound": "Una gru di carta: %d su 10", "secretAll": "Le hai trovate tutte e dieci! Nel negozio c'è una Vespa per te.", "shopPrize": "Servono tutte le dieci gru di carta.", "shopPrizeN": "PREMIO · GRU %d/10",
+		"photoTitle": "Foto", "photoShot": "SCATTA", "photoFilter": "FILTRO", "photoNone": "nessuno", "photoExit": "ESCI", "photoSaved": "Cartolina salvata",
+		"radioNames": ["RADIO SPENTA", "Tirreno Lo-fi 98.4", "Onda Elettrica 101.7", "Bossa dell'Aurelia", "Radio Fisica"],
+		"radioNews": ["un secondo è la durata di 9.192.631.770 oscillazioni della luce di un atomo di cesio.", "la Luna si allontana da noi di quasi quattro centimetri l'anno. Nessun rancore.", "in un cucchiaino di stella di neutroni c'è la massa di una montagna.", "i muoni dei raggi cosmici arrivano a terra solo perché, per loro, il tempo scorre più piano.", "la luce del Sole che vedi ora è partita otto minuti fa.", "un fulmine è più caldo della superficie del Sole, ma dura molto meno.", "il vuoto non è mai del tutto vuoto: lo misura l'effetto Casimir.", "a Cascina, vicino a Pisa, il rivelatore Virgo ascolta le onde gravitazionali.", "Enrico Fermi ha studiato a Pisa. Si dice che esplorasse anche i tetti della città.", "traffico regolare sull'Aurelia, qualche rallentamento alla velocità della luce."],
+		"visit": "VISITA IN 60 SECONDI", "visitHello": "Chi sono", "visitEnd": "E adesso?", "visitPause": "PAUSA", "visitPlay": "CONTINUA",
 		"map": "MAPPA", "mapTitle": "Dove vuoi andare?", "season": "Stagione", "seasonAuto": "VERA", "seasons": {"inverno": "INVERNO", "primavera": "PRIMAVERA", "estate": "ESTATE", "autunno": "AUTUNNO"},
 		"streetTitles": {"inverno": "UNA NOTTE DI NEVE", "primavera": "UNA NOTTE DI PETALI", "estate": "UNA NOTTE DI LUCCIOLE", "autunno": "UNA NOTTE DI FOGLIE"},
-		"places": {"street": "La strada", "room": "La cameretta", "ride": "Il giro in Vespa", "grove": "I templi", "sky": "L'osservatorio", "train": "Il treno notturno", "arcade": "La sala giochi", "tower": "La Torre di Pisa", "light": "Il faro di Livorno", "pier": "Il molo di Quercianella", "bottles": "Bottiglie nel mare"},
-		"placeInfo": {"street": "Da qui comincia tutto.", "room": "I miei progetti, oggetto per oggetto.", "ride": "Il lungomare, dalla notte all'alba.", "grove": "Star Wars, Harry Potter e Dune.", "sky": "Il cielo vero di Rosignano, stanotte.", "train": "La mia strada, una carrozza alla volta.", "arcade": "Un cabinato per ogni progetto.", "tower": "Chi arriva prima a terra?", "light": "Onde, lampade e frange.", "pier": "Pesca qualcosa da leggere.", "bottles": "Lascia un messaggio a chi verrà."},
-		"go": {"train": "Sali sul treno", "sky": "Sali all'osservatorio", "arcade": "Entra in sala giochi", "light": "Sali sul faro", "pier": "Vai a pescare", "bottles": "Guarda le bottiglie"},
+		"places": {"street": "La strada", "room": "La cameretta", "ride": "Il giro in Vespa", "grove": "I templi", "sky": "L'osservatorio", "train": "Il treno notturno", "arcade": "La sala giochi", "tower": "La Torre di Pisa", "light": "Il faro di Livorno", "pier": "Il molo di Quercianella", "bottles": "Bottiglie nel mare", "lab": "Il laboratorio", "field": "Campi vivi", "foucault": "Pendolo di Foucault", "aurora": "Aurora su richiesta", "photon": "Doppia fenditura", "coffee": "Il cielo dei caffè"},
+		"placeInfo": {"street": "Da qui comincia tutto.", "room": "I miei progetti, oggetto per oggetto.", "ride": "Il lungomare, dalla notte all'alba.", "grove": "Star Wars, Harry Potter e Dune.", "sky": "Il cielo vero di Rosignano, stanotte.", "train": "La mia strada, una carrozza alla volta.", "arcade": "Un cabinato per ogni progetto.", "tower": "Chi arriva prima a terra?", "light": "Onde, lampade e frange.", "pier": "Pesca qualcosa da leggere.", "bottles": "Lascia un messaggio a chi verrà.", "lab": "Campi, pendolo, aurora, fotoni.", "coffee": "Una stella per ogni caffè."},
+		"go": {"lab": "Entra in laboratorio", "train": "Sali sul treno", "sky": "Sali all'osservatorio", "arcade": "Entra in sala giochi", "light": "Sali sul faro", "pier": "Vai a pescare", "bottles": "Guarda le bottiglie"},
 		"backSea": "◀ Lungomare", "towerGo": "Alla Torre di Pisa",
 		"hintSky": "[k]←[/k][k]→[/k][k]W[/k][k]S[/k] guarda · [k]E[/k] che cos'è? · [k]Q[/k][k]R[/k] ore · [k]+[/k][k]−[/k] zoom · [k]L[/k] linee · [k]ESC[/k] menu",
 		"hintTower": "[k]E[/k] lascia cadere · [k]←[/k][k]→[/k] cambia oggetto · [k]Q[/k] aria o vuoto · [k]ESC[/k] menu",
@@ -133,7 +171,7 @@ const T := {
 		"trainRead": "Leggi", "trainEmpty": "L'ultima carrozza è ancora vuota. Si vedrà.",
 		"arcadeHello": "Un cabinato per ogni progetto. Il gettone lo offre la casa.", "arcadePlay": "Gioca",
 		"bottleTitle": "Bottiglie nel mare", "bottleNone": "Nessuna bottiglia, per ora. La prima potrebbe essere la tua.", "bottleOther": "UN'ALTRA BOTTIGLIA", "bottleWrite": "Scrivi un messaggio: chi passerà di qui potrà trovarlo. Cristiano lo legge prima che prenda il largo.", "bottleText": "Il tuo messaggio (massimo 200 caratteri)", "bottleName": "Come ti chiami? (se vuoi)", "bottleSend": "LANCIA LA BOTTIGLIA", "bottleSent": "La bottiglia è partita. Tornerà a galla dopo essere stata letta.", "bottleErr": "Il mare l'ha riportata indietro. Riprova più tardi.", "bottleShort": "Scrivi almeno qualche parola.", "bottleAnon": "senza nome", "bottleOff": "Il mare stasera non risponde: riprova quando c'è rete.",
-		"grove": "i templi", "toGrove": "Vai ai templi", "pray": {"stelle": "Prega", "magia": "Prega", "dune": "Prega"},
+		"grove": "i templi", "toGrove": "Vai ai templi", "templesHello": "Tre templi: a sinistra Star Wars, a destra Harry Potter e, più avanti, in fondo al sentiero, Dune.", "pray": {"stelle": "Prega", "magia": "Prega", "dune": "Prega"},
 		"temples": {
 			"stelle": "STAR WARS, i film. Mi hanno accompagnato nella vita: mi hanno fatto alzare gli occhi al cielo, e chiedermi cosa c'è oltre.",
 			"magia": "HARRY POTTER, i film. Mi hanno accompagnato nella vita: mi hanno insegnato che la meraviglia è una cosa seria, e che gli amici sono casa.",
@@ -147,9 +185,9 @@ const T := {
 		"shop": "NEGOZIO", "shopTitle": "Il negozio", "shopGet": "OTTIENI MONETE", "shopBack": "◀ Articoli", "shopOffline": "La cassa ora non risponde: puoi guardare e provare, ma non comprare.",
 		"shopWorn": "IN USO", "shopOwned": "TUO", "shopBuy": "COMPRA", "shopWear": "USA", "shopOn": "ACCENDI", "shopOff": "SPEGNI", "shopGot": "È tuo: %s.", "shopPoor": "Per questo non bastano ancora le monete.", "shopErr": "Qualcosa è andato storto, nessuna moneta spesa. Riprova.", "shopWait": "Un attimo…",
 		"shopPlayT": "Giocando", "shopPlay": "Ogni giorno che passi di qui: %d. Ogni nuova tappa in Vespa: %d. Ogni oggetto della cameretta: %d. L'alba in fondo alla strada: %d. Una preghiera a ogni tempio, una volta al giorno: %d. Il primo pesce del giorno: %d.",
-		"shopGiveT": "Offrendo un caffè su KO-FI", "shopGive": "Ogni unità donata vale %d monete. Copia il codice del portafoglio e incollalo nel messaggio della donazione: le monete arrivano qui da sole, di solito entro un minuto.", "shopSoon": "Le donazioni non sono ancora aperte. Intanto le monete si guadagnano giocando.", "shopThanks": "Se ti piace questo posto puoi offrirmi un caffè. Le monete per chi dona non sono ancora attive: per ora sarebbe solo un pensiero gentile. Grazie.",
+		"shopGiveT": "Offrendo un caffè su KO-FI", "shopGive": "Ogni unità donata vale %d monete. Copia il tuo codice per le donazioni (serve solo a ricevere, può essere pubblico) e incollalo nel messaggio: le monete arrivano qui da sole, di solito entro un minuto.", "shopSoon": "Le donazioni non sono ancora aperte. Intanto le monete si guadagnano giocando.", "shopThanks": "Se ti piace questo posto puoi offrirmi un caffè. Le monete per chi dona non sono ancora attive: per ora sarebbe solo un pensiero gentile. Grazie.",
 		"shopCopy": "COPIA %s", "shopCopied": "Codice copiato: incollalo nel messaggio della donazione.", "shopCoffee": "APRI KO-FI ↗", "shopCheck": "CONTROLLA LE MONETE", "shopIn": "Sono arrivate %d monete. Grazie!", "shopNotYet": "Ancora niente. Può volerci un minuto.",
-		"shopCodeT": "Il tuo portafoglio", "shopCode": "Il tuo codice è [color=#f2b85b]%s[/color]. Conservalo: porta monete e acquisti su qualunque altro dispositivo. Nessun nome, nessuna email.", "shopEnter": "USA UN CODICE", "shopCodeOk": "Portafoglio trovato.", "shopCodeBad": "Nessun portafoglio con questo codice.", "coinsIn": "+%d monete",
+		"shopCodeT": "Il tuo portafoglio", "shopCode": "Il tuo codice è [color=#f2b85b]%s[/color]. Tienilo per te, come una password: porta monete e acquisti su qualunque altro dispositivo. Nessun nome, nessuna email.", "shopEnter": "USA UN CODICE", "shopCodeOk": "Portafoglio trovato.", "shopCodeBad": "Nessun portafoglio con questo codice.", "coinsIn": "+%d monete",
 		"full": "Schermo intero", "fullOn": "SCHERMO INTERO", "fullOff": "ESCI DA SCHERMO INTERO", "fullHint": "Premi [k]F[/k] in qualsiasi momento per lo schermo intero, e di nuovo per uscire.",
 		"music": "Musica", "effects": "Effetti", "roomMode": "Cameretta", "walk": "CAMMINA", "point": "PUNTA E CLICCA",
 		"modeWalk": "MODALITÀ CAMMINA", "modePoint": "MODALITÀ PUNTA E CLICCA", "modeHint": "puoi cambiarla quando vuoi nelle Impostazioni",
@@ -163,7 +201,7 @@ const T := {
 		"enterHouse": "Entra in casa", "tv": "Cambia canale", "fire": "Scaldati le mani", "door": "Entra in cameretta", "warm": "Ahh, molto meglio.", "open": "Apri",
 		"toSea": "Prendi il sentiero per il mare", "sea": "il lungomare", "backStreet": "◀ Strada", "rideMenu": "GIRO IN VESPA",
 		"hintSeaWalk": "[k]←[/k][k]→[/k] cammina · [k]E[/k] mettiti il casco · [k]ESC[/k] menu",
-		"hintRide": "[k]→[/k] gas · [k]←[/k] freno · [k]SHIFT[/k] più veloce · [k]E[/k] fermati · [k]H[/k] clacson · [k]ESC[/k] menu",
+		"hintRide": "[k]→[/k] gas · [k]←[/k] freno · [k]SHIFT[/k] più veloce · [k]E[/k] fermati · [k]H[/k] clacson · [k]R[/k] radio · [k]ESC[/k] menu",
 		"rideHelmet": "Mettiti il casco", "rideStop": "Fermati a guardare", "rideDawn": "Guarda l'alba", "rideStops": "TAPPE", "rideStopN": "TAPPA %d DI %d", "rideGoOn": "Riparti ▶", "rideChapter": "CAPITOLO %d",
 		"ridePlaces": {"libreria": "Rosignano", "letto": "Castiglioncello", "scrivania": "Quercianella", "lavagna": "Livorno", "finestra": "Marina di Pisa"},
 		"rideTitles": {"libreria": "I LIBRI", "letto": "LE PAROLE", "scrivania": "LE COSE COSTRUITE", "lavagna": "LE DOMANDE", "finestra": "LA STRADA"},
@@ -182,7 +220,7 @@ const T := {
 		"empty": "Qui non c'è ancora niente. Torna presto.", "find": "Dove trovarmi", "cv": "Apri il CV", "openLink": "apri ↗", "details": "scheda ↗", "physics": "fisica",
 		"titles": {"grove": "I TEMPLI", "sea": "IL LUNGOMARE", "street": "UNA NOTTE DI NEVE", "living": "CASA, DOLCE CASA", "room": "LA MIA CAMERETTA"},
 		"helpTitle": "Come si gioca",
-		"helpItems": ["Percorri la strada innevata con [k]←[/k] [k]→[/k] (o [k]A[/k] [k]D[/k]). Tieni [k]SHIFT[/k] per correre. Da telefono usa le frecce o tocca dove vuoi andare.", "Leggi le bolle lungo la strada: ti raccontano chi sono.", "A metà strada un sentiero illuminato scende al mare. C'è una Vespa: metti il casco e parti, [k]→[/k] gas, [k]←[/k] freno, [k]E[/k] per fermarti a guardare, [k]H[/k] per il clacson.", "Davanti a casa, e vicino a TV, camino e porta luminosa, premi [k]E[/k] (o il pulsante giallo).", "In cameretta ogni oggetto apre una parte del portfolio. Puoi camminare o puntare e cliccare: la modalità attuale è sempre indicata in alto e la cambi nelle Impostazioni.", "Un altro sentiero, illuminato di viola, entra nel bosco: ci sono tre templi dove sedersi a pregare con [k]E[/k].", "Giocando si guadagnano monete da spendere nel negozio (la moneta in alto): temi, vestiti, Vespa, arredi.", "Premi [k]F[/k] per lo schermo intero.", "[k]ESC[/k] torna indietro."],
+		"helpItems": ["Percorri la strada innevata con [k]←[/k] [k]→[/k] (o [k]A[/k] [k]D[/k]). Tieni [k]SHIFT[/k] per correre. Da telefono usa le frecce o tocca dove vuoi andare.", "Leggi le bolle lungo la strada: ti raccontano chi sono.", "A metà strada un sentiero illuminato scende al mare. C'è una Vespa: metti il casco e parti, [k]→[/k] gas, [k]←[/k] freno, [k]E[/k] per fermarti a guardare, [k]H[/k] per il clacson.", "Davanti a casa, e vicino a TV, camino e porta luminosa, premi [k]E[/k] (o il pulsante giallo).", "In cameretta ogni oggetto apre una parte del portfolio. Puoi camminare o puntare e cliccare: la modalità attuale è sempre indicata in alto e la cambi nelle Impostazioni.", "Un altro sentiero, illuminato di viola, entra nel bosco: ci sono tre templi dove sedersi a pregare con [k]E[/k].", "Giocando si guadagnano monete da spendere nel negozio (la moneta in alto): temi, vestiti, Vespa, arredi.", "[k]P[/k] scatta una foto, [k]G[/k] saluta gli altri visitatori (le sagome azzurre). In giro sono nascoste dieci gru di carta: trovale tutte.", "Premi [k]F[/k] per lo schermo intero.", "[k]ESC[/k] torna indietro."],
 		"noServer": "Copia offline: avvia il server per caricare i contenuti aggiornati",
 	},
 }
@@ -212,6 +250,9 @@ var effects_user := 1.0
 var tv_channel := 0
 var ride_seen: Dictionary = {}     # tappe del giro in Vespa già viste (id delle voci)
 var season := "auto"
+var real_weather := true
+var ghosts := true
+var secrets: Dictionary = {}       # gru di carta trovate
 var fish: Dictionary = {}          # pescato al molo
 var prayers: Dictionary = {}       # preghiere fatte in ogni tempio
 var ride_found := false            # il giro è stato scoperto: compare nel menu
@@ -234,6 +275,9 @@ func _ready() -> void:
 	prayers = prefs.get_value("p", "prayers", {})
 	fish = prefs.get_value("p", "fish", {})
 	season = prefs.get_value("p", "season", "auto")
+	real_weather = prefs.get_value("p", "weather", true)
+	ghosts = prefs.get_value("p", "ghosts", true)
+	for k in prefs.get_value("p", "secrets", []): secrets[k] = true
 	if is_web:
 		base_url = str(JavaScriptBridge.eval("location.origin", true))
 	else:
@@ -251,6 +295,9 @@ func save_prefs() -> void:
 	prefs.set_value("p", "prayers", prayers)
 	prefs.set_value("p", "fish", fish)
 	prefs.set_value("p", "season", season)
+	prefs.set_value("p", "weather", real_weather)
+	prefs.set_value("p", "ghosts", ghosts)
+	prefs.set_value("p", "secrets", secrets.keys())
 	prefs.set_value("p", "audio", audio_on)
 	prefs.set_value("p", "lang", lang)
 	prefs.save(PREFS)
@@ -347,7 +394,7 @@ func load_all() -> void:
 	for k in ["room", "mask", "far", "mid", "near", "living", "player", "menu_sky"]:
 		var f := {"room": "room", "mask": "mask", "far": "street_far", "mid": "street_mid", "near": "street_near", "living": "living", "player": "player", "menu_sky": "menu_sky"}[k] as String
 		tex[k] = load("res://assets/img/%s.png" % f)
-	for k in ["sea_sky", "sea_near", "sea_fore", "sea_beach", "sea_props", "sea_emblems", "shop", "grove_far", "grove_near", "grove_props", "place_pisa", "place_train", "place_arcade", "place_pier", "place_props"]: tex[k] = load("res://assets/img/%s.png" % k)
+	for k in ["sea_sky", "sea_near", "sea_fore", "sea_beach", "sea_props", "sea_emblems", "shop", "grove_far", "grove_near", "grove_props", "place_pisa", "place_train", "place_arcade", "place_pier", "place_props", "place_lab"]: tex[k] = load("res://assets/img/%s.png" % k)
 	_step(6)
 	var d = await fetch_json("/api/public")
 	if typeof(d) != TYPE_DICTIONARY:

@@ -76,8 +76,8 @@ func fringe() -> float:
 	return lam * 242.0 / sep
 
 func labels() -> Array:
-	var o := [{"x": 84 if tall else 110, "y": 166, "t": "%s %d · %s %d" % [G.t("lightW").to_lower(), int(lam), G.t("lightD").to_lower(), int(sep)], "c": G.gold, "s": 28}]
-	if two: o.append({"x": 172 if tall else 236, "y": 166, "t": "%s %d" % [G.t("lightF"), int(fringe())], "c": Color("ffeeb0"), "s": 28})
+	var o := [{"x": 92 if tall else 110, "y": 166, "t": "%s %d · %s %d" % [G.t("lightW").to_lower(), int(lam), G.t("lightD").to_lower(), int(sep)], "c": G.gold, "s": 28}]
+	if two: o.append({"x": 246 if tall else 236, "y": 166, "t": "%s %d" % [G.t("lightF"), int(fringe())], "c": Color("ffeeb0"), "s": 28})
 	return o
 
 func _draw_light(ci: CanvasItem) -> void:

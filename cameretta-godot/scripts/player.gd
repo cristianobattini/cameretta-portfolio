@@ -13,6 +13,10 @@ var idle := 0.0
 var frame := 0
 var last_step := -1
 var target := -1.0            # punto toccato/cliccato verso cui camminare
+var pet_x := -1e9
+var pet_dir := 1
+var pet_t := 0.0
+var pet_mov := false
 var on_arrive: Callable       # azione da fare all'arrivo (cameretta, modalità cammina)
 
 func update(dt: float, input_dir: int, run: bool, min_x: float, max_x: float, step_sound: Callable, locked := false) -> void:
@@ -48,6 +52,7 @@ func update(dt: float, input_dir: int, run: bool, min_x: float, max_x: float, st
 	animate(dt, run, step_sound)
 
 func animate(dt: float, run: bool, step_sound: Callable) -> void:
+	_pet(dt)
 	var J: Dictionary = G.J.player
 	if moving:
 		anim += dt * (10.0 if run else 6.7)
@@ -60,6 +65,27 @@ func animate(dt: float, run: bool, step_sound: Callable) -> void:
 		last_step = -1
 		frame = int(J.idle[int(idle) % 4])
 
+## Il gatto comprato nel negozio: segue a qualche passo, e quando ci si ferma si siede.
+func _pet(dt: float) -> void:
+	if not Shop.cur("pet").has("pal"): return
+	if absf(pet_x - x) > 200: pet_x = x - dir * 26
+	var want := x - dir * 26.0
+	pet_mov = absf(want - pet_x) > (4.0 if pet_mov else 12.0)
+	if pet_mov:
+		pet_dir = 1 if want > pet_x else -1
+		pet_x = move_toward(pet_x, want, maxf(44.0, absf(want - pet_x) * 2.2) * dt)
+	pet_t += dt
+
+func _draw_pet(ci: CanvasItem, sx: float, feet: float) -> void:
+	var it: Dictionary = Shop.cur("pet")
+	if not it.has("pal") or pet_x < -1e8 or not pet_on: return
+	var a := 1.0
+	if it.id == "pe_grigio": a = 0.25 + 0.75 * absf(sin(pet_t * 0.9))      # c'è, e non c'è
+	var n: String = "pet%d" % (3 if not pet_mov else [0, 1, 0, 2][int(pet_t * 9) % 4])
+	Shop.draw_pet(ci, n, roundf(sx + pet_x - x), feet + 2, pet_dir, a)
+
+var pet_on := true
+
 func draw(ci: CanvasItem, sx: float, feet: float, shadow := Color(0.08, 0.09, 0.24, 0.35), sc := 1.0) -> void:
 	var J: Dictionary = G.J.player
 	var fw: int = J.fw
@@ -69,6 +95,7 @@ func draw(ci: CanvasItem, sx: float, feet: float, shadow := Color(0.08, 0.09, 0.
 	for k in range(-rw, rw + 1):
 		var hh := 2.0 * sc * sqrt(maxf(0.0, 1.0 - pow(float(k) / rw, 2)))
 		ci.draw_rect(Rect2(roundf(sx) + k, feet + 1 - roundf(hh * 0.5), 1, maxf(1.0, roundf(hh))), shadow)
+	if sc == 1.0: _draw_pet(ci, sx, feet)
 	var src := Rect2(frame * fw, 0, fw, fh)
 	var px := roundf(sx - fw * sc / 2.0)
 	var py := roundf(feet - float(J.footY) * sc)

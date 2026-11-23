@@ -24,7 +24,9 @@ La musica di sottofondo si carica dall'admin e vale per entrambe.
 
 Tutti i contenuti stanno in un database **SQLite locale** e si gestiscono da una **dashboard admin**.
 
-Lungo la strada ci sono due deviazioni: il **lungomare** con il giro in Vespa e i **templi** (omaggi a Star Wars, Harry Potter e Dune, arte originale) dove ci si siede a pregare. Dalla strada si raggiungono anche il **treno notturno**, l'**osservatorio** (cielo vero di Rosignano) e la **sala giochi**; dal lungomare il **molo**, il **faro** e, alla fine del giro, la **Torre di Pisa**. Sulla spiaggia ci sono le **bottiglie nel mare**: i messaggi dei visitatori si approvano in *Admin → Bottiglie*. La strada segue la stagione vera (Impostazioni → Stagione per cambiarla). La voce **Mappa** del menu porta ovunque. `F` = schermo intero.
+Lungo la strada ci sono due deviazioni: il **lungomare** con il giro in Vespa e i **templi** (omaggi a Star Wars, Harry Potter e Dune, arte originale) dove ci si siede a pregare. Dalla strada si raggiungono anche il **treno notturno**, l'**osservatorio** (cielo vero di Rosignano) e la **sala giochi**; dal lungomare il **molo**, il **faro** e, alla fine del giro, la **Torre di Pisa**. Il **laboratorio** ha quattro esperienze (campi, pendolo di Foucault, aurora, doppia fenditura), l'osservatorio può tornare al 7 gennaio 1610 e dal suo terrazzo si vede il **cielo dei caffè**, una stella per donazione (i nomi si approvano in *Admin → Negozio*). Sulla spiaggia ci sono le **bottiglie nel mare**: i messaggi dei visitatori si approvano in *Admin → Bottiglie*. La strada segue la stagione vera (Impostazioni → Stagione per cambiarla). La voce **Mappa** del menu porta ovunque. `F` = schermo intero.
+
+Altre cose: **visita in 60 secondi** dal menu, **modalità foto** (`P`), **radio** della Vespa (`R`), dieci **gru di carta** nascoste con un premio nel negozio, un **gatto** che segue, il **meteo vero** di Rosignano (lo chiede il server a Open-Meteo, al massimo ogni 15 minuti) e gli **altri visitatori** come sagome azzurre (`G` per salutare: solo una posizione tenuta in memoria per pochi secondi, senza nomi). Meteo e visitatori si spengono dalle Impostazioni.
 
 ## Password dell'admin
 
@@ -49,7 +51,7 @@ Per attivare le donazioni:
 
 Finché manca il token il gioco mostra il link a Ko-fi senza promettere monete. Ko-fi non avvisa dei rimborsi: si stornano a mano da Admin → Negozio.
 
-Ogni visitatore ha un portafoglio anonimo (`CRI-XXXX-XXXX`): chi dona incolla il codice nel messaggio. Non si salvano nomi né email.
+Ogni visitatore ha un portafoglio anonimo con due codici: `CRI-XXXX-XXXX` è privato, come una password; `DON-XXXX-XXXX` serve solo a ricevere e si incolla nel messaggio della donazione (che su Ko-fi può essere pubblico). Non si salvano nomi né email.
 
 ## Avvio
 

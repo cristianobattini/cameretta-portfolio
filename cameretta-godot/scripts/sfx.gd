@@ -6,6 +6,8 @@ var _pool: Array[AudioStreamPlayer] = []
 var _scene := "menu"
 var music: AudioStreamPlayer
 var engine: AudioStreamPlayer
+var radio: AudioStreamPlayer
+var station := 0               # 0 spenta, 1-3 musica, 4 notizie
 var waves: AudioStreamPlayer
 var _engine_v := 0.0
 var _sea_near := 0.0
@@ -47,6 +49,7 @@ func _ready() -> void:
 	tv_static = _loop_player("Ambience", "tv_static")
 	engine = _loop_player("SFX", "engine_loop")
 	waves = _loop_player("Ambience", "waves_loop")
+	radio = _loop_player("Music", "radio_lofi")
 
 func _loop_player(bus: String, name := "") -> AudioStreamPlayer:
 	var p := AudioStreamPlayer.new()
@@ -221,3 +224,19 @@ func _fade_music(db: float, time: float) -> void:
 	if _music_tween: _music_tween.kill()
 	_music_tween = create_tween()
 	_music_tween.tween_property(music, "volume_db", db, time)
+
+## La radio della Vespa: gira tra le stazioni e torna a spegnersi.
+func tune(s: int) -> void:
+	station = s
+	play("key_3", 0.4, 0.7)
+	if s in [1, 2, 3]:
+		radio.stream = _snd[["radio_lofi", "radio_synth", "radio_bossa"][s - 1]]
+		if radio.stream is AudioStreamOggVorbis: radio.stream.loop = true
+		radio.volume_db = linear_to_db(0.5)
+		radio.play()
+	else: radio.stop()
+
+## Fuori dal lungomare la radio tace.
+func radio_scene(on: bool) -> void:
+	if not on: radio.stop()
+	elif station in [1, 2, 3] and not radio.playing: radio.play()

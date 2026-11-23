@@ -37,3 +37,6 @@ Pixel art e codice: fatti per CRI's CAMERETTA (generatori in `cameretta-portfoli
 
 - Cielo dell'osservatorio: stelle e costellazioni da [d3-celestial](https://github.com/ofrohn/d3-celestial) di Olaf Frohn (BSD 3, testo in `licenses/d3-celestial-BSD.txt`); Sole, Luna e pianeti calcolati in `scripts/astro.gd` (confrontati con astropy: errore massimo 0,07°).
 - Osservatorio, treno, sala giochi, Torre di Pisa, faro, molo e bottiglie: grafica originale da `tools/build_places.py`.
+
+- Radio della Vespa: tre brani composti e sintetizzati da `cameretta-godot/tools/build_radio.py` (CC0).
+- Lune di Giove: formule di J. Meeus, *Astronomical Algorithms*. Meteo: [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).

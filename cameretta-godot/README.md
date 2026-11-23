@@ -63,4 +63,4 @@ Prima di esportare puoi aggiornare `assets/data/data.json` con quello scaricato 
 
 ## Prove automatiche
 
-`CAMERETTA_TOUR=/cartella CAMERETTA_RIDE=<prova> godot --path cameretta-godot`, con `<prova>` = `check` (giro in Vespa), `menu` (menu, citazioni, schermo intero), `shop` (negozio; con `CAMERETTA_URL` compra su un server di prova), `grove` (templi), `places` (luoghi). Le prove sono sempre mute.
+`CAMERETTA_TOUR=/cartella CAMERETTA_RIDE=<prova> godot --path cameretta-godot`, con `<prova>` = `check` (giro in Vespa), `menu` (menu, citazioni, schermo intero), `shop` (negozio; con `CAMERETTA_URL` compra su un server di prova), `grove` (templi), `places` (luoghi), `addons` (laboratorio, meteo, foto, gru…). Le prove sono sempre mute.

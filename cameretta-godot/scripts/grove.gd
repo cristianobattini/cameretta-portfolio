@@ -24,6 +24,7 @@ var flakes: Array = []
 var sparks: Array = []
 var glow := {"stelle": 0.0, "magia": 0.0, "dune": 0.0}
 var _last := {"stelle": -1, "magia": -1, "dune": -1}
+var _hello := false
 var _read := ""                # la targa già letta
 var _J: Dictionary = {}
 var _dt := 0.0
@@ -43,12 +44,13 @@ func _ready() -> void:
 
 func enter() -> void:
 	P = Player.new()
-	P.x = 296
+	P.x = 250
 	_read = ""
 	cam = clampf(P.x - 160, 0, float(_J.world) - 320)
 	last_cam = roundf(cam)
 	state = "walk"; st = 0.0; line = ""; shown = 0
 	sparks.clear()
+	_hello = false
 
 func at(id: String) -> float:
 	return float(_J[id])
@@ -56,6 +58,9 @@ func at(id: String) -> float:
 func update(dt: float) -> void:
 	time += dt; st += dt; _dt = dt
 	prompt = {}
+	if not _hello and st > 1.0:
+		_hello = true
+		_say(G.t("templesHello"))
 	match state:
 		"walk":
 			P.update(dt, input_dir, run, 24, float(_J.world) - 24, Sfx.step_snow, locked)
@@ -155,6 +160,8 @@ func _draw_back(ci: CanvasItem) -> void:
 	var sx := at("stelle") - c
 	var mx := at("magia") - c
 	for id in IDS: _spr(ci, "shrine_" + id, at(id) - c - 70, 171 - float(_J.rects["shrine_" + id][3]))
+	_spr(ci, "guide", 318 - c - 42, 173 - 70)
+	_spr(ci, "guide2", 548 - c - 42, 173 - 50)
 	# la lama di luce, piantata nell'altare
 	var g: float = glow.stelle
 	var n := int(G.prayers.get("stelle", 0))

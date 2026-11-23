@@ -50,6 +50,10 @@ func _run() -> void:
 		await _places_check()
 		get_tree().quit()
 		return
+	if OS.get_environment("CAMERETTA_RIDE") == "addons":
+		await _addons_check()
+		get_tree().quit()
+		return
 	if OS.get_environment("CAMERETTA_RIDE") == "menu":
 		await _menu_check()
 		get_tree().quit()
@@ -470,7 +474,8 @@ func _grove_check() -> void:
 	await wait(1.6); await shot("bivio")
 	await key(KEY_DOWN)
 	ok(await until(func(): return m.scene == "grove" and not m.busy), "freccia giu' porta ai templi")
-	await wait(2.6); await shot("templi")
+	await wait(1.4); ok(m.worlds.grove.line == G.t("templesHello"), "indicazioni all'arrivo"); await wait(2.6); await shot("templi")
+	m.worlds.grove.P.x = 520; await wait(1.6); await shot("cartello_dune")
 	var g = m.worlds.grove
 	for id in ["stelle", "magia", "dune"]:
 		g.P.x = g.at(id) - 70; await wait(1.6); await shot("targa_" + id)
@@ -587,3 +592,131 @@ func _places_check() -> void:
 	m.open_settings(); await wait(0.3); await shot("impostazioni"); ok(m._panel.size.y <= m.size.y, "impostazioni nello schermo"); m.close_modal()
 	m._set_season("auto")
 	print("PLACES DONE")
+
+## Laboratorio, 1610, meteo, fantasmi, caffè, gru, foto, gatto, radio, visita: CAMERETTA_RIDE=addons
+func _addons_check() -> void:
+	G.set_lang("it"); G.room_mode = "walk"; G.season = "inverno"; G.secrets = {}; G.real_weather = true; G.ghosts = true
+	Shop.code = ""; Shop.owned.clear(); Shop.worn.clear(); Shop._queue.clear(); Shop.balance = 0; Shop.online = false
+	Season.apply(); Shop.apply()
+	m._apply_texts(); await wait(0.4); await shot("menu")
+	# --- visita in 60 secondi
+	m._menu_act("visit"); await wait(1.2); await shot("visita_0")
+	ok(m.visit.visible and m.visit.steps.size() >= 5 and absf(m.visit.each * m.visit.steps.size() - 60.0) < 0.1, "visita: %d tappe in 60 s" % m.visit.steps.size())
+	for i in range(1, m.visit.steps.size()):
+		await key(KEY_RIGHT); await wait(0.9); await shot("visita_%d" % i)
+		ok(m.visit.box.position.y > 0 and m.visit.box.position.y + m.visit.box.size.y <= m.size.y + 1, "tappa %d nello schermo" % i)
+	await key(KEY_ESCAPE); await wait(0.3); ok(not m.visit.visible and m.scene == "menu" and m.menu_ui.visible, "ESC torna al menu")
+	m.open_map(); await wait(0.3); await shot("mappa"); ok(m._panel.size.y <= m.size.y, "mappa nello schermo"); m.close_modal(true)
+	# --- laboratorio
+	m._enter_street(m.worlds.street.path_x("lab") - 20); await wait(0.8); await shot("strada_lab")
+	await key(KEY_E); ok(await until(func(): return m.scene == "lab" and not m.busy, 5), "si entra in laboratorio"); await wait(1.4); await shot("lab")
+	var lab = m.worlds.lab
+	for s in lab.SPOTS:
+		lab.P.x = s[0]; await wait(0.3); await key(KEY_E)
+		ok(await until(func(): return m.scene == s[1] and not m.busy, 5), "esperimento " + s[1]); await wait(1.0)
+		var w = m.worlds[s[1]]
+		match s[1]:
+			"field":
+				await shot("field")
+				ok(w.lines.size() == 16, "linee del dipolo: %d" % w.lines.size())
+				var arrive := 0
+				for l in w.lines: if (l[0] as PackedVector2Array)[-1].distance_to(Vector2(210, 100)) < 7: arrive += 1
+				ok(arrive >= 10, "vanno dal + al − (%d su 16)" % arrive)
+				var mid: Vector2 = w.E_at(Vector2(160, 100)); ok(mid.x > 0 and absf(mid.y) < 1e-6, "campo al centro lungo l'asse")
+				w.tap(Vector2(160, 50)); w.flip_sign(); w.tap(Vector2(60, 150)); ok(w.Q.size() == 4 and w.Q[3].q == -1, "si posano cariche")
+				w.hold(Vector2(160, 50)); w.move_to(Vector2(170, 60)); w.release(); ok(w.Q[2].p == Vector2(170, 60), "si trascinano")
+				w.flip_pot(); await wait(0.4); await shot("field_4"); w.tap(Vector2(60, 150)); ok(w.Q.size() == 3, "si tolgono")
+			"foucault":
+				ok(absf(w.rate() - 10.33) < 0.02 and absf(w.period() - 34.8) < 0.1, "Rosignano: %.2f gradi/ora, giro in %.1f ore" % [w.rate(), w.period()])
+				await wait(3.0); await shot("foucault")
+				w.li = 3; ok(w.period() == 0.0, "all'equatore non gira"); w.li = 1; ok(absf(w.period() - 23.93) < 0.02, "al polo un giorno siderale: %.2f" % w.period())
+				w.li = 4; ok(w.rate() < 0, "a sud gira al contrario")
+			"aurora":
+				var l0: float = w.lat_deg(); w.energy = 2; ok(w.lat_deg() < l0, "tempesta: l'aurora scende (%.0f -> %.0f)" % [l0, w.lat_deg()])
+				for k in 3: w.fire()
+				await wait(4.6); await shot("aurora"); ok(w.lights.size() > 5, "il cielo si accende (%d)" % w.lights.size())
+			"photon":
+				w.shoot(1); await wait(0.5); await shot("photon_1")
+				w.shoot(3000); ok(await until(func(): return w.n >= 3000, 12), "tremila fotoni"); await wait(0.2); await shot("photon_frange")
+				var vis := func() -> float:
+					var hi := 0; var lo := 1 << 30
+					for i in range(24, 36): hi = maxi(hi, w.bins[i]); lo = mini(lo, w.bins[i])
+					return float(hi - lo) / maxf(1, hi + lo)
+				var v1: float = vis.call(); ok(v1 > 0.7, "frange ben visibili (contrasto %.2f)" % v1)
+				w.flip_spy(); w.shoot(3000); await until(func(): return w.n >= 3000, 12); await shot("photon_spia")
+				var v2: float = vis.call(); ok(v2 < 0.4, "col rivelatore spariscono (contrasto %.2f)" % v2)
+		m.b_back.pressed.emit(); ok(await until(func(): return m.scene == "lab" and not m.busy, 5) and absf(lab.P.x - s[0]) < 5, "si torna al banco")
+	m.b_back.pressed.emit(); ok(await until(func(): return m.scene == "street" and not m.busy, 5), "e dal laboratorio in strada")
+	# --- 1610
+	m._go_to("sky"); await until(func(): return m.scene == "sky" and not m.busy, 5); await wait(0.6)
+	var sky = m.worlds.sky
+	await key(KEY_T); await wait(0.6); await shot("sky_1610")
+	var east := 0; var west := 0
+	for q in Astro.jupiter_moons(sky.now()):
+		if q[1] < -1: east += 1
+		else: west += 1
+	ok(sky.galileo and east == 3 and west == 1, "1610: Io ed Europa insieme e Callisto a est, Ganimede a ovest")
+	for k in 24: await key(KEY_R)
+	west = 0
+	for q in Astro.jupiter_moons(sky.now()): if q[1] > 1: west += 1
+	ok(west == 3, "il giorno dopo tre a ovest, come scrisse Galileo")
+	# --- caffe'
+	sky.goto.emit("coffee"); ok(await until(func(): return m.scene == "coffee" and not m.busy, 5), "cielo dei caffe'"); await until(func(): return m.worlds.coffee.loaded, 8); await wait(2.0); await shot("caffe")
+	m._goto("starname"); await until(func(): return m.modal_kind == "star", 8); await wait(0.3); await shot("caffe_nome"); m.close_modal()
+	m.b_back.pressed.emit(); ok(await until(func(): return m.scene == "sky" and not m.busy, 5), "si torna all'osservatorio")
+	# --- meteo
+	m._enter_street(560.0); await wait(0.5)
+	Weather._next = 9999
+	for k in ["pioggia", "neve", "nebbia", "temporale", "nuvole", "sereno"]:
+		Weather.kind = k; Weather.temp = 9; m._apply_texts()
+		if k == "temporale": Weather.flash = 0.8
+		await wait(0.7 if k != "temporale" else 0.12); await shot("meteo_" + k)
+		ok(m.crumb.text.contains("9°"), "in alto: " + m.crumb.text)
+	Weather.kind = ""
+	# --- fantasmi
+	var other := {"id": "prova0prova0prova0", "scene": "street", "x": 600.0, "dir": -1, "wave": 0}
+	if Shop.online or (await Shop._call("/api/stars"))[0] == 200:
+		await Shop._call("/api/presence", other)
+		m.ghosts.t = 0.0
+		ok(await until(func(): return m.ghosts.others.size() == 1, 8), "si vede un altro visitatore")
+		other.wave = 1; await Shop._call("/api/presence", other); m.ghosts.t = 0.0
+		await until(func(): return m.ghosts.others.values()[0].hi > 0, 6)
+		await key(KEY_G); await wait(0.4); await shot("fantasma"); ok(m.ghosts.hi > 0 and m.ghosts.others.values()[0].hi > 0, "ci si saluta")
+	# --- gatto
+	Shop.owned["pe_nero"] = true; Shop.wear("pe_nero"); m.pad_dir = 1; await wait(1.6); await shot("gatto_cammina"); m.pad_dir = 0; await wait(1.6); await shot("gatto_seduto")
+	ok(absf(m.worlds.street.P.pet_x - m.worlds.street.P.x) < 45 and not m.worlds.street.P.pet_mov, "il gatto segue e si ferma")
+	ShopUI.cat = "pet"; ShopUI.sel = "pe_bianco"; m.open_shop(); await wait(1.4); await shot("negozio_gatto"); m.close_modal()
+	# --- foto
+	await key(KEY_P); await wait(0.4); await shot("foto"); ok(m.photo.visible and not m.hud.visible, "modalita' foto")
+	await key(KEY_RIGHT); await key(KEY_RIGHT); await wait(0.2)
+	await key(KEY_ENTER); await until(func(): return m.photo.last != null, 4); await wait(0.2)
+	if m.photo.last: m.photo.last.save_png(out + "/zz_cartolina.png")
+	ok(m.photo.last != null and m.photo.last.get_width() > 400, "cartolina salvata (%s, scatto %s)" % [m.photo.last.get_size() if m.photo.last else "niente", m.photo.shooting])
+	await key(KEY_ESCAPE); await wait(0.2); ok(not m.photo.visible and m.hud.visible and m.view.material == null, "si esce e il filtro sparisce")
+	# --- gru
+	for id in m.secrets.AT:
+		var a: Array = m.secrets.AT[id]
+		match a[0]:
+			"street": m._enter_street(a[1] - 60)
+			"living": m._enter_living(false)
+			"room": m._enter_room()
+			"grove": m._enter_grove()
+			"sea": m._enter_sea()
+			_: m._enter_place(a[0])
+		await wait(0.5)
+		var w = m.worlds[a[0]]
+		if a[0] in ["train", "arcade", "lab", "grove"]: w.P.x = clampf(a[1] - 50, 20, 5000); w.cam = clampf(a[1] - 160, 0, 2000); await wait(0.3)
+		var c: float = w.cam if "cam" in w and a[0] != "living" else 0.0
+		ok(a[1] - c > 2 and a[1] - c < 318, "gru raggiungibile: " + id)
+		await shot("gru_" + id)
+		if not G.secrets.has(id): ok(m.secrets.tap(Vector2(a[1] - c, a[2])), "presa: " + id)
+	ok(G.secrets.size() == 10, "dieci gru")
+	# --- radio
+	m._enter_sea(); await wait(0.4); var sea = m.worlds.sea
+	sea.take_helmet(); await until(func(): return sea.state == "ride", 20)
+	m.pad_dir = 1; await key(KEY_R); await wait(0.4); ok(Sfx.station == 1 and Sfx.radio.playing, "radio: " + G.t("radioNames")[1]); await shot("radio")
+	for k in 3: await key(KEY_R)
+	ok(Sfx.station == 4 and not Sfx.radio.playing and sea.narr_text() != null and not sea.narr.is_empty(), "notizie di fisica"); await wait(2.5); await shot("radio_notizie")
+	await key(KEY_R); ok(Sfx.station == 0, "spenta"); m.pad_dir = 0
+	m.open_settings(); await wait(0.3); await shot("impostazioni"); ok(m._panel.size.y <= m.size.y, "impostazioni nello schermo"); m.close_modal()
+	print("ADDONS DONE")

@@ -4,6 +4,7 @@ extends Node2D
 
 signal open_item(it: Dictionary, sec: Dictionary)
 signal bar_changed
+signal goto(id: String)         # passa a un altro luogo
 
 var time := 0.0
 var st := 0.0
@@ -75,6 +76,10 @@ func press(_k: int) -> bool: return false
 func tap(p: Vector2) -> void:
 	if walking: P.target = clampf(p.x + cam, 14, world - 14)
 func drag(_rel: Vector2) -> void: pass
+## Il dito o il mouse si posa, si muove, si alza.
+func hold(_p: Vector2) -> void: pass
+func move_to(_p: Vector2) -> void: pass
+func release() -> void: pass
 func zoom(_d: float) -> void: pass
 ## I comandi in basso: [[scritta, azione], …]
 func bar() -> Array: return []

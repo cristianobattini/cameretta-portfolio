@@ -9,6 +9,7 @@ const GROVE_X := 640.0         # il sentiero che porta ai templi
 const FORK_X := 866.0          # il sentiero che scende al mare
 ## Le deviazioni lungo la strada: [x, dove porta, cartello, atlante, colore]
 const PATHS := [
+	[200.0, "lab", "sign_lab", "place_props", "6ee6be"],
 	[400.0, "train", "sign_train", "place_props", "ff9a70"],
 	[GROVE_X, "grove", "signgrove", "grove_props", "c8a0ff"],
 	[FORK_X, "sea", "signpost", "sea_props", "ffcc80"],
@@ -191,6 +192,16 @@ func finish_bubbles() -> void:
 			B.shown = G.L(B.data, "text").length()
 
 func _snow(ci: CanvasItem, dx: float, front: bool) -> void:
+	if Weather.rain():
+		for f in flakes:
+			if (f.z > 1) != front: continue
+			f.y += f.vy * 17 * _dt; f.x -= 46 * _dt + dx * f.z
+			if f.y > 190:
+				if front: puffs.append({"x": f.x + cam, "y": 168 + randf() * 14, "vx": randf_range(-6, 6), "vy": -8.0, "a": 0.5, "d": 0.0})
+				f.y = randf_range(-60, 0); f.x = randf_range(0, 360)
+			f.x = fposmod(f.x + 4, 330) - 4
+			ci.draw_line(Vector2(f.x, f.y).round(), Vector2(f.x - 1.5, f.y + (7 if front else 4)).round(), Color(0.7, 0.8, 1, 0.5 if front else 0.25))
+		return
 	for f in flakes:
 		if (f.z > 1) != front: continue
 		f.y += f.vy * _dt
@@ -200,13 +211,14 @@ func _snow(ci: CanvasItem, dx: float, front: bool) -> void:
 		if f.x < -4: f.x += 328
 		if f.x > 324: f.x -= 328
 		var big: bool = f.z > 1
-		ci.draw_rect(Rect2(roundf(f.x), roundf(f.y), 2 if big else 1, 2 if big else 1), Season.flake(big))
+		ci.draw_rect(Rect2(roundf(f.x), roundf(f.y), 2 if big else 1, 2 if big else 1), Shop.flake(big) if Weather.active() and Weather.kind == "neve" else Season.flake(big))
 
 func _draw_back(ci: CanvasItem) -> void:
 	var s: Dictionary = G.J.street
 	var c := roundf(cam)
 	var dcam := c - last_cam
 	ci.draw_texture(G.tex.far, Vector2(-roundf(c * float(s.pfar)), 0))
+	Weather.clouds(ci, time)
 	ci.draw_texture(G.tex.mid, Vector2(-roundf(c * float(s.pmid)), 0))
 	_snow(ci, dcam * 0.4, false)
 	ci.draw_texture(G.tex.near, Vector2(-c, 0))
@@ -249,6 +261,7 @@ func _draw_front(ci: CanvasItem) -> void:
 		if p.d > 0: continue
 		ci.draw_rect(Rect2(roundf(p.x - c), roundf(p.y), 1, 1), Color(0.94, 0.96, 1, p.a))
 	_snow(ci, c - last_cam, true)
+	Weather.veil(ci, time)
 	last_cam = c
 
 func tap(world_x: float) -> void:

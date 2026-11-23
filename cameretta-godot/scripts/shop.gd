@@ -5,12 +5,14 @@ signal changed                 # monete, acquisti o guardaroba
 
 var CAT: Dictionary = {}       # store/catalog.json
 var by_id: Dictionary = {}
-var code := ""
+var code := ""                 # password del portafoglio: non va mai scritta in pubblico
+var deposit := ""              # codice per le donazioni: serve solo a ricevere
 var balance := 0
 var owned: Dictionary = {}
 var earned: Dictionary = {}
 var worn: Dictionary = {}      # categoria -> id
 var ups: Dictionary = {}       # potenziamenti accesi
+var star_names: Array = []     # le stelle accese da questo portafoglio
 var online := false
 var busy := false
 var _src: Dictionary = {}      # immagini originali
@@ -58,14 +60,14 @@ func items(cat: String) -> Array:
 	return CAT.items.filter(func(i): return i.cat == cat)
 
 func has(id: String) -> bool:
-	return owned.has(id) or (by_id.has(id) and int(by_id[id].price) == 0)
+	return owned.has(id) or (by_id.has(id) and int(by_id[id].price) == 0 and not by_id[id].has("prize"))
 
 ## L'articolo indossato in una categoria (il primo, gratuito, se non si è scelto altro).
 func cur(cat: String, look: Dictionary = {}) -> Dictionary:
 	var id: String = look.get(cat, worn.get(cat, ""))
 	if by_id.has(id): return by_id[id]
 	for i in CAT.items:
-		if i.cat == cat and int(i.price) == 0: return i
+		if i.cat == cat and int(i.price) == 0 and not i.has("prize"): return i
 	return {}
 
 func up(id: String) -> bool:
@@ -101,7 +103,9 @@ func _take(w) -> void:
 	if typeof(w) != TYPE_DICTIONARY or not w.has("balance"): return
 	online = true
 	code = str(w.code)
+	deposit = str(w.get("deposit", ""))
 	balance = int(w.balance)
+	star_names = w.get("stars", [])
 	owned.clear(); earned.clear()
 	for k in w.owned: owned[str(k)] = true
 	for k in w.earned: earned[str(k)] = true
@@ -149,6 +153,7 @@ func buy(id: String) -> String:
 		_take(r[1])
 		return "" if has(id) else "shopErr"
 	if r[0] == 402: return "shopPoor"
+	if r[0] == 403: return "shopPrize"
 	online = false
 	changed.emit()
 	return "shopErr"
@@ -293,6 +298,24 @@ signal theme_changed
 func spr(ci: CanvasItem, n: String, at: Vector2) -> void:
 	var r := _rect(_rects[n])
 	ci.draw_texture_rect_region(G.tex.shop, Rect2(at, r.size), Rect2(r))
+
+var _pet_tex: Dictionary = {}
+## L'atlante con il gatto del colore scelto.
+func pet_texture(look: Dictionary = {}) -> Texture2D:
+	var it := cur("pet", look)
+	if not _pet_tex.has(it.id):
+		var im: Image = _image("shop").duplicate()
+		var m := {}
+		for i in 3: m[Color(["d6883a", "f0ac5c", "a05c2c"][i]).to_rgba32()] = Color(it.pal[i])
+		for k in 4: _swap(im, _rect(_rects["pet%d" % k]), m)
+		_pet_tex[it.id] = ImageTexture.create_from_image(im)
+	return _pet_tex[it.id]
+
+func draw_pet(ci: CanvasItem, n: String, x: float, feet: float, dir: int, a := 1.0) -> void:
+	var r := _rect(_rects[n])
+	ci.draw_set_transform(Vector2(x - dir * r.size.x / 2.0, feet - r.size.y), 0, Vector2(dir, 1))
+	ci.draw_texture_rect_region(pet_texture(), Rect2(Vector2.ZERO, r.size), Rect2(r), Color(1, 1, 1, a))
+	ci.draw_set_transform(Vector2.ZERO)
 
 func spr_size(n: String) -> Vector2:
 	return Vector2(_rects[n][2], _rects[n][3])

@@ -12,6 +12,7 @@ Variabili d'ambiente opzionali:
 Ogni testo visibile ha due versioni: il campo normale (italiano) e quello con
 suffisso _en (inglese). Se il campo _en è vuoto, il sito mostra l'italiano.
 """
+import hashlib
 import hmac
 import json
 import mimetypes
@@ -19,7 +20,10 @@ import os
 import re
 import secrets
 import sqlite3
+import ssl
+import threading
 import time
+import urllib.request
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
@@ -77,11 +81,16 @@ CREATE TABLE IF NOT EXISTS assets (
   id INTEGER PRIMARY KEY AUTOINCREMENT, filename TEXT NOT NULL UNIQUE, original_name TEXT NOT NULL,
   mime TEXT NOT NULL DEFAULT '', size INTEGER NOT NULL DEFAULT 0, label TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL
 );
+-- il cielo dei caffè: una stella per donazione, col nome scelto da chi dona (visibile dopo l'approvazione)
+CREATE TABLE IF NOT EXISTS stars (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, tx TEXT NOT NULL UNIQUE, wallet TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', ok INTEGER NOT NULL DEFAULT 0
+);
 -- bottiglie nel mare: messaggi dei visitatori, visibili solo dopo l'approvazione
 CREATE TABLE IF NOT EXISTS bottles (
   id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', ok INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL
 );
 -- negozio: nessun dato personale, solo un codice a caso per ogni portafoglio
+-- code = password del portafoglio (privata); deposit = codice per le donazioni (può essere pubblico: serve solo a ricevere)
 CREATE TABLE IF NOT EXISTS wallets (code TEXT PRIMARY KEY, created_at INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS ledger (
   id INTEGER PRIMARY KEY AUTOINCREMENT, wallet TEXT NOT NULL REFERENCES wallets(code), delta INTEGER NOT NULL,
@@ -264,6 +273,14 @@ def db():
         con.close()
 
 
+ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"   # senza 0/O e 1/I
+
+
+def rand_code(prefix):
+    s = "".join(secrets.choice(ALPHABET) for _ in range(8))
+    return f"{prefix}-{s[:4]}-{s[4:]}"
+
+
 def init_db():
     with db() as con:
         con.executescript(SCHEMA)
@@ -272,6 +289,11 @@ def init_db():
             for c in cols:
                 if c not in have:
                     con.execute(f"ALTER TABLE {table} ADD COLUMN {c} TEXT NOT NULL DEFAULT ''")
+        if "deposit" not in {r["name"] for r in con.execute("PRAGMA table_info(wallets)")}:
+            con.execute("ALTER TABLE wallets ADD COLUMN deposit TEXT")
+        con.execute("CREATE UNIQUE INDEX IF NOT EXISTS wallets_deposit ON wallets(deposit)")
+        for r in con.execute("SELECT code FROM wallets WHERE deposit IS NULL").fetchall():
+            con.execute("UPDATE wallets SET deposit = ? WHERE code = ?", (rand_code("DON"), r["code"]))
         for k, v in DEFAULT_SETTINGS.items():
             con.execute("INSERT OR IGNORE INTO settings(key, value) VALUES (?, ?)", (k, v))
         # versione 3.0: aggiorna la scritta in fondo al menu, se comincia ancora con v2.0
@@ -616,12 +638,14 @@ def export_all():
 
 # ---------------------------------------------------------------- negozio
 # Le monete si guadagnano giocando (premi fissi, una volta sola) o donando su Ko-fi:
-# chi dona incolla nel messaggio il codice del suo portafoglio e il webhook accredita le monete.
+# chi dona incolla nel messaggio il suo codice per le donazioni (DON-…) e il webhook accredita le monete.
 
 CATALOG = json.loads(CATALOG_PATH.read_text(encoding="utf-8")) if CATALOG_PATH.exists() else {"categories": [], "items": [], "earn": {}}
 PRICES = {i["id"]: int(i["price"]) for i in CATALOG["items"]}
+PRIZES = {i["id"]: i["prize"] for i in CATALOG["items"] if i.get("prize")}
+SECRETS = set(CATALOG.get("secrets", []))
 CODE_RE = re.compile(r"CRI-([A-Z2-9]{4})-([A-Z2-9]{4})", re.I)
-ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"   # senza 0/O e 1/I
+DEPOSIT_RE = re.compile(r"DON-([A-Z2-9]{4})-([A-Z2-9]{4})", re.I)
 _hits = {}
 
 
@@ -644,12 +668,14 @@ def store_on(con):
 
 
 def wallet_out(con, code):
-    if not con.execute("SELECT 1 FROM wallets WHERE code = ?", (code,)).fetchone():
+    w = con.execute("SELECT deposit FROM wallets WHERE code = ?", (code,)).fetchone()
+    if not w:
         raise HTTPException(404, "Portafoglio non trovato")
     bal = con.execute("SELECT COALESCE(SUM(delta), 0) FROM ledger WHERE wallet = ?", (code,)).fetchone()[0]
     owned = [r["ref"] for r in con.execute("SELECT ref FROM ledger WHERE wallet = ? AND reason = 'buy' ORDER BY id", (code,))]
     got = [r["ref"] for r in con.execute("SELECT ref FROM ledger WHERE wallet = ? AND reason = 'earn'", (code,))]
-    return {"code": code, "balance": bal, "owned": owned, "earned": got}
+    stars = [r["name"] for r in con.execute("SELECT name FROM stars WHERE wallet = ? ORDER BY id DESC", (code,))]
+    return {"code": code, "deposit": w["deposit"], "balance": bal, "owned": owned, "earned": got, "stars": stars}
 
 
 def norm_code(code):
@@ -657,6 +683,18 @@ def norm_code(code):
     if not m:
         raise HTTPException(404, "Portafoglio non trovato")
     return f"CRI-{m[1]}-{m[2]}".upper()
+
+
+def by_deposit(con, text):
+    """Il portafoglio a cui appartiene il codice per le donazioni scritto in un testo (o None)."""
+    m = DEPOSIT_RE.search(text) if isinstance(text, str) else None
+    r = con.execute("SELECT code FROM wallets WHERE deposit = ?", (f"DON-{m[1]}-{m[2]}".upper(),)).fetchone() if m else None
+    return r["code"] if r else None
+
+
+def admin_code(con, code):
+    """In admin va bene sia il codice del portafoglio sia quello per le donazioni."""
+    return by_deposit(con, code) or norm_code(code)
 
 
 def ledger_add(con, code, delta, reason, ref):
@@ -672,9 +710,8 @@ def new_wallet(request: Request):
     with db() as con:
         store_on(con)
         while True:
-            s = "".join(secrets.choice(ALPHABET) for _ in range(8))
-            code = f"CRI-{s[:4]}-{s[4:]}"
-            if con.execute("INSERT OR IGNORE INTO wallets VALUES (?, ?)", (code, int(time.time()))).rowcount:
+            code = rand_code("CRI")
+            if con.execute("INSERT OR IGNORE INTO wallets(code, created_at, deposit) VALUES (?, ?, ?)", (code, int(time.time()), rand_code("DON"))).rowcount:
                 return wallet_out(con, code)
 
 
@@ -699,8 +736,10 @@ def buy(code: str, body: StoreIn, request: Request):
         store_on(con)
         con.execute("BEGIN IMMEDIATE")          # due acquisti insieme non possono spendere le stesse monete
         w = wallet_out(con, code)
-        if body.id in w["owned"] or PRICES[body.id] == 0:
+        if body.id in w["owned"] or (PRICES[body.id] == 0 and body.id not in PRIZES):
             return w
+        if body.id in PRIZES and not all(f"secret:{s}" in w["earned"] for s in SECRETS):
+            raise HTTPException(403, "Premio non ancora conquistato")
         if w["balance"] < PRICES[body.id]:
             raise HTTPException(402, "Monete insufficienti")
         ledger_add(con, code, -PRICES[body.id], "buy", body.id)
@@ -722,7 +761,7 @@ def earn(code: str, body: StoreIn, request: Request):
             ref = body.id
         elif kind == "section" and con.execute("SELECT 1 FROM sections WHERE id = ? AND visible = 1", (arg,)).fetchone():
             ref = body.id
-        elif body.id == "ride_end":
+        elif body.id == "ride_end" or (kind == "secret" and arg in SECRETS):
             ref = body.id
         elif body.id in ("daily", "fish") or (kind == "pray" and arg in ("stelle", "magia", "dune")):
             ref = f"{body.id}:{day}"
@@ -730,18 +769,6 @@ def earn(code: str, body: StoreIn, request: Request):
             raise HTTPException(400, "Premio sconosciuto")
         new = ledger_add(con, code, int(e.get(kind, 0)), "earn", ref)
         return {**wallet_out(con, code), "got": int(e.get(kind, 0)) if new else 0}
-
-
-def find_code(x):
-    """Il codice del portafoglio, in qualunque campo del messaggio sia finito."""
-    if isinstance(x, str):
-        m = CODE_RE.search(x)
-        return f"CRI-{m[1]}-{m[2]}".upper() if m else None
-    for v in (x.values() if isinstance(x, dict) else x if isinstance(x, list) else []):
-        c = find_code(v)
-        if c:
-            return c
-    return None
 
 
 @app.post("/api/kofi/webhook")
@@ -773,13 +800,13 @@ async def kofi_webhook(request: Request):
         if not 0 < amount < 100000:
             return {"ok": True, "ignored": kind}
         coins = int(round(amount * max(0.0, rate)))
-        code = find_code(data.get("message"))
-        if code and not con.execute("SELECT 1 FROM wallets WHERE code = ?", (code,)).fetchone():
-            code = None
+        # i messaggi di Ko-fi possono essere pubblici: si accetta solo il codice per ricevere, mai quello del portafoglio
+        code = by_deposit(con, data.get("message"))
         status = "prova" if tx == KOFI_TEST_TX else "ok" if code else "da_assegnare"
         con.execute("INSERT INTO donations VALUES (?,?,?,?,?,?,?)", (tx, amount, str(data.get("currency", ""))[:8], coins, code, status, int(time.time())))
         if status == "ok":
             ledger_add(con, code, coins, "donation", tx)
+            con.execute("INSERT OR IGNORE INTO stars(tx, wallet) VALUES (?, ?)", (tx, code))
     return {"ok": True}
 
 
@@ -798,15 +825,16 @@ class AssignIn(BaseModel):
 @app.post("/api/store/assign", dependencies=[Depends(require_admin)])
 def assign_donation(body: AssignIn):
     """Una donazione arrivata senza codice: si assegna a mano a un portafoglio."""
-    code = norm_code(body.code)
     with db() as con:
         con.execute("BEGIN IMMEDIATE")
+        code = admin_code(con, body.code)
         wallet_out(con, code)
         d = con.execute("SELECT * FROM donations WHERE tx = ? AND status = 'da_assegnare'", (body.tx,)).fetchone()
         if not d:
             raise HTTPException(404, "Donazione non trovata o già assegnata")
         ledger_add(con, code, d["coins"], "donation", body.tx)
         con.execute("UPDATE donations SET wallet = ?, status = 'ok' WHERE tx = ?", (code, body.tx))
+        con.execute("INSERT OR IGNORE INTO stars(tx, wallet) VALUES (?, ?)", (body.tx, code))
         return wallet_out(con, code)
 
 
@@ -824,6 +852,7 @@ def refund_donation(body: RefundIn):
             raise HTTPException(404, "Donazione non trovata o già stornata")
         ledger_add(con, d["wallet"], -d["coins"], "refund", body.tx)
         con.execute("UPDATE donations SET status = 'rimborsata' WHERE tx = ?", (body.tx,))
+        con.execute("DELETE FROM stars WHERE tx = ?", (body.tx,))
     return {"ok": True}
 
 
@@ -834,10 +863,10 @@ class GiftIn(BaseModel):
 
 @app.post("/api/store/gift", dependencies=[Depends(require_admin)])
 def gift(body: GiftIn):
-    code = norm_code(body.code)
     if not 0 < body.coins <= 100000:
         raise HTTPException(400, "Numero di monete non valido")
     with db() as con:
+        code = admin_code(con, body.code)
         wallet_out(con, code)
         ledger_add(con, code, body.coins, "gift", uuid.uuid4().hex)
         return wallet_out(con, code)
@@ -893,6 +922,123 @@ def delete_bottle(bid: int):
     with db() as con:
         con.execute("DELETE FROM bottles WHERE id = ?", (bid,))
     return {"ok": True}
+
+
+# ---------------------------------------------------------------- il cielo dei caffè
+
+class StarIn(BaseModel):
+    name: str
+
+
+@app.get("/api/stars")
+def get_stars(request: Request):
+    limit(request, "stars", 60, 60)
+    with db() as con:
+        return [{"id": r["id"], "name": r["name"] if r["ok"] else ""} for r in con.execute("SELECT id, name, ok FROM stars ORDER BY id DESC LIMIT 300")]
+
+
+@app.post("/api/wallet/{code}/star")
+def name_star(code: str, body: StarIn, request: Request):
+    """Il nome della stella più recente di questo portafoglio; si vede dopo l'approvazione."""
+    limit(request, "star", 10, 3600)
+    code, name = norm_code(code), clean(body.name, 24)
+    if len(name) < 2:
+        raise HTTPException(400, "Nome troppo corto")
+    with db() as con:
+        r = con.execute("SELECT id FROM stars WHERE wallet = ? ORDER BY id DESC LIMIT 1", (code,)).fetchone()
+        if not r:
+            raise HTTPException(404, "Nessuna stella")
+        con.execute("UPDATE stars SET name = ?, ok = 0 WHERE id = ?", (name, r["id"]))
+        return wallet_out(con, code)
+
+
+@app.get("/api/store/stars", dependencies=[Depends(require_admin)])
+def all_stars():
+    with db() as con:
+        return rows(con.execute("SELECT id, name, ok FROM stars WHERE name <> '' ORDER BY ok, id DESC LIMIT 300"))
+
+
+@app.put("/api/store/stars/{sid}", dependencies=[Depends(require_admin)])
+def approve_star(sid: int, data: dict):
+    with db() as con:
+        if data.get("ok"):
+            con.execute("UPDATE stars SET ok = 1 WHERE id = ?", (sid,))
+        else:
+            con.execute("UPDATE stars SET ok = 0, name = '' WHERE id = ?", (sid,))
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- meteo vero (Open-Meteo, senza chiave)
+# Lo chiede il server per tutti, al massimo ogni 15 minuti: gli indirizzi dei visitatori non escono da qui.
+
+WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=43.39&longitude=10.44&current=temperature_2m,weather_code,wind_speed_10m,is_day"
+try:                                            # se c'è certifi si usano i suoi certificati, altrimenti quelli di sistema
+    import certifi
+    SSL_CTX = ssl.create_default_context(cafile=certifi.where())
+except ImportError:
+    SSL_CTX = ssl.create_default_context()
+_weather = {"at": 0.0, "data": {"ok": False}}
+_weather_lock = threading.Lock()
+
+
+def weather_kind(code):
+    if code in (45, 48):
+        return "nebbia"
+    if code in (71, 73, 75, 77, 85, 86):
+        return "neve"
+    if code >= 95:
+        return "temporale"
+    if 51 <= code <= 67 or 80 <= code <= 82:
+        return "pioggia"
+    return "nuvole" if code in (2, 3) else "sereno"
+
+
+@app.get("/api/weather")
+def weather(request: Request):
+    limit(request, "weather", 60, 60)
+    with _weather_lock:
+        if time.time() - _weather["at"] > (900 if _weather["data"]["ok"] else 300):
+            _weather["at"] = time.time()
+            try:
+                with urllib.request.urlopen(WEATHER_URL, timeout=5, context=SSL_CTX) as r:
+                    c = json.loads(r.read(20000))["current"]
+                _weather["data"] = {"ok": True, "kind": weather_kind(int(c["weather_code"])), "temp": round(float(c["temperature_2m"])), "wind": round(float(c["wind_speed_10m"]))}
+            except Exception:                     # senza rete il gioco va avanti col tempo di sempre
+                _weather["data"] = {"ok": False}
+        return _weather["data"]
+
+
+# ---------------------------------------------------------------- fantasmi gentili
+# Chi c'è adesso: solo in memoria, per pochi secondi, senza nomi né indirizzi.
+
+GHOST_SCENES = {"street", "grove", "arcade", "train", "lab"}
+_ghosts = {}
+_ghost_lock = threading.Lock()
+_ghost_salt = secrets.token_bytes(8)
+
+
+class GhostIn(BaseModel):
+    id: str
+    scene: str
+    x: float = 0
+    dir: int = 1
+    wave: int = 0
+
+
+@app.post("/api/presence")
+def presence(body: GhostIn, request: Request):
+    limit(request, "presence", 240, 60)
+    if not re.fullmatch(r"[a-z0-9]{12,32}", body.id) or body.scene not in GHOST_SCENES or not -100 < body.x < 10000:
+        raise HTTPException(400, "Dati non validi")
+    now = time.time()
+    with _ghost_lock:
+        for k in [k for k, g in _ghosts.items() if now - g["t"] > 9]:
+            del _ghosts[k]
+        if body.id in _ghosts or len(_ghosts) < 400:
+            _ghosts[body.id] = {"t": now, "scene": body.scene, "x": round(body.x, 1), "dir": 1 if body.dir > 0 else -1, "wave": body.wave % 1000}
+        others = [(k, g) for k, g in _ghosts.items() if k != body.id and g["scene"] == body.scene][:12]
+    # agli altri arriva un'impronta, non l'id: nessuno può fingersi un altro
+    return [{"k": hashlib.sha256(_ghost_salt + k.encode()).hexdigest()[:10], "x": g["x"], "dir": g["dir"], "wave": g["wave"]} for k, g in others]
 
 
 # ---------------------------------------------------------------- importazione

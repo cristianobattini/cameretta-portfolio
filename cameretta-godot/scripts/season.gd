@@ -61,7 +61,7 @@ static func apply() -> void:
 			elif k == "mid": tint(im, Rect2i(0, 0, im.get_width(), im.get_height()), q[1])
 			else: tint(im, Rect2i(0, 60, im.get_width(), 140), [q[2][0], q[2][1], q[2][1]])
 		G.tex[k] = ImageTexture.create_from_image(im)
-	for q2 in [["grove_props", "grove", ["signgrove"]], ["place_props", "places", ["sign_sky", "sign_train", "sign_game"]]]:
+	for q2 in [["grove_props", "grove", ["signgrove"]], ["place_props", "places", ["sign_sky", "sign_train", "sign_game", "sign_lab"]]]:
 		var im2: Image = _img(q2[0]).duplicate()
 		if s != "inverno":
 			for n in q2[2]:

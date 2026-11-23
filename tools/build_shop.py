@@ -135,6 +135,20 @@ def maxwell():
     s.p(21, 1, (200, 70, 56)); s.r(20, 2, 22, 4, (200, 70, 56)); return s
 add("mu_onda", maxwell())
 
+# ------------------------------------------------ gatto al seguito (26x20): 0-2 cammina, 3 seduto
+def petcat(i):
+    s = Spr(28, 20)
+    if i == 3:
+        s.ell(7, 8, 17, 19, FUR); s.ell(8, 9, 12, 17, FUR_HI); s.limb([(7, 17), (3, 16), (2, 11)], 2, FUR); hx, hy = 12, 2
+    else:
+        legs = [((8, 10), (16, 18)), ((9, 9), (17, 17)), ((7, 11), (15, 19))][i]
+        for x in legs[0] + legs[1]: s.limb([(x + .5, 13), (x + (.5 if i == 0 else (-1 if i == 1 else 1.5)), 18)], 2, FUR_SH)
+        s.ell(5, 7, 20, 15, FUR); s.ell(7, 7, 16, 11, FUR_HI); s.limb([(6, 9), (2, 6), (3, 2)], 2, FUR); hx, hy = 16, 2
+    s.ell(hx, hy, hx + 9, hy + 9, FUR); s.poly([(hx + 1, hy + 2), (hx + 1, hy - 2), (hx + 4, hy + 1)], FUR); s.poly([(hx + 6, hy + 1), (hx + 9, hy - 2), (hx + 9, hy + 2)], FUR)
+    s.p(hx + 4, hy + 4, (40, 30, 40)); s.p(hx + 7, hy + 4, (40, 30, 40)); s.p(hx + 6, hy + 6, (230, 130, 130)); s.r(hx + 3, hy + 1, hx + 3, hy + 2, FUR_SH); s.r(hx + 6, hy + 1, hx + 6, hy + 2, FUR_SH)
+    return s
+for i in range(4): add(f"pet{i}", petcat(i))
+
 # ------------------------------------------------ moneta (16x16, 4 fotogrammi)
 def coin(i):
     s = Spr(16, 16); w = [6.5, 5, 2, 5][i]; s.ell(7.5 - w, 1, 7.5 + w, 14, (224, 160, 50))
