@@ -19,6 +19,7 @@ buses/default_bus_layout="res://default_bus_layout.tres"
 
 G="*res://scripts/g.gd"
 Sfx="*res://scripts/sfx.gd"
+Shop="*res://scripts/shop.gd"
 
 [display]
 

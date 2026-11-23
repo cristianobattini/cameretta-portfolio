@@ -7,13 +7,18 @@ Variabili d'ambiente opzionali:
   CAMERETTA_PORT        porta (default 8000)
   CAMERETTA_HOST        host (default 127.0.0.1, solo questo computer)
   CAMERETTA_ADMIN_TOKEN se impostata, l'admin chiede questa password per salvare
+  CAMERETTA_BMC_SECRET  segreto del webhook di Buy Me a Coffee (senza, le donazioni non accreditano monete)
 
 Ogni testo visibile ha due versioni: il campo normale (italiano) e quello con
 suffisso _en (inglese). Se il campo _en è vuoto, il sito mostra l'italiano.
 """
+import hashlib
+import hmac
+import json
 import mimetypes
 import os
 import re
+import secrets
 import sqlite3
 import time
 import uuid
@@ -21,7 +26,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
 
-from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -40,6 +45,8 @@ DATA.mkdir(exist_ok=True)
 UPLOADS.mkdir(exist_ok=True)
 
 ADMIN_TOKEN = os.environ.get("CAMERETTA_ADMIN_TOKEN", "")
+BMC_SECRET = os.environ.get("CAMERETTA_BMC_SECRET", "")
+CATALOG_PATH = ROOT / "cameretta-godot" / "store" / "catalog.json"
 MAX_UPLOAD = 25 * 1024 * 1024
 ALLOWED_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".pdf", ".mp3", ".ogg", ".wav", ".m4a", ".json", ".txt", ".md", ".zip"}
 
@@ -69,6 +76,16 @@ CREATE TABLE IF NOT EXISTS bubbles (
 CREATE TABLE IF NOT EXISTS assets (
   id INTEGER PRIMARY KEY AUTOINCREMENT, filename TEXT NOT NULL UNIQUE, original_name TEXT NOT NULL,
   mime TEXT NOT NULL DEFAULT '', size INTEGER NOT NULL DEFAULT 0, label TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL
+);
+-- negozio: nessun dato personale, solo un codice a caso per ogni portafoglio
+CREATE TABLE IF NOT EXISTS wallets (code TEXT PRIMARY KEY, created_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS ledger (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, wallet TEXT NOT NULL REFERENCES wallets(code), delta INTEGER NOT NULL,
+  reason TEXT NOT NULL, ref TEXT NOT NULL, created_at INTEGER NOT NULL, UNIQUE (wallet, reason, ref)
+);
+CREATE TABLE IF NOT EXISTS donations (
+  tx TEXT PRIMARY KEY, amount REAL NOT NULL, currency TEXT NOT NULL DEFAULT '', coins INTEGER NOT NULL,
+  wallet TEXT, status TEXT NOT NULL, created_at INTEGER NOT NULL   -- status: ok | da_assegnare | prova | rimborsata
 );
 """
 
@@ -101,6 +118,7 @@ DEFAULT_SETTINGS = {
     "accent_color": "#f2b85b",
     "default_lang": "en",
     "skip_intro": "0",
+    "store_enabled": "1", "bmc_url": "", "coins_per_unit": "100",
 }
 
 GH = "https://github.com/cristianobattini/"
@@ -587,6 +605,227 @@ def export_all():
             "items": rows(con.execute("SELECT * FROM items ORDER BY section_id, sort")),
             "bubbles": rows(con.execute("SELECT * FROM bubbles ORDER BY sort")),
         }
+
+
+# ---------------------------------------------------------------- negozio
+# Le monete si guadagnano giocando (premi fissi, una volta sola) o donando su Buy Me a Coffee:
+# chi dona incolla nel messaggio il codice del suo portafoglio e il webhook accredita le monete.
+
+CATALOG = json.loads(CATALOG_PATH.read_text(encoding="utf-8")) if CATALOG_PATH.exists() else {"categories": [], "items": [], "earn": {}}
+PRICES = {i["id"]: int(i["price"]) for i in CATALOG["items"]}
+CODE_RE = re.compile(r"CRI-([A-Z2-9]{4})-([A-Z2-9]{4})", re.I)
+ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"   # senza 0/O e 1/I
+_hits = {}
+
+
+def limit(request: Request, what: str, n: int, secs: int):
+    """Al massimo n richieste ogni `secs` secondi per indirizzo."""
+    now = time.time()
+    if len(_hits) > 5000:
+        _hits.clear()
+    key = (what, request.client.host if request.client else "?")
+    q = [t for t in _hits.get(key, []) if now - t < secs]
+    if len(q) >= n:
+        raise HTTPException(429, "Troppe richieste, riprova tra poco")
+    _hits[key] = q + [now]
+
+
+def store_on(con):
+    r = con.execute("SELECT value FROM settings WHERE key = 'store_enabled'").fetchone()
+    if r and r["value"] == "0":
+        raise HTTPException(404, "Negozio chiuso")
+
+
+def wallet_out(con, code):
+    if not con.execute("SELECT 1 FROM wallets WHERE code = ?", (code,)).fetchone():
+        raise HTTPException(404, "Portafoglio non trovato")
+    bal = con.execute("SELECT COALESCE(SUM(delta), 0) FROM ledger WHERE wallet = ?", (code,)).fetchone()[0]
+    owned = [r["ref"] for r in con.execute("SELECT ref FROM ledger WHERE wallet = ? AND reason = 'buy' ORDER BY id", (code,))]
+    got = [r["ref"] for r in con.execute("SELECT ref FROM ledger WHERE wallet = ? AND reason = 'earn'", (code,))]
+    return {"code": code, "balance": bal, "owned": owned, "earned": got}
+
+
+def norm_code(code):
+    m = CODE_RE.fullmatch(code.strip())
+    if not m:
+        raise HTTPException(404, "Portafoglio non trovato")
+    return f"CRI-{m[1]}-{m[2]}".upper()
+
+
+def ledger_add(con, code, delta, reason, ref):
+    """False se la stessa riga c'era già."""
+    cur = con.execute("INSERT OR IGNORE INTO ledger(wallet, delta, reason, ref, created_at) VALUES (?,?,?,?,?)",
+                      (code, delta, reason, ref, int(time.time())))
+    return cur.rowcount == 1
+
+
+@app.post("/api/wallet")
+def new_wallet(request: Request):
+    limit(request, "new", 10, 3600)
+    with db() as con:
+        store_on(con)
+        while True:
+            s = "".join(secrets.choice(ALPHABET) for _ in range(8))
+            code = f"CRI-{s[:4]}-{s[4:]}"
+            if con.execute("INSERT OR IGNORE INTO wallets VALUES (?, ?)", (code, int(time.time()))).rowcount:
+                return wallet_out(con, code)
+
+
+@app.get("/api/wallet/{code}")
+def get_wallet(code: str, request: Request):
+    limit(request, "get", 90, 60)
+    with db() as con:
+        return wallet_out(con, norm_code(code))
+
+
+class StoreIn(BaseModel):
+    id: str
+
+
+@app.post("/api/wallet/{code}/buy")
+def buy(code: str, body: StoreIn, request: Request):
+    limit(request, "buy", 60, 60)
+    code = norm_code(code)
+    if body.id not in PRICES:
+        raise HTTPException(404, "Articolo non trovato")
+    with db() as con:
+        store_on(con)
+        con.execute("BEGIN IMMEDIATE")          # due acquisti insieme non possono spendere le stesse monete
+        w = wallet_out(con, code)
+        if body.id in w["owned"] or PRICES[body.id] == 0:
+            return w
+        if w["balance"] < PRICES[body.id]:
+            raise HTTPException(402, "Monete insufficienti")
+        ledger_add(con, code, -PRICES[body.id], "buy", body.id)
+        return wallet_out(con, code)
+
+
+@app.post("/api/wallet/{code}/earn")
+def earn(code: str, body: StoreIn, request: Request):
+    """Premi del gioco: ogni traguardo una volta sola; quelli giornalieri una volta al giorno."""
+    limit(request, "earn", 90, 60)
+    code = norm_code(code)
+    kind, _, arg = body.id.partition(":")
+    e = CATALOG["earn"]
+    with db() as con:
+        store_on(con)
+        wallet_out(con, code)
+        day = time.strftime("%Y-%m-%d")
+        if kind == "stop" and arg.isdigit() and con.execute("SELECT 1 FROM items WHERE id = ? AND visible = 1", (int(arg),)).fetchone():
+            ref = body.id
+        elif kind == "section" and con.execute("SELECT 1 FROM sections WHERE id = ? AND visible = 1", (arg,)).fetchone():
+            ref = body.id
+        elif body.id == "ride_end":
+            ref = body.id
+        elif body.id == "daily" or (kind == "pray" and arg in ("stelle", "magia", "dune")):
+            ref = f"{body.id}:{day}"
+        else:
+            raise HTTPException(400, "Premio sconosciuto")
+        new = ledger_add(con, code, int(e.get(kind, 0)), "earn", ref)
+        return {**wallet_out(con, code), "got": int(e.get(kind, 0)) if new else 0}
+
+
+def find_code(x):
+    """Il codice del portafoglio, in qualunque campo del messaggio sia finito."""
+    if isinstance(x, str):
+        m = CODE_RE.search(x)
+        return f"CRI-{m[1]}-{m[2]}".upper() if m else None
+    for v in (x.values() if isinstance(x, dict) else x if isinstance(x, list) else []):
+        c = find_code(v)
+        if c:
+            return c
+    return None
+
+
+@app.post("/api/bmc/webhook")
+async def bmc_webhook(request: Request):
+    if not BMC_SECRET:
+        raise HTTPException(503, "Webhook non configurato")
+    raw = await request.body()
+    sig = (request.headers.get("x-signature-sha256") or request.headers.get("x-bmc-signature") or "").strip().lower().removeprefix("sha256=")
+    good = hmac.new(BMC_SECRET.encode(), raw, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(good.encode(), sig.encode()):
+        raise HTTPException(401, "Firma non valida")
+    try:
+        ev = json.loads(raw)
+        data = ev.get("data") or {}
+        kind = str(ev.get("type", ""))
+    except (ValueError, AttributeError):
+        raise HTTPException(400, "Messaggio non valido")
+    tx = str(data.get("transaction_id") or data.get("id") or "")
+    if not tx:
+        return {"ok": True, "ignored": kind}
+    now = int(time.time())
+    with db() as con:
+        con.execute("BEGIN IMMEDIATE")
+        old = con.execute("SELECT * FROM donations WHERE tx = ?", (tx,)).fetchone()
+        if "refund" in kind:
+            if old and old["status"] != "rimborsata":
+                if old["wallet"] and old["status"] == "ok":
+                    ledger_add(con, old["wallet"], -old["coins"], "refund", tx)
+                con.execute("UPDATE donations SET status = 'rimborsata' WHERE tx = ?", (tx,))
+            return {"ok": True}
+        if kind != "donation.created" or old:
+            return {"ok": True, "ignored": kind}
+        try:
+            amount = float(data.get("amount") or 0)
+            rate = float((con.execute("SELECT value FROM settings WHERE key = 'coins_per_unit'").fetchone() or {"value": "100"})["value"])
+        except ValueError:
+            raise HTTPException(400, "Importo non valido")
+        if not 0 < amount < 100000 or str(data.get("status", "succeeded")) != "succeeded":
+            return {"ok": True, "ignored": kind}
+        coins = int(round(amount * max(0.0, rate)))
+        code = find_code(data)
+        if code and not con.execute("SELECT 1 FROM wallets WHERE code = ?", (code,)).fetchone():
+            code = None
+        status = "prova" if ev.get("live_mode") is False else "ok" if code else "da_assegnare"
+        con.execute("INSERT INTO donations VALUES (?,?,?,?,?,?,?)", (tx, amount, str(data.get("currency", ""))[:8], coins, code, status, now))
+        if status == "ok":
+            ledger_add(con, code, coins, "donation", tx)
+    return {"ok": True}
+
+
+@app.get("/api/store/donations", dependencies=[Depends(require_admin)])
+def list_donations():
+    with db() as con:
+        return {"configured": bool(BMC_SECRET), "wallets": con.execute("SELECT COUNT(*) FROM wallets").fetchone()[0],
+                "donations": rows(con.execute("SELECT * FROM donations ORDER BY created_at DESC LIMIT 200"))}
+
+
+class AssignIn(BaseModel):
+    tx: str
+    code: str
+
+
+@app.post("/api/store/assign", dependencies=[Depends(require_admin)])
+def assign_donation(body: AssignIn):
+    """Una donazione arrivata senza codice: si assegna a mano a un portafoglio."""
+    code = norm_code(body.code)
+    with db() as con:
+        con.execute("BEGIN IMMEDIATE")
+        wallet_out(con, code)
+        d = con.execute("SELECT * FROM donations WHERE tx = ? AND status = 'da_assegnare'", (body.tx,)).fetchone()
+        if not d:
+            raise HTTPException(404, "Donazione non trovata o già assegnata")
+        ledger_add(con, code, d["coins"], "donation", body.tx)
+        con.execute("UPDATE donations SET wallet = ?, status = 'ok' WHERE tx = ?", (code, body.tx))
+        return wallet_out(con, code)
+
+
+class GiftIn(BaseModel):
+    code: str
+    coins: int
+
+
+@app.post("/api/store/gift", dependencies=[Depends(require_admin)])
+def gift(body: GiftIn):
+    code = norm_code(body.code)
+    if not 0 < body.coins <= 100000:
+        raise HTTPException(400, "Numero di monete non valido")
+    with db() as con:
+        wallet_out(con, code)
+        ledger_add(con, code, body.coins, "gift", uuid.uuid4().hex)
+        return wallet_out(con, code)
 
 
 # ---------------------------------------------------------------- importazione

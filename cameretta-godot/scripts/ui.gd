@@ -122,6 +122,7 @@ static func button(text: String, cb: Callable, kind := "tool", size := 20) -> Bu
 	b.add_theme_color_override("font_hover_color", hc)
 	b.add_theme_color_override("font_pressed_color", hc)
 	b.add_theme_color_override("font_focus_color", fc)
+	b.add_theme_color_override("font_disabled_color", Color(fc, 0.6))
 	b.pressed.connect(cb)
 	b.mouse_filter = Control.MOUSE_FILTER_STOP
 	return b

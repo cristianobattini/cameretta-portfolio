@@ -35,6 +35,16 @@ static func section_body(s: Dictionary, narrow: bool) -> VBoxContainer:
 		else:
 			sec.add_child(cards(g.items, chalk, narrow))
 		v.add_child(sec)
+	# in fondo alla lavagna, la frase di un fisico scritta col gesso
+	if chalk:
+		var q := Quotes.next()
+		var board := PanelContainer.new()
+		board.add_theme_stylebox_override("panel", UI.box(Color("24493a"), Color("8a5a36"), 4, 20, 14))
+		var qv := UI.vbox(4)
+		qv.add_child(UI.rich(G.esc_bb("«%s»" % G.L(q, "text")), 25, Color("f4f7ef")))
+		qv.add_child(UI.label("— " + Quotes.author(q), 20, Color("b9cdb5"), null, true))
+		board.add_child(qv)
+		v.add_child(board)
 	# link della sezione e contatti
 	var bits := HFlowContainer.new()
 	bits.add_theme_constant_override("h_separation", 10)

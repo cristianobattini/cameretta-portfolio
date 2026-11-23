@@ -60,3 +60,7 @@ Pixel art e suoni del lungomare si rigenerano con `tools/build_sea.py` (nella ca
 ## Contenuti offline
 
 Prima di esportare puoi aggiornare `assets/data/data.json` con quello scaricato dall'admin (Backup → data.json): è la copia usata quando il server non risponde.
+
+## Prove automatiche
+
+`CAMERETTA_TOUR=/cartella CAMERETTA_RIDE=<prova> godot --path cameretta-godot`, con `<prova>` = `check` (giro in Vespa), `menu` (menu, citazioni, schermo intero), `shop` (negozio; con `CAMERETTA_URL` compra su un server di prova), `grove` (templi).

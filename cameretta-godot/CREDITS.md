@@ -26,3 +26,9 @@ Le licenze sono in `licenses/`.
 ## Grafica e codice
 
 Pixel art e codice: fatti per CRI's CAMERETTA (generatori in `cameretta-portfolio/tools/`).
+
+## Templi, negozio e citazioni
+
+- Grafica dei templi e degli oggetti del negozio: originale, generata da `tools/build_grove.py` e `tools/build_shop.py`. I tre templi sono omaggi non ufficiali a Star Wars, Harry Potter e Dune: nessun logo, personaggio o musica delle saghe; i testi delle preghiere sono originali. I nomi appartengono ai rispettivi titolari.
+- Suoni delle preghiere: sintetizzati da `cameretta-godot/tools/build_grove_sounds.py` (CC0).
+- Citazioni: in `scripts/quotes.gd`, con autore e, dove noto, opera o anno; le traduzioni italiane sono nostre.

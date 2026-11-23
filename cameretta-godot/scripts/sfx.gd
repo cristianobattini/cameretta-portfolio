@@ -179,7 +179,7 @@ func _process(dt: float) -> void:
 	_gust_t -= dt
 	if _gust_t <= 0:
 		_gust_t = randf_range(7.0, 14.0)
-		var gv := {"street": 0.55, "sea": 0.4, "menu": 0.3, "living": 0.08, "room": 0.06}.get(_scene, 0.0) as float
+		var gv := {"street": 0.55, "sea": 0.4, "grove": 0.35, "menu": 0.3, "living": 0.08, "room": 0.06}.get(_scene, 0.0) as float
 		if gv > 0: play("wind_gust", gv * randf_range(0.7, 1.0), randf_range(0.8, 1.1), "Ambience")
 	# orologio a pendolo del salotto
 	if _scene == "living":

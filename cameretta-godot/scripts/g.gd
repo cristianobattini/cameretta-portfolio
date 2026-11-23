@@ -29,6 +29,24 @@ const T := {
 		"tips": ["Tip: use [k]←[/k] [k]→[/k] to walk, hold [k]SHIFT[/k] to run.", "Tip: press [k]E[/k] near a door to go inside.", "Tip: in my room, click the objects to open them.", "Tip: the lit window on the menu takes you straight in."],
 		"loading": "LOADING", "start": "START", "room": "GO STRAIGHT TO MY ROOM", "settings": "SETTINGS", "help": "HOW TO PLAY",
 		"language": "Language", "langName": "English", "audio": "Audio", "on": "ON", "off": "OFF",
+		"grove": "the temples", "toGrove": "Go to the temples", "pray": {"stelle": "Pray", "magia": "Pray", "dune": "Pray"},
+		"temples": {
+			"stelle": "STAR WARS, the films. They've kept me company all my life: they made me look up, and wonder what lies beyond.",
+			"magia": "HARRY POTTER, the films. They've kept me company all my life: they taught me that wonder is a serious thing, and that friends are home.",
+			"dune": "DUNE, the books. They've kept me company all my life: pages as slow as the desert, where I learned patience.",
+		},
+		"prayers": {
+			"stelle": ["Let go of fear. The rest follows.", "Even a horizon with two suns becomes home, if you look at it long enough.", "Those who want everything at once take the dark road. You, breathe.", "In the silence between the stars something holds it all together. Listen.", "The best teacher is the one who lets you get it wrong.", "One light is enough to give the dark an edge.", "You don't have to believe you'll make it. You have to begin.", "Wonder comes before the equation. Don't lose it along the way."],
+			"magia": ["The right words light a lamp. Most times it's enough to say them.", "A place that made you happy stays yours even after you get off the train.", "Courage is small, and always cold. Bring it anyway.", "Those who loved us are still our shield.", "Talent doesn't say who you are: the choices you make when nobody is looking do.", "Every library has a forbidden room. It's usually the one you need.", "Even the longest night ends at breakfast with your friends.", "If you find a door where there wasn't one, knock."],
+			"dune": ["The desert asks for nothing: it waits.", "Let fear go by like the wind: what remains is you.", "Every drop counts. Every word does too.", "Those who see every road still have to choose one.", "Walk without rhythm, if you don't want to wake what sleeps beneath.", "A book read in silence is an oasis: carry water away from it.", "Don't trust heroes. Read to the end.", "Even a planet can be changed, one seed at a time."],
+		},
+		"shop": "SHOP", "shopTitle": "The shop", "shopGet": "GET COINS", "shopBack": "◀ Items", "shopOffline": "The till can't be reached right now: you can look and try things on, but not buy.",
+		"shopWorn": "IN USE", "shopOwned": "YOURS", "shopBuy": "BUY", "shopWear": "USE", "shopOn": "TURN ON", "shopOff": "TURN OFF", "shopGot": "It's yours: %s.", "shopPoor": "Not enough coins for this one, yet.", "shopErr": "Something went wrong, no coins were taken. Try again.", "shopWait": "One moment…",
+		"shopPlayT": "Play", "shopPlay": "Every day you drop by: %d. Each new stop on the Vespa ride: %d. Each object in the room: %d. Dawn at the end of the road: %d. A prayer at each temple, once a day: %d.",
+		"shopGiveT": "Buy me a coffee", "shopGive": "1 unit donated = %d coins. Copy your wallet code and paste it in the donation message: the coins land here by themselves, usually within a minute.", "shopSoon": "Coffee donations aren't open yet. In the meantime, coins are earned by playing.",
+		"shopCopy": "COPY %s", "shopCopied": "Code copied: paste it in the donation message.", "shopCoffee": "BUY ME A COFFEE ↗", "shopCheck": "CHECK MY COINS", "shopIn": "%d coins have arrived. Thank you!", "shopNotYet": "Nothing yet. It can take a minute.",
+		"shopCodeT": "Your wallet", "shopCode": "Your code is [color=#f2b85b]%s[/color]. Keep it: it brings coins and items to any other device. No name, no email.", "shopEnter": "USE A CODE", "shopCodeOk": "Wallet found.", "shopCodeBad": "No wallet with that code.", "coinsIn": "+%d coins",
+		"full": "Full screen", "fullOn": "FULL SCREEN", "fullOff": "EXIT FULL SCREEN", "fullHint": "Press [k]F[/k] at any time to go full screen and back.",
 		"music": "Music", "effects": "Effects", "roomMode": "My room", "walk": "WALK", "point": "POINT & CLICK",
 		"modeWalk": "WALK MODE", "modePoint": "POINT & CLICK MODE", "modeHint": "change it any time in Settings",
 		"chooseTitle": "How do you want to explore my room?",
@@ -58,15 +76,33 @@ const T := {
 		"rideEndTitle": "The road goes on", "rideEndSeen": "You stopped %d times out of %d.", "rideEndAll": "You saw every stop. Really, all of them. Thank you.", "rideEndSome": "The others will be there, under the snow, whenever you feel like another ride.", "rideHome": "Go home ▶", "rideAgain": "Ride again",
 		"back": "◀ Living room", "skip": "Skip ▸", "menu": "Menu", "explored": "OBJECTS EXPLORED", "sheet": "What do you want to explore?", "close": "CLOSE",
 		"empty": "Nothing here yet. Come back soon.", "find": "Where to find me", "cv": "Open my CV", "openLink": "open ↗", "details": "details ↗", "physics": "physics",
-		"titles": {"sea": "BY THE SEA", "street": "A SNOWY NIGHT", "living": "HOME, SWEET HOME", "room": "MY LITTLE ROOM"},
+		"titles": {"grove": "THE TEMPLES", "sea": "BY THE SEA", "street": "A SNOWY NIGHT", "living": "HOME, SWEET HOME", "room": "MY LITTLE ROOM"},
 		"helpTitle": "How to play",
-		"helpItems": ["Walk down the snowy street with [k]←[/k] [k]→[/k] (or [k]A[/k] [k]D[/k]). Hold [k]SHIFT[/k] to run. On a phone, use the arrows or tap where you want to go.", "Read the bubbles along the way: they tell you who I am.", "Halfway down the street a lit path goes down to the sea. There's a Vespa: put on the helmet and ride, [k]→[/k] throttle, [k]←[/k] brake, [k]E[/k] to stop and look, [k]H[/k] for the horn.", "At the house, and near the TV, the fireplace and the glowing door, press [k]E[/k] (or the yellow button).", "In my room every object opens a part of my portfolio. You can walk around or point and click: the current mode is always shown at the top, and you can switch it in Settings.", "[k]ESC[/k] goes back."],
+		"helpItems": ["Walk down the snowy street with [k]←[/k] [k]→[/k] (or [k]A[/k] [k]D[/k]). Hold [k]SHIFT[/k] to run. On a phone, use the arrows or tap where you want to go.", "Read the bubbles along the way: they tell you who I am.", "Halfway down the street a lit path goes down to the sea. There's a Vespa: put on the helmet and ride, [k]→[/k] throttle, [k]←[/k] brake, [k]E[/k] to stop and look, [k]H[/k] for the horn.", "At the house, and near the TV, the fireplace and the glowing door, press [k]E[/k] (or the yellow button).", "In my room every object opens a part of my portfolio. You can walk around or point and click: the current mode is always shown at the top, and you can switch it in Settings.", "Another path, lit in violet, enters the woods: three temples where you can sit and pray with [k]E[/k].", "Playing earns coins to spend in the shop (the coin at the top): themes, clothes, Vespa, furniture.", "Press [k]F[/k] for full screen.", "[k]ESC[/k] goes back."],
 		"noServer": "Offline copy: start the server to load fresh content",
 	},
 	"it": {
 		"tips": ["Suggerimento: [k]←[/k] [k]→[/k] per camminare, tieni premuto [k]SHIFT[/k] per correre.", "Suggerimento: premi [k]E[/k] vicino a una porta per entrare.", "Suggerimento: in cameretta clicca gli oggetti per aprirli.", "Suggerimento: nel menu, la finestra accesa ti porta subito dentro."],
 		"loading": "CARICAMENTO", "start": "INIZIA", "room": "VAI SUBITO IN CAMERETTA", "settings": "IMPOSTAZIONI", "help": "COME SI GIOCA",
 		"language": "Lingua", "langName": "Italiano", "audio": "Audio", "on": "ON", "off": "OFF",
+		"grove": "i templi", "toGrove": "Vai ai templi", "pray": {"stelle": "Prega", "magia": "Prega", "dune": "Prega"},
+		"temples": {
+			"stelle": "STAR WARS, i film. Mi hanno accompagnato nella vita: mi hanno fatto alzare gli occhi al cielo, e chiedermi cosa c'è oltre.",
+			"magia": "HARRY POTTER, i film. Mi hanno accompagnato nella vita: mi hanno insegnato che la meraviglia è una cosa seria, e che gli amici sono casa.",
+			"dune": "DUNE, i libri. Mi hanno accompagnato nella vita: pagine lente come il deserto, dove ho imparato la pazienza.",
+		},
+		"prayers": {
+			"stelle": ["Lascia andare la paura. Il resto viene da sé.", "Anche un orizzonte con due soli, a guardarlo abbastanza, diventa casa.", "Chi vuole tutto subito prende la strada buia. Tu respira.", "Nel silenzio tra una stella e l'altra qualcosa tiene insieme tutto. Ascoltalo.", "Il maestro migliore è quello che ti lascia sbagliare.", "Una luce accesa basta a dare un bordo al buio.", "Non serve credere di farcela. Serve cominciare.", "Prima dell'equazione viene la meraviglia. Non perderla per strada."],
+			"magia": ["Le parole giuste accendono una luce. Quasi sempre basta dirle.", "Un posto che ti ha fatto felice resta tuo anche quando scendi dal treno.", "Il coraggio è piccolo, e ha sempre freddo. Portalo lo stesso.", "Chi ci ha voluto bene ci fa ancora da scudo.", "Non è il talento a dire chi sei: sono le scelte che fai quando nessuno guarda.", "Ogni biblioteca ha una stanza proibita. Di solito è quella che ti serve.", "Anche la notte più lunga finisce davanti a una colazione con gli amici.", "Se trovi una porta dove non c'era, bussa."],
+			"dune": ["Il deserto non chiede niente: aspetta.", "Lascia passare la paura come il vento: quello che resta sei tu.", "Ogni goccia conta. Anche ogni parola.", "Chi vede tutte le strade deve comunque sceglierne una.", "Cammina senza ritmo, se non vuoi svegliare ciò che dorme sotto.", "Un libro letto in silenzio è un'oasi: portane via dell'acqua.", "Non fidarti degli eroi. Leggi fino in fondo.", "Anche un pianeta si può cambiare, un seme alla volta."],
+		},
+		"shop": "NEGOZIO", "shopTitle": "Il negozio", "shopGet": "OTTIENI MONETE", "shopBack": "◀ Articoli", "shopOffline": "La cassa ora non risponde: puoi guardare e provare, ma non comprare.",
+		"shopWorn": "IN USO", "shopOwned": "TUO", "shopBuy": "COMPRA", "shopWear": "USA", "shopOn": "ACCENDI", "shopOff": "SPEGNI", "shopGot": "È tuo: %s.", "shopPoor": "Per questo non bastano ancora le monete.", "shopErr": "Qualcosa è andato storto, nessuna moneta spesa. Riprova.", "shopWait": "Un attimo…",
+		"shopPlayT": "Giocando", "shopPlay": "Ogni giorno che passi di qui: %d. Ogni nuova tappa in Vespa: %d. Ogni oggetto della cameretta: %d. L'alba in fondo alla strada: %d. Una preghiera a ogni tempio, una volta al giorno: %d.",
+		"shopGiveT": "Offrendo un caffè", "shopGive": "Ogni unità donata vale %d monete. Copia il codice del portafoglio e incollalo nel messaggio della donazione: le monete arrivano qui da sole, di solito entro un minuto.", "shopSoon": "Le donazioni non sono ancora aperte. Intanto le monete si guadagnano giocando.",
+		"shopCopy": "COPIA %s", "shopCopied": "Codice copiato: incollalo nel messaggio della donazione.", "shopCoffee": "OFFRIMI UN CAFFÈ ↗", "shopCheck": "CONTROLLA LE MONETE", "shopIn": "Sono arrivate %d monete. Grazie!", "shopNotYet": "Ancora niente. Può volerci un minuto.",
+		"shopCodeT": "Il tuo portafoglio", "shopCode": "Il tuo codice è [color=#f2b85b]%s[/color]. Conservalo: porta monete e acquisti su qualunque altro dispositivo. Nessun nome, nessuna email.", "shopEnter": "USA UN CODICE", "shopCodeOk": "Portafoglio trovato.", "shopCodeBad": "Nessun portafoglio con questo codice.", "coinsIn": "+%d monete",
+		"full": "Schermo intero", "fullOn": "SCHERMO INTERO", "fullOff": "ESCI DA SCHERMO INTERO", "fullHint": "Premi [k]F[/k] in qualsiasi momento per lo schermo intero, e di nuovo per uscire.",
 		"music": "Musica", "effects": "Effetti", "roomMode": "Cameretta", "walk": "CAMMINA", "point": "PUNTA E CLICCA",
 		"modeWalk": "MODALITÀ CAMMINA", "modePoint": "MODALITÀ PUNTA E CLICCA", "modeHint": "puoi cambiarla quando vuoi nelle Impostazioni",
 		"chooseTitle": "Come vuoi esplorare la mia cameretta?",
@@ -96,9 +132,9 @@ const T := {
 		"rideEndTitle": "La strada continua", "rideEndSeen": "Tappe viste: %d su %d.", "rideEndAll": "Le hai viste tutte. Davvero tutte. Grazie.", "rideEndSome": "Le altre restano lì, sotto la neve, per quando avrai voglia di un altro giro.", "rideHome": "Torna a casa ▶", "rideAgain": "Rifai il giro",
 		"back": "◀ Salotto", "skip": "Salta ▸", "menu": "Menu", "explored": "OGGETTI ESPLORATI", "sheet": "Cosa vuoi esplorare?", "close": "CHIUDI",
 		"empty": "Qui non c'è ancora niente. Torna presto.", "find": "Dove trovarmi", "cv": "Apri il CV", "openLink": "apri ↗", "details": "scheda ↗", "physics": "fisica",
-		"titles": {"sea": "IL LUNGOMARE", "street": "UNA NOTTE DI NEVE", "living": "CASA, DOLCE CASA", "room": "LA MIA CAMERETTA"},
+		"titles": {"grove": "I TEMPLI", "sea": "IL LUNGOMARE", "street": "UNA NOTTE DI NEVE", "living": "CASA, DOLCE CASA", "room": "LA MIA CAMERETTA"},
 		"helpTitle": "Come si gioca",
-		"helpItems": ["Percorri la strada innevata con [k]←[/k] [k]→[/k] (o [k]A[/k] [k]D[/k]). Tieni [k]SHIFT[/k] per correre. Da telefono usa le frecce o tocca dove vuoi andare.", "Leggi le bolle lungo la strada: ti raccontano chi sono.", "A metà strada un sentiero illuminato scende al mare. C'è una Vespa: metti il casco e parti, [k]→[/k] gas, [k]←[/k] freno, [k]E[/k] per fermarti a guardare, [k]H[/k] per il clacson.", "Davanti a casa, e vicino a TV, camino e porta luminosa, premi [k]E[/k] (o il pulsante giallo).", "In cameretta ogni oggetto apre una parte del portfolio. Puoi camminare o puntare e cliccare: la modalità attuale è sempre indicata in alto e la cambi nelle Impostazioni.", "[k]ESC[/k] torna indietro."],
+		"helpItems": ["Percorri la strada innevata con [k]←[/k] [k]→[/k] (o [k]A[/k] [k]D[/k]). Tieni [k]SHIFT[/k] per correre. Da telefono usa le frecce o tocca dove vuoi andare.", "Leggi le bolle lungo la strada: ti raccontano chi sono.", "A metà strada un sentiero illuminato scende al mare. C'è una Vespa: metti il casco e parti, [k]→[/k] gas, [k]←[/k] freno, [k]E[/k] per fermarti a guardare, [k]H[/k] per il clacson.", "Davanti a casa, e vicino a TV, camino e porta luminosa, premi [k]E[/k] (o il pulsante giallo).", "In cameretta ogni oggetto apre una parte del portfolio. Puoi camminare o puntare e cliccare: la modalità attuale è sempre indicata in alto e la cambi nelle Impostazioni.", "Un altro sentiero, illuminato di viola, entra nel bosco: ci sono tre templi dove sedersi a pregare con [k]E[/k].", "Giocando si guadagnano monete da spendere nel negozio (la moneta in alto): temi, vestiti, Vespa, arredi.", "Premi [k]F[/k] per lo schermo intero.", "[k]ESC[/k] torna indietro."],
 		"noServer": "Copia offline: avvia il server per caricare i contenuti aggiornati",
 	},
 }
@@ -127,6 +163,7 @@ var music_user := 1.0
 var effects_user := 1.0
 var tv_channel := 0
 var ride_seen: Dictionary = {}     # tappe del giro in Vespa già viste (id delle voci)
+var prayers: Dictionary = {}       # preghiere fatte in ogni tempio
 var ride_found := false            # il giro è stato scoperto: compare nel menu
 
 var is_web := false
@@ -144,6 +181,7 @@ func _ready() -> void:
 	tv_channel = prefs.get_value("p", "tv", 0)
 	for k in prefs.get_value("p", "ride_seen", []): ride_seen[k] = true
 	ride_found = prefs.get_value("p", "ride_found", false)
+	prayers = prefs.get_value("p", "prayers", {})
 	if is_web:
 		base_url = str(JavaScriptBridge.eval("location.origin", true))
 	else:
@@ -158,6 +196,7 @@ func save_prefs() -> void:
 	prefs.set_value("p", "tv", tv_channel)
 	prefs.set_value("p", "ride_seen", ride_seen.keys())
 	prefs.set_value("p", "ride_found", ride_found)
+	prefs.set_value("p", "prayers", prayers)
 	prefs.set_value("p", "audio", audio_on)
 	prefs.set_value("p", "lang", lang)
 	prefs.save(PREFS)
@@ -176,6 +215,21 @@ func set_lang(l: String) -> void:
 	lang = "it" if l == "it" else "en"
 	save_prefs()
 	lang_changed.emit()
+
+## Schermo intero: su iPhone il browser non lo concede ai giochi, quindi lì il pulsante non c'è.
+var _can_full := -1
+func can_fullscreen() -> bool:
+	if _can_full < 0:
+		_can_full = 1
+		if is_web: _can_full = 1 if JavaScriptBridge.eval("!!(document.fullscreenEnabled||document.webkitFullscreenEnabled)", true) else 0
+	return _can_full == 1
+
+func is_fullscreen() -> bool:
+	return DisplayServer.window_get_mode() in [DisplayServer.WINDOW_MODE_FULLSCREEN, DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN]
+
+func toggle_fullscreen() -> void:
+	if not can_fullscreen(): return
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if is_fullscreen() else DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 func set_room_mode(m: String) -> void:
 	room_mode = "point" if touch else m
@@ -234,10 +288,11 @@ func load_all() -> void:
 	for k in ["anim", "menu", "street", "living", "player", "sea"]:
 		var f := {"anim": "anim", "menu": "menu_anim", "street": "street", "living": "living", "player": "player", "sea": "sea"}[k] as String
 		J[k] = JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/%s.json" % f))
+	J.grove = JSON.parse_string(FileAccess.get_file_as_string("res://store/grove.json"))
 	for k in ["room", "mask", "far", "mid", "near", "living", "player", "menu_sky"]:
 		var f := {"room": "room", "mask": "mask", "far": "street_far", "mid": "street_mid", "near": "street_near", "living": "living", "player": "player", "menu_sky": "menu_sky"}[k] as String
 		tex[k] = load("res://assets/img/%s.png" % f)
-	for k in ["sea_sky", "sea_near", "sea_fore", "sea_beach", "sea_props", "sea_emblems"]: tex[k] = load("res://assets/img/%s.png" % k)
+	for k in ["sea_sky", "sea_near", "sea_fore", "sea_beach", "sea_props", "sea_emblems", "shop", "grove_far", "grove_near", "grove_props"]: tex[k] = load("res://assets/img/%s.png" % k)
 	_step(6)
 	var d = await fetch_json("/api/public")
 	if typeof(d) != TYPE_DICTIONARY:

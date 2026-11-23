@@ -17,91 +17,7 @@ LCOL = [(255, 96, 90), (255, 214, 100), (110, 220, 140), (110, 180, 255)]
 HORIZON, SKY_H, SS = 92, 140, 8
 
 # ================================================================ utilità
-class Spr:
-    """Tela in pixel; i poligoni sono campionati 8x e sogliati: bordi netti, niente sfumature."""
-    def __init__(self, w, h):
-        self.w, self.h = w, h
-        self.a = np.zeros((h, w, 4), np.uint8)
-
-    def _put(self, m, c):
-        self.a[m] = (*c, 255) if len(c) == 3 else c
-
-    def _mask(self, fn):
-        im = Image.new("L", (self.w * SS, self.h * SS), 0)
-        fn(ImageDraw.Draw(im))
-        return np.asarray(im.resize((self.w, self.h), Image.BOX)) >= 128
-
-    def poly(self, pts, c, only=None):
-        m = self._mask(lambda d: d.polygon([((x + .5) * SS, (y + .5) * SS) for x, y in pts], fill=255))
-        if only is not None: m &= only
-        self._put(m, c); return m
-
-    def ell(self, x0, y0, x1, y1, c, only=None):
-        m = self._mask(lambda d: d.ellipse([x0 * SS, y0 * SS, (x1 + 1) * SS - 1, (y1 + 1) * SS - 1], fill=255))
-        if only is not None: m &= only
-        self._put(m, c); return m
-
-    def curve(self, pts, c, only=None, n=10):
-        """poligono chiuso con curve di Catmull-Rom"""
-        out = []
-        k = len(pts)
-        for i in range(k):
-            p0, p1, p2, p3 = (np.array(pts[(i + j) % k], float) for j in (-1, 0, 1, 2))
-            for s in range(n):
-                t = s / n
-                out.append(tuple(0.5 * (2 * p1 + (p2 - p0) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (3 * p1 - p0 - 3 * p2 + p3) * t ** 3)))
-        return self.poly(out, c, only)
-
-    def r(self, x0, y0, x1, y1, c, only=None):
-        x0, y0, x1, y1 = (int(round(v)) for v in (x0, y0, x1, y1))
-        m = np.zeros((self.h, self.w), bool)
-        m[max(0, y0):max(0, y1 + 1), max(0, x0):max(0, x1 + 1)] = True
-        if only is not None: m &= only
-        self._put(m, c); return m
-
-    def p(self, x, y, c):
-        x, y = int(round(x)), int(round(y))
-        if 0 <= x < self.w and 0 <= y < self.h: self.a[y, x] = (*c, 255) if len(c) == 3 else c
-
-    def line(self, x0, y0, x1, y1, c, w=1):
-        n = int(max(abs(x1 - x0), abs(y1 - y0), 1))
-        for i in range(n + 1):
-            x, y = x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n
-            for k in range(w): self.p(x, y + k, c)
-
-    def limb(self, pts, w, c, only=None):
-        """segmento spesso con estremità tonde"""
-        def fn(d):
-            q = [((x + .5) * SS, (y + .5) * SS) for x, y in pts]
-            d.line(q, fill=255, width=int(w * SS), joint="curve")
-            for x, y in q: d.ellipse([x - w * SS / 2, y - w * SS / 2, x + w * SS / 2, y + w * SS / 2], fill=255)
-        m = self._mask(fn)
-        if only is not None: m &= only
-        self._put(m, c); return m
-
-    @property
-    def m(self): return self.a[:, :, 3] > 0
-
-    def padl(self, n):
-        z = np.zeros((self.h, n, 4), np.uint8); self.a = np.concatenate([z, self.a], axis=1); self.w += n
-        return self
-
-    def outline(self, c=OUT):
-        m = self.m
-        o = np.zeros_like(m)
-        o[1:] |= m[:-1]; o[:-1] |= m[1:]; o[:, 1:] |= m[:, :-1]; o[:, :-1] |= m[:, 1:]
-        self.a[o & ~m] = (*c, 255)
-        return self
-
-    def snowcap(self, thick=2, c=SNOW):
-        """neve sulle superfici rivolte in alto"""
-        m = self.m
-        for x in range(self.w):
-            ys = np.nonzero(m[:, x])[0]
-            if len(ys) and ys[0] > 0:
-                for k in range(thick): self.p(x, ys[0] + k - 1, c)
-        return self
-
+from pix import Spr   # noqa: E402
 
 def mix(a, b, t): return tuple(int(round(a[i] + (b[i] - a[i]) * t)) for i in range(3))
 def dith(c, x, y, q=8): return tuple(int(v) for v in np.clip(np.floor(np.array(c, float) / q + BAY[y % 4, x % 4] + .5) * q, 0, 255))
@@ -387,6 +303,24 @@ def rider(kind):
 riders = {}
 for k in ("ride0", "ride1", "stop", "sea", "horn", "kick"):
     rb, s = rider(k); add("rider_back_" + k, rb); add("rider_" + k, s); riders[k] = {"head": list(s.head), "neck": list(s.neck)}
+
+def kneel(i):
+    """seduto a gambe incrociate, in meditazione (templi)"""
+    s = Spr(40, 50); dy = i
+    s.limb([(13, 40), (4, 45), (20, 47)], 7, PANTS_SH); shoe(s, 23, 45, True)
+    s.limb([(17, 40), (31, 44), (16, 47)], 7, PANTS); s.limb([(18, 38), (29, 42)], 1.2, PANTS_HI); s.limb([(28, 47), (17, 49)], 1.2, PANTS_SH); shoe(s, 12, 46)
+    m = s.curve([(8, 42), (8, 33 + dy), (10, 25 + dy), (13, 21 + dy), (22, 21 + dy), (24, 26 + dy), (23, 34 + dy), (22, 42)], HOOD)
+    s.limb([(9, 41), (9, 32 + dy), (12, 24 + dy)], 2.4, HOOD_SH, only=m); s.limb([(23, 25 + dy), (22, 36)], 1.3, HOOD_HI, only=m); s.r(8, 40, 22, 41, (46, 44, 56), only=m)
+    s.ell(8, 17 + dy, 15, 24 + dy, HOOD); s.ell(9, 18 + dy, 12, 21 + dy, HOOD_HI)
+    ex, ey = 11, 3 + dy
+    s.r(ex + 2, ey + 2, ex + 13, ey + 14, SKIN); s.r(ex, ey + 1, ex + 4, ey + 9, HAIR); s.r(ex + 1, ey, ex + 12, ey + 4, HAIR); s.r(ex + 5, ey, ex + 8, ey, HAIR_HI)
+    s.r(ex + 10, ey + 8, ex + 12, ey + 8, (30, 22, 30)); s.p(ex + 13, ey + 10, (232, 150, 140)); s.r(ex + 14, ey + 8, ex + 14, ey + 10, SKIN); s.r(ex + 5, ey + 7, ex + 5, ey + 8, SKIN_SH); s.r(ex + 10, ey + 12, ex + 12, ey + 12, (178, 108, 92))
+    s.r(11, 18 + dy, 25, 22 + dy, SCARF); s.r(11, 22 + dy, 25, 22 + dy, SCARF_SH)
+    for k in (13, 17, 21): s.r(k, 19 + dy, k + 1, 20 + dy, SCARF_ST)
+    s.r(9, 22 + dy, 11, 33 + dy, SCARF); s.r(9, 30 + dy, 11, 31 + dy, SCARF_ST); s.r(9, 34 + dy, 11, 34 + dy, SCARF_SH)
+    s.limb([(17, 26 + dy), (20, 35), (27, 40)], 5, HOOD); s.limb([(18, 25 + dy), (22, 34)], 1.2, HOOD_HI); s.r(27, 38, 30, 41, SKIN); s.p(30, 41, SKIN_SH)
+    return s.outline()
+for i in (0, 1): add(f"kneel{i}", kneel(i))
 
 def helmet(back=False):
     s = Spr(22, 19)

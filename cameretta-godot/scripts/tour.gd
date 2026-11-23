@@ -37,6 +37,18 @@ func _run() -> void:
 			await shot("direct_%d" % i)
 		get_tree().quit()
 		return
+	if OS.get_environment("CAMERETTA_RIDE") == "shop":
+		await _shop_check()
+		get_tree().quit()
+		return
+	if OS.get_environment("CAMERETTA_RIDE") == "grove":
+		await _grove_check()
+		get_tree().quit()
+		return
+	if OS.get_environment("CAMERETTA_RIDE") == "menu":
+		await _menu_check()
+		get_tree().quit()
+		return
 	if OS.get_environment("CAMERETTA_RIDE") == "check":
 		await _ride_check()
 		get_tree().quit()
@@ -286,3 +298,191 @@ func _ride_check() -> void:
 	m._menu_act("ride")
 	ok(await until(func(): return m.scene == "sea" and not m.busy), "dal menu si va alla Vespa")
 	print("CHECK DONE")
+
+## Il menu non deve mai rimpicciolirsi da solo: CAMERETTA_RIDE=menu
+func _menu_scale(what: String, frames := 30) -> void:
+	var lo := 9.0
+	var first := 0.0
+	var last := 0.0
+	for i in frames:
+		var c = m.menu_ui.get_node_or_null("Col")
+		if c != null:
+			lo = minf(lo, c.scale.x)
+			if i == 0: first = c.scale.x
+			last = c.scale.x
+			if m.menu_ui.is_visible_in_tree() and not m.portrait:
+				var h: float = c.size.y * c.scale.y
+				if i == frames - 1: ok(c.position.y + h <= m.size.y + 1, "%s: sta nello schermo (%.0f+%.0f su %.0f)" % [what, c.position.y, h, m.size.y])
+		await get_tree().process_frame
+	if not what.begins_with("finestra"): ok(lo >= last - 0.001, "%s: scala primo=%.2f min=%.2f fine=%.2f" % [what, first, lo, last])
+	ok(last > 0.75, "%s: leggibile" % what)
+
+func _menu_check() -> void:
+	for found in [false, true]:
+		G.ride_found = found
+		m._apply_texts()
+		await _menu_scale("ricostruito, giro %s" % found)
+	for l in ["it", "en", "it"]:
+		G.set_lang(l)
+		await _menu_scale("lingua " + l)
+	m._menu_act("audio"); await _menu_scale("audio")
+	m._menu_act("audio"); await _menu_scale("audio")
+	G.room_mode = "walk"
+	for go in ["street", "sea"]:
+		if go == "sea": m._start_ride()
+		else: m._start_game(false)
+		await until(func(): return m.scene != "menu" and not m.busy)
+		await wait(0.3)
+		G.set_lang("en"); G.set_lang("it")
+		await wait(0.2)
+		m._to_menu()
+		await until(func(): return m.scene == "menu")
+		await _menu_scale("ritorno da %s dopo cambio lingua" % go, 90)
+	for s in [Vector2i(1280, 800), Vector2i(1920, 800), Vector2i(1280, 640), Vector2i(1000, 560), Vector2i(844, 390), Vector2i(430, 900), Vector2i(1280, 720)]:
+		get_window().size = s
+		await _menu_scale("finestra %s" % s)
+		await shot("menu_%dx%d" % [s.x, s.y])
+	m._next_menu_quote(); await wait(1.2)
+	await shot("menu_altra_frase")
+	m.open_settings(); await wait(0.3); await shot("impostazioni"); m.close_modal()
+	ok(Quotes.ALL.size() > 40, "citazioni: %d" % Quotes.ALL.size())
+	Quotes._deck.clear()
+	var seen := {}
+	for i in Quotes.ALL.size(): seen[Quotes.next().text] = true
+	ok(seen.size() == Quotes.ALL.size(), "il mazzo non si ripete (%d)" % seen.size())
+	# la citazione più lunga deve stare nel riquadro del menu
+	for l in ["it", "en"]:
+		G.set_lang(l)
+		for q in Quotes.ALL:
+			m.menu_quote = q
+			m._fill_menu_quote(); m._layout_menu_quote()
+			await get_tree().process_frame
+			var b: Control = m.menu_ui.get_node("Quote")
+			var c: Control = m.menu_ui.get_node("Col")
+			if b.position.x + b.size.x > c.position.x or b.position.y + b.size.y > m.size.y: ok(false, "citazione fuori posto: " + str(q.text))
+	G.set_lang("it")
+	m._start_game(false)
+	await until(func(): return m.scene == "street" and not m.busy)
+	var st = m.worlds.street
+	ok(st.bub.size() == st.MAX_BUBBLES, "bolle in strada: %d" % st.bub.size())
+	for x in [300.0, 620.0, 1000.0, 1300.0]:
+		st.P.x = x
+		await wait(7.0)
+		await shot("strada_%d" % int(x))
+		var vis: Array = m.bubble_nodes.filter(func(b): return b.visible)
+		for i in vis.size() - 1:
+			ok(not vis[i].get_rect().intersects(vis[i + 1].get_rect()), "bolle non accavallate a %d" % int(x))
+	var f0 := G.is_fullscreen()
+	await key(KEY_F); await wait(2.0)
+	ok(G.is_fullscreen() != f0, "F: schermo intero")
+	await shot("schermo_intero")
+	await key(KEY_F); await wait(2.0)
+	ok(G.is_fullscreen() == f0, "F: di nuovo finestra")
+	print("MENU DONE")
+
+## Il negozio: CAMERETTA_RIDE=shop (con il server acceso compra davvero, su un portafoglio nuovo)
+func _shop_check() -> void:
+	G.set_lang("it"); G.room_mode = "walk"
+	Shop.code = ""; Shop.owned.clear(); Shop.worn.clear(); Shop.ups.clear(); Shop._queue.clear(); Shop.balance = 0; Shop.online = false
+	Shop.apply()
+	m.open_shop()
+	var net: bool = await until(func(): return Shop.online, 6)
+	print("server: ", net)
+	await wait(0.6)
+	if net: ok(Shop.code.begins_with("CRI-"), "portafoglio " + Shop.code)
+	if net: ok(await until(func(): return Shop.balance >= 5, 6), "premio del giorno: %d" % Shop.balance)
+	for c in ["theme", "vespa", "helmet", "hood", "cargo", "wall", "rug", "corner", "poster", "up"]:
+		ShopUI.cat = c
+		ShopUI.sel = Shop.items(c)[mini(2, Shop.items(c).size() - 1)].id
+		m.open_shop(true)
+		await wait(0.35)
+		await shot("shop_" + c)
+		ok(m._panel.size.y <= m.size.y and m._panel.position.y >= 0, "il pannello sta nello schermo: " + c)
+	ShopUI.getting = true; m.open_shop(true); await wait(0.3); ok(m._panel.size.x <= m.size.x, "la pagina delle monete sta in larghezza"); await shot("shop_monete"); ShopUI.getting = false
+	if net:
+		ShopUI.cat = "vespa"; ShopUI.sel = "ve_oro"
+		await ShopUI.act(m)
+		ok(not Shop.has("ve_oro") and ShopUI.getting, "senza monete non si compra e si spiega come averle")
+		var r: Array = await Shop._call("/api/store/gift", {"code": Shop.code, "coins": 9000})
+		ok(r[0] == 200, "regalo di prova")
+		await Shop.sync()
+		for id in ["ve_rosso", "se_nera", "ca_notte", "fe_gialla", "pa_jeans", "sc_blu", "po_gatto", "ta_blu", "pr_verde", "te_rosse", "an_lava", "mu_neon", "th_aurora", "up_marmitta", "up_gomme", "up_faro", "up_clacson", "up_scia", "up_aurora", "up_comete"]:
+			ShopUI.cat = Shop.by_id[id].cat; ShopUI.sel = id
+			await ShopUI.act(m)
+			ok(Shop.has(id) and (Shop.up(id) if Shop.by_id[id].cat == "up" else Shop.cur(Shop.by_id[id].cat).id == id), "comprato e in uso: " + id)
+		await wait(0.2); await shot("shop_dopo")
+		var b := Shop.balance
+		var keep := Shop.code
+		Shop.code = ""; Shop.owned.clear(); Shop.balance = 0
+		ok(await Shop.use_code(keep.to_lower()) and Shop.balance == b and Shop.has("ve_rosso"), "il codice riporta tutto")
+		ok(not await Shop.use_code("CRI-ZZZZ-ZZZZ"), "codice inventato respinto")
+	else:
+		for id in ["ve_rosso", "ca_notte", "fe_gialla", "sc_blu", "po_gatto", "pr_verde", "ta_blu", "an_lava", "mu_neon", "th_aurora"]:
+			Shop.owned[id] = true; Shop.wear(id)
+	m.close_modal()
+	await shot("menu_tema")
+	m._start_game(false)
+	await until(func(): return m.scene == "street" and not m.busy)
+	await wait(1.0); await shot("strada_tema")
+	m._to_menu(); await until(func(): return m.scene == "menu" and not m.busy); await wait(0.5)
+	m._start_game(true)
+	await until(func(): return m.scene == "room" and not m.busy)
+	await wait(1.2); await shot("camera_tema")
+	m._to_menu(); await until(func(): return m.scene == "menu" and not m.busy); await wait(0.5)
+	m._start_ride()
+	await until(func(): return m.scene == "sea" and not m.busy)
+	await wait(0.6); await shot("mare_fermo")
+	var sea = m.worlds.sea
+	sea.take_helmet()
+	await until(func(): return sea.state == "ride", 20)
+	m.pad_dir = 1
+	await wait(3.2); sea.horn(); await wait(0.35); await shot("mare_corsa")
+	if net: await wait(2.0); ok(sea.v > sea.MAX_V + 4, "la marmitta si sente (%.0f)" % sea.v)
+	Shop.worn["theme"] = "th_neve"; Shop.apply(); await wait(0.3); await shot("mare_senza_tema")
+	ok(m.view.material == null, "tema di serie: nessun filtro")
+	print("SHOP DONE")
+
+## I templi: CAMERETTA_RIDE=grove
+func _grove_check() -> void:
+	G.set_lang("it"); G.room_mode = "walk"; G.prayers = {}
+	m._start_game(false)
+	await until(func(): return m.scene == "street" and not m.busy)
+	# dai due lati di ogni insegna: si gira dalla parte giusta e la scena cambia subito
+	for q in [["GROVE_X", "grove", 32.0], ["GROVE_X", "grove", -32.0], ["FORK_X", "sea", 32.0], ["FORK_X", "sea", -32.0]]:
+		var st = m.worlds.street
+		m._enter_street(st.get_script().get_script_constant_map()[q[0]] + q[2])
+		st.P.dir = int(signf(q[2]))          # guarda dalla parte opposta al sentiero
+		await wait(0.3)
+		var t0 := Time.get_ticks_msec()
+		await key(KEY_E)
+		await wait(0.1)
+		ok(st.P.dir == -int(signf(q[2])), "%s %+d: si gira verso il sentiero" % [q[1], int(q[2])])
+		await until(func(): return m.scene == q[1], 5)
+		ok(Time.get_ticks_msec() - t0 < 1150, "%s %+d: cambia scena in %d ms" % [q[1], int(q[2]), Time.get_ticks_msec() - t0])
+		await until(func(): return not m.busy)
+	m._enter_street(m.worlds.street.GROVE_X - 4)
+	await wait(1.6); await shot("bivio")
+	await key(KEY_DOWN)
+	ok(await until(func(): return m.scene == "grove" and not m.busy), "freccia giu' porta ai templi")
+	await wait(2.6); await shot("templi")
+	var g = m.worlds.grove
+	for id in ["stelle", "magia", "dune"]:
+		g.P.x = g.at(id) - 70; await wait(1.6); await shot("targa_" + id)
+		ok(g.line == G.t("temples")[id], "targa: " + g.line)
+		g.tap(g.at(id) - g.cam)
+		ok(await until(func(): return g.state == "pray", 12), "si siede: " + id)
+		ok(absf(g.P.x - g.at(id) + 56) < 4, "davanti all'altare: " + id)
+		await wait(2.6); await shot("prega_" + id)
+		ok(await until(func(): return g.state == "walk", 8) and int(G.prayers.get(id, 0)) == 1, "preghiera contata: " + id)
+		ok(await until(func(): return g.line != "" and g.line != G.t("temples")[id] and g.done(), 12), "risposta: " + g.line)
+		await shot("risposta_" + id)
+	g.P.x = g.at("stelle"); await wait(0.2)
+	await key(KEY_E); await until(func(): return g.state == "pray", 8); await wait(1.2)
+	m.pad_dir = 1; await wait(0.3); m.pad_dir = 0
+	ok(g.state == "walk" and int(G.prayers.stelle) == 1, "ci si puo' alzare prima: non conta")
+	G.prayers.stelle = 8; G.prayers.magia = 5; G.prayers.dune = 6; await wait(1.0); await shot("candele")
+	m.b_back.pressed.emit()
+	ok(await until(func(): return m.scene == "street" and not m.busy), "indietro torna in strada")
+	ok(absf(m.worlds.street.P.x - m.worlds.street.GROVE_X) < 40, "vicino al bivio")
+	if Shop.code == "": ok(Shop._queue.has("pray:stelle"), "il premio aspetta il portafoglio")
+	print("GROVE DONE")

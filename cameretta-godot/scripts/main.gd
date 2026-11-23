@@ -20,6 +20,9 @@ var menu_ui: Control
 var menu_items: Array = []
 var menu_sel := 0
 var menu_mode_lbl: Button
+var menu_full: Button
+var menu_quote: Dictionary = {}
+var menu_quote_t := 0.0
 var hud: Control
 var hud_top: Control
 var crumb: Label
@@ -30,6 +33,8 @@ var b_skip: Button
 var b_lang: Button
 var b_audio: Button
 var b_settings: Button
+var b_full: Button
+var b_shop: Button
 var b_menu: Button
 var hint: RichTextLabel
 var prog: Control
@@ -90,7 +95,7 @@ func _ready() -> void:
 	sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	sv.disable_3d = true
 	add_child(sv)
-	for n in ["menu", "street", "living", "room", "sea"]:
+	for n in ["menu", "street", "living", "room", "sea", "grove"]:
 		var w := Node2D.new()
 		w.set_script(load("res://scripts/%s.gd" % n))
 		w.visible = false
@@ -134,7 +139,8 @@ func _ready() -> void:
 	G.settings_changed.connect(_apply_texts)
 	worlds.street.go_inside.connect(func(): _transition(_enter_living.bind(false), true))
 	worlds.living.go_room.connect(_go_room)
-	worlds.street.go_sea.connect(func(): get_tree().create_timer(0.55).timeout.connect(func(): if scene == "street": _transition(_enter_sea)))
+	worlds.street.go_sea.connect(func(): if scene == "street": _transition(_enter_sea))
+	worlds.street.go_grove.connect(func(): if scene == "street": _transition(_enter_grove))
 	worlds.sea.open_stop.connect(func(i): get_tree().create_timer(0.25).timeout.connect(func(): if scene == "sea" and worlds.sea.state == "parked": open_stop(i)))
 	worlds.sea.chapter.connect(_on_chapter)
 	worlds.sea.mode_changed.connect(func(): if scene == "sea": _sea_mode())
@@ -142,6 +148,9 @@ func _ready() -> void:
 	worlds.room.open_section.connect(func(id): open_section(id))
 	worlds.room.hover_changed.connect(func(_g): _render_sign())
 	_layout()
+	Shop.coins_in.connect(func(n): toast(G.t("coinsIn") % n))
+	Shop.changed.connect(func(): if modal.visible and modal_kind == "shop": open_shop(true))
+	Shop.theme_changed.connect(_apply_theme)
 	_boot()
 	if OS.get_environment("CAMERETTA_TOUR") != "":
 		var t := Node.new()
@@ -156,6 +165,7 @@ func _boot() -> void:
 		_ld_update()
 		await get_tree().process_frame
 	_ld_update()
+	Shop.apply()
 	worlds.room.build()
 	Sfx.levels()
 	Sfx.apply_volumes()
@@ -172,6 +182,7 @@ func _boot() -> void:
 	elif h == "salotto": _enter_living(false)
 	elif h == "strada": _enter_street()
 	elif h == "lungomare": _enter_sea()
+	elif h == "templi": _enter_grove()
 	if G.offline: toast(G.t("noServer"))
 	var left := 1500 - (Time.get_ticks_msec() - t0)
 	if left > 0: await get_tree().create_timer(left / 1000.0).timeout
@@ -248,6 +259,10 @@ void fragment(){
 	var tip := UI.rich("[center]" + G.kbd(tips[randi() % tips.size()]) + "[/center]", 22, G.C_MUTED)
 	tip.custom_minimum_size.x = 520
 	v.add_child(tip)
+	menu_quote = Quotes.next()     # la stessa frase poi resta nel menu
+	var q := UI.rich("[center]«%s»\n[color=#f2b85b]— %s[/color][/center]" % [G.esc_bb(G.L(menu_quote, "text")), G.esc_bb(Quotes.author(menu_quote))], 24, G.C_CREAM)
+	q.custom_minimum_size.x = 520
+	v.add_child(q)
 
 # ================================================================== palco (bolle, prompt, cartello, titolo)
 func _build_stage() -> void:
@@ -295,14 +310,21 @@ func _make_bubble(B: Dictionary) -> PanelContainer:
 	p.size = Vector2(340, 10)
 	p.mouse_filter = MOUSE_FILTER_IGNORE
 	var v := UI.vbox(6)
-	if quote: v.add_child(UI.label("“", 44, G.gold, UI.f_head))
+	if quote:
+		var mk := Control.new()     # le virgolette, senza lo spazio vuoto sotto
+		mk.custom_minimum_size.y = 22
+		mk.mouse_filter = MOUSE_FILTER_IGNORE
+		var ql := UI.label("“", 44, G.gold, UI.f_head)
+		ql.position.y = -10
+		mk.add_child(ql)
+		v.add_child(mk)
 	var r := UI.rich("", 25, G.C_CREAM if quote else G.C_INK)
 	r.name = "T"
 	r.custom_minimum_size.x = 300
 	r.mouse_filter = MOUSE_FILTER_IGNORE
 	v.add_child(r)
 	if quote and str(B.data.get("author", "")) != "":
-		var a := UI.label("— " + str(B.data.author), 21, G.gold)
+		var a := UI.label("— " + G.L(B.data, "author"), 21, G.gold, null, true)
 		a.name = "A"
 		a.modulate.a = 0
 		v.add_child(a)
@@ -346,7 +368,9 @@ func _update_bubbles() -> void:
 		var txt := G.esc_bb(shown) + caret
 		if r.text != txt: r.text = txt
 		var a = p.find_child("A", true, false)
-		if a: a.modulate.a = 1.0 if B.state == "done" else 0.0
+		if a:
+			a.text = "— " + G.L(B.data, "author")
+			a.modulate.a = 1.0 if B.state == "done" else 0.0
 		if not p.visible:
 			p.visible = true
 			p.modulate.a = 0
@@ -363,7 +387,7 @@ func _update_bubbles() -> void:
 		tail2.position = Vector2(0, p.size.y)
 		last_text = shown
 		last_quote = B.data.get("kind", "") == "quote"
-		last_auth = str(B.data.get("author", "")) if B.state == "done" else ""
+		last_auth = G.L(B.data, "author") if B.state == "done" else ""
 	if portrait and dialog:
 		var bb := G.esc_bb(last_text)
 		if last_quote and last_auth != "": bb += "\n[color=#f2b85b]— %s[/color]" % G.esc_bb(last_auth)
@@ -515,6 +539,32 @@ func _update_sea() -> void:
 	route.visible = sea.riding() and not modal.visible
 	route.queue_redraw()
 
+## Riquadro della voce nei templi (in verticale usa il fumetto in basso).
+func _say_box(txt: String, full: String, done: bool) -> void:
+	var on := txt != "" and not modal.visible
+	if portrait:
+		narr_node.visible = false
+		var bb := G.esc_bb(txt)
+		if dialog_txt.text != bb:
+			dialog_txt.text = bb
+			dialog.get_node("Inner").add_theme_stylebox_override("panel", UI.box(G.C_CREAM, G.C_INK, 4, 14, 10))
+			dialog_txt.add_theme_color_override("default_color", G.C_INK)
+		dialog.visible = on
+		return
+	if on:
+		var tx := G.esc_bb(txt) + ("" if done else "[color=#f2b85b]▌[/color]")
+		if narr_txt.text != tx: narr_txt.text = tx
+		if not narr_node.visible:
+			narr_node.visible = true
+			narr_node.modulate.a = 0
+		var nw := minf(560, size.x * 0.46)
+		narr_node.custom_minimum_size = Vector2(nw, 0)
+		narr_txt.custom_minimum_size = Vector2(nw - 48, UI.f_body.get_multiline_string_size(full, HORIZONTAL_ALIGNMENT_LEFT, nw - 56, 27).y)
+		narr_node.reset_size()
+		narr_node.position = Vector2((size.x - narr_node.size.x) / 2, 66)
+	narr_node.modulate.a = move_toward(narr_node.modulate.a, 1.0 if on else 0.0, get_process_delta_time() * 5)
+	if not on and narr_node.modulate.a <= 0.01: narr_node.visible = false
+
 ## Striscia del percorso: capitoli, tappe viste, Vespa, chilometri per Pisa.
 func _draw_route() -> void:
 	var sea = worlds.sea
@@ -620,11 +670,10 @@ func _rebuild_menu() -> void:
 	var col := UI.vbox(8)
 	col.mouse_filter = MOUSE_FILTER_IGNORE
 	back.add_child(col)
-	var kick := UI.label(G.L(S, "menu_kicker"), 22, G.C_SKY, UI.f_ui)
-	col.add_child(kick)
+	if not compact: col.add_child(UI.label(G.L(S, "menu_kicker"), 22, G.C_SKY, UI.f_ui))
 	var site := str(S.get("site_name", "CRI's CAMERETTA"))
 	var avail := (size.x - 48) if portrait else 520.0
-	var fs := 96 if not portrait else 64
+	var fs := 64 if portrait or compact else 96
 	while fs > 28 and UI.f_head.get_string_size(site, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > avail - 8: fs -= 2
 	var nm := UI.label(site, fs, G.C_CREAM, UI.f_head)
 	nm.add_theme_color_override("font_shadow_color", G.C_TERRA)
@@ -632,11 +681,11 @@ func _rebuild_menu() -> void:
 	nm.add_theme_constant_override("shadow_offset_y", 6)
 	col.add_child(nm)
 	col.add_child(UI.label(G.L(S, "menu_subtitle"), 28, G.gold, UI.f_ui, true))
-	var tag := UI.label(G.L(S, "menu_tagline"), 24, G.C_MUTED, null, true)
-	col.add_child(tag)
-	var gap := Control.new()
-	gap.custom_minimum_size.y = 14
-	col.add_child(gap)
+	if not compact:
+		col.add_child(UI.label(G.L(S, "menu_tagline"), 24, G.C_MUTED, null, true))
+		var gap := Control.new()
+		gap.custom_minimum_size.y = 14
+		col.add_child(gap)
 	var nav := PanelContainer.new()
 	nav.add_theme_stylebox_override("panel", UI.box(Color(G.C_NIGHT, 0.82), G.C_CREAM, 4, 4))
 	var nv := UI.vbox(2)
@@ -647,18 +696,22 @@ func _rebuild_menu() -> void:
 		["enter", enter_lbl if enter_lbl != "" else G.t("start"), ""],
 		["room", G.t("room"), ""],
 		["ride", G.t("rideMenu"), "★"],
+		["shop", G.t("shop"), str(Shop.balance) if Shop.code != "" else ""],
 		["settings", G.t("settings"), G.t("walk") if G.room_mode == "walk" else G.t("point") if G.room_mode == "point" else ""],
 		["lang", G.t("language").to_upper(), G.t("langName").to_upper()],
 		["audio", G.t("audio").to_upper(), G.t("on") if G.audio_on else G.t("off")],
 		["help", G.t("help"), ""],
 	]
+	if not Shop.enabled(): items = items.filter(func(q): return q[0] != "shop")
+	# schermi bassi: lingua e audio stanno già nelle impostazioni, così il resto rimane grande
+	if compact: items = items.filter(func(q): return q[0] != "lang" and q[0] != "audio")
 	if not G.ride_found: items = items.filter(func(q): return q[0] != "ride")
 	for i in items.size():
 		var it: Array = items[i]
 		var b := Button.new()
 		b.focus_mode = Control.FOCUS_NONE
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.custom_minimum_size = Vector2(440 if not portrait else 0, 50)
+		b.custom_minimum_size = Vector2(440 if not portrait else 0, 40 if compact else 46)
 		b.add_theme_font_override("font", UI.f_ui)
 		b.add_theme_font_size_override("font_size", 24 if not portrait else 22)
 		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -672,12 +725,16 @@ func _rebuild_menu() -> void:
 		nv.add_child(b)
 		menu_items.append(b)
 	_menu_sel(menu_sel)
-	if not G.touch:
+	if not G.touch and not compact:
 		var press := UI.label(G.L(S, "press_text"), 20, G.C_DIM, UI.f_ui, true)
 		col.add_child(press)
 	# modalità della cameretta: sempre indicata
 	menu_mode_lbl = _mode_button()
-	col.add_child(menu_mode_lbl)
+	var row := UI.hbox(10)
+	row.add_child(menu_mode_lbl)
+	menu_full = _full_button(18)
+	row.add_child(menu_full)
+	col.add_child(row)
 	var foot: BoxContainer = UI.vbox(2) if portrait else UI.hbox(14)
 	foot.name = "Foot"
 	menu_ui.add_child(foot)
@@ -686,7 +743,62 @@ func _rebuild_menu() -> void:
 		var gh: String = S.github_url
 		var gb := UI.button(gh.replace("https://", "").replace("http://", ""), func(): G.open_url(gh), "link", 18)
 		foot.add_child(gb)
+	_build_menu_quote()
 	_layout_menu()
+
+# --- la citazione del menu: cambia da sola ogni tanto
+func _build_menu_quote() -> void:
+	if menu_quote.is_empty(): menu_quote = Quotes.next()
+	var p := PanelContainer.new()
+	p.name = "Quote"
+	p.mouse_filter = MOUSE_FILTER_IGNORE
+	p.add_theme_stylebox_override("panel", UI.box(Color("26204a", 0.9), G.gold, 4, 18, 12))
+	var v := UI.vbox(4)
+	v.mouse_filter = MOUSE_FILTER_IGNORE
+	var tx := UI.label("", 25, G.C_CREAM, null, true)
+	tx.name = "T"
+	tx.add_theme_constant_override("line_spacing", -8)
+	var au := UI.label("", 20, G.gold, null, true)
+	au.name = "A"
+	for l in [tx, au]:
+		l.mouse_filter = MOUSE_FILTER_IGNORE
+		v.add_child(l)
+	p.add_child(v)
+	menu_ui.add_child(p)
+	_fill_menu_quote()
+
+func _fill_menu_quote() -> void:
+	var p: PanelContainer = menu_ui.get_node("Quote")
+	(p.find_child("T", true, false) as Label).text = "«%s»" % G.L(menu_quote, "text")
+	(p.find_child("A", true, false) as Label).text = "— " + Quotes.author(menu_quote)
+
+func _layout_menu_quote() -> void:
+	var p: PanelContainer = menu_ui.get_node_or_null("Quote")
+	if p == null: return
+	var col: Control = menu_ui.get_node("Col")
+	var w := minf(480, col.position.x - 48)
+	p.visible = not portrait and not compact and w >= 300
+	if not p.visible: return
+	for l in [p.find_child("T", true, false), p.find_child("A", true, false)]:
+		l.custom_minimum_size.x = w - 44
+		l.size.x = w - 44
+		l.update_minimum_size()
+	p.custom_minimum_size.x = w
+	p.size = Vector2(w, 0)
+	var foot: Control = menu_ui.get_node("Foot")
+	p.position = Vector2(24, size.y - foot.get_combined_minimum_size().y - 34 - p.get_combined_minimum_size().y)
+
+func _next_menu_quote() -> void:
+	var p: Control = menu_ui.get_node_or_null("Quote")
+	if p == null: return
+	var tw := create_tween()
+	tw.tween_property(p, "modulate:a", 0.0, 0.4)
+	tw.tween_callback(func():
+		menu_quote = Quotes.next()
+		if not is_instance_valid(p) or not p.is_inside_tree(): return
+		_fill_menu_quote()
+		_layout_menu_quote())
+	tw.tween_property(p, "modulate:a", 1.0, 0.4)
 
 func _menu_sel(i: int) -> void:
 	if menu_items.is_empty(): return
@@ -707,6 +819,7 @@ func _menu_act(a: String) -> void:
 		"enter": _start_game(false)
 		"room": _start_game(true)
 		"ride": _start_ride()
+		"shop": open_shop()
 		"settings": open_settings()
 		"lang":
 			Sfx.select()
@@ -722,6 +835,14 @@ func _layout_menu() -> void:
 	var sz := size
 	var col: PanelContainer = menu_ui.get_node("Col")
 	var foot: BoxContainer = menu_ui.get_node("Foot")
+	# i testi che vanno a capo devono conoscere la larghezza prima di misurare l'altezza:
+	# appena creati (o da nascosti) sono larghi zero e il menu risulterebbe altissimo, quindi minuscolo
+	var inner: float = (sz.x - 48 if portrait else 572.0) - col.get_theme_stylebox("panel").get_minimum_size().x
+	for l in col.get_child(0).get_children():
+		if l is Label and l.autowrap_mode != TextServer.AUTOWRAP_OFF:
+			l.custom_minimum_size.x = inner
+			l.size.x = inner
+			l.update_minimum_size()
 	if portrait:
 		col.scale = Vector2.ONE
 		col.custom_minimum_size.x = sz.x - 48
@@ -730,10 +851,11 @@ func _layout_menu() -> void:
 	else:
 		col.custom_minimum_size.x = 572
 		col.size = Vector2(572, 0)
-		# sugli schermi bassi il menu si rimpicciolisce invece di uscire dal bordo
-		var fit := minf(1.0, (sz.y - 40) / maxf(1, col.get_combined_minimum_size().y))
+		# sugli schermi bassi il menu si rimpicciolisce un po' invece di uscire dal bordo
+		var fit := clampf((sz.y - 40) / maxf(1, col.get_combined_minimum_size().y), 0.55, 1.0)
 		col.scale = Vector2(fit, fit)
 		col.position = Vector2(sz.x - 572 * fit - maxf(30, sz.x * 0.05), maxf(20, (sz.y - col.get_combined_minimum_size().y * fit) / 2))
+	_layout_menu_quote()
 	foot.reset_size()
 	foot.position = Vector2(24, sz.y - foot.size.y - 12)
 
@@ -743,6 +865,29 @@ func _mode_button() -> Button:
 	b.name = "Mode"
 	_update_mode_button(b)
 	return b
+
+## Pulsante dello schermo intero: l'icona (quattro angoli) è disegnata, i font pixel non ce l'hanno.
+func _full_button(fs: int) -> Button:
+	var b := UI.button("    ", func(): Sfx.select(); G.toggle_fullscreen(), "tool", fs)
+	b.name = "Full"
+	b.visible = G.can_fullscreen()
+	b.draw.connect(func():
+		var c := (b.size / 2).round()
+		var on := G.is_fullscreen()
+		var ink: Color = G.C_INK if b.get_draw_mode() in [BaseButton.DRAW_HOVER, BaseButton.DRAW_PRESSED, BaseButton.DRAW_HOVER_PRESSED] else G.C_CREAM
+		for sx in [-1, 1]:
+			for sy in [-1, 1]:
+				var q := c + Vector2(sx, sy) * (3.0 if on else 9.0)
+				var dir := Vector2(sx, sy) * (1.0 if on else -1.0)
+				b.draw_rect(Rect2(q, Vector2(dir.x * 6, dir.y * 2)).abs(), ink)
+				b.draw_rect(Rect2(q, Vector2(dir.x * 2, dir.y * 6)).abs(), ink))
+	_update_full_button(b)
+	return b
+
+func _update_full_button(b: Button) -> void:
+	if b == null or not is_instance_valid(b): return
+	b.tooltip_text = G.t("fullOff" if G.is_fullscreen() else "fullOn") + " (F)"
+	b.queue_redraw()
 
 func _update_mode_button(b: Button) -> void:
 	if b == null: return
@@ -786,13 +931,19 @@ func _build_hud() -> void:
 	b_back = UI.button("", func():
 		Sfx.select()
 		if scene == "sea": _transition(_enter_street.bind(worlds.street.FORK_X + 20))
+		elif scene == "grove": _transition(_enter_street.bind(worlds.street.GROVE_X + 20))
 		else: _transition(_enter_living.bind(true), true))
 	b_skip = UI.button("", func(): Sfx.select(); _transition(_enter_room, scene == "living"))
 	b_settings = UI.button("✻", func(): open_settings())
 	b_lang = UI.button("EN", func(): Sfx.select(); G.set_lang("it" if G.lang == "en" else "en"))
 	b_audio = UI.button("♪", func(): Sfx.set_enabled(not G.audio_on); Sfx.select(); _apply_texts())
 	b_menu = UI.button("", func(): Sfx.select(); _to_menu())
-	for b in [b_back, b_skip, b_settings, b_lang, b_audio, b_menu]: tools.add_child(b)
+	b_full = _full_button(20)
+	b_shop = UI.button("", func(): open_shop())
+	b_shop.icon = ShopUI.coin_icon()
+	b_shop.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	b_shop.add_theme_constant_override("icon_max_width", 24)
+	for b in [b_back, b_skip, b_shop, b_settings, b_lang, b_audio, b_full, b_menu]: tools.add_child(b)
 	hint = UI.rich("", 20, G.C_CREAM)
 	hint.autowrap_mode = TextServer.AUTOWRAP_OFF
 	hint.custom_minimum_size.x = 0
@@ -861,6 +1012,9 @@ func _build_mobile() -> void:
 	pad.visible = false
 
 # ================================================================== layout
+var _was_full := false
+var _shape := ""                # disposizione attuale: se cambia (telefono ruotato) i testi si ricompongono
+
 func _layout() -> void:
 	var win := get_window()
 	var px := Vector2(win.size)
@@ -869,10 +1023,13 @@ func _layout() -> void:
 	var css := px / dpr
 	portrait = css.x < 760 and css.y > css.x
 	compact = css.y < 520 and not portrait
+	var shape := "%s%s" % [portrait, compact]
+	var reshaped := _shape != "" and shape != _shape
+	_shape = shape
 	var f: float
 	if portrait: f = css.x / 430.0
 	elif compact: f = css.y / 540.0
-	else: f = clampf(minf(css.x / 1280.0, css.y / 800.0), 0.62, 2.2)
+	else: f = clampf(minf(css.x / 1280.0, css.y / 800.0), 0.62, 4.0)
 	win.content_scale_factor = maxf(0.3, f * dpr)
 	await get_tree().process_frame
 	# schermi più larghi di 16:9: il gioco resta un 16:9 centrato (bande ai lati), altrimenti
@@ -903,6 +1060,15 @@ func _layout() -> void:
 	view.pivot_offset = Vector2.ZERO
 	stage.position = world_rect.position
 	stage.scale = Vector2.ONE * (world_rect.size.x / 1280.0)
+	var fl := G.is_fullscreen()
+	if fl != _was_full:            # entrato o uscito (anche con ESC o dal browser)
+		_was_full = fl
+		_update_full_button(b_full)
+		_update_full_button(menu_full)
+		if modal.visible and modal_kind == "settings": open_settings(true)
+	if reshaped and menu_ui.has_node("Col"):
+		_apply_texts()              # richiama da sé _layout
+		return
 	_layout_hud()
 	_layout_menu()
 	_layout_modal()
@@ -925,6 +1091,7 @@ func _follow(k: float) -> void:
 		"street": fx = worlds.street.P.x - worlds.street.cam
 		"living": fx = worlds.living.P.x
 		"sea": fx = worlds.sea.focus_x()
+		"grove": fx = worlds.grove.P.x - worlds.grove.cam
 		"room":
 			var r = worlds.room
 			if G.room_mode == "walk": fx = r.P.x
@@ -944,7 +1111,7 @@ func content_scale() -> float:
 
 func _layout_hud() -> void:
 	var sz := size
-	var walk := scene == "street" or scene == "living" or scene == "sea" or (scene == "room" and G.room_mode == "walk")
+	var walk := scene == "street" or scene == "living" or scene == "sea" or scene == "grove" or (scene == "room" and G.room_mode == "walk")
 	var left: HBoxContainer = hud_top.get_node("Left")
 	if portrait:
 		left.position = Vector2(8, 8)
@@ -958,7 +1125,7 @@ func _layout_hud() -> void:
 		var below := world_rect.end.y + (56 if scene == "room" else 10)
 		hint.visible = false
 		prog.visible = false
-		dialog.visible = (scene == "street" or scene == "sea") and dialog_txt.text != ""
+		dialog.visible = (scene == "street" or scene == "sea" or scene == "grove") and dialog_txt.text != ""
 		dialog.position = Vector2(10, below)
 		dialog.size = Vector2(sz.x - 20, 0)
 		dialog.custom_minimum_size = Vector2(sz.x - 20, 120)
@@ -977,7 +1144,7 @@ func _layout_hud() -> void:
 		if mode_badge.get_parent() != left:
 			mode_badge.get_parent().remove_child(mode_badge)
 			left.add_child(mode_badge)
-		mode_badge.visible = scene != "menu" and scene != "sea"
+		mode_badge.visible = scene != "menu" and scene != "sea" and scene != "grove"
 		var top := maxf(10, world_rect.position.y + 10) if compact else 14.0
 		left.position = Vector2(maxf(14, world_rect.position.x + 14), top)
 		tools.position = Vector2(minf(sz.x, world_rect.end.x) - tools.get_combined_minimum_size().x - 14, top)
@@ -999,9 +1166,8 @@ func _layout_hud() -> void:
 		pad_a.position = Vector2(world_rect.end.x - 130, py)
 		if scene == "room": prog.position.x -= (140 if pad.visible else 0)
 	hud.visible = scene != "menu" and scene != "loading"
-	if scene != "sea":
-		route.visible = false
-		narr_node.visible = false
+	if scene != "sea": route.visible = false
+	if scene != "sea" and scene != "grove": narr_node.visible = false
 	menu_ui.visible = scene == "menu"
 	if not hud.visible:
 		dialog.visible = false
@@ -1014,16 +1180,19 @@ func _apply_texts() -> void:
 	if G.S.is_empty(): return
 	_rebuild_menu()
 	var name := str(G.S.get("site_name", "CRI's CAMERETTA"))
-	var sc: String = G.t("street") if scene == "street" else G.t("living") if scene == "living" else G.t("sea") if scene == "sea" else G.L(G.S, "room_crumb")
+	var sc: String = G.t("street") if scene == "street" else G.t("living") if scene == "living" else G.t("sea") if scene == "sea" else G.t("grove") if scene == "grove" else G.L(G.S, "room_crumb")
 	crumb.text = name + " · " + sc
 	crumb.get_parent().visible = not portrait
-	b_back.text = "◀" if portrait else G.t("backStreet" if scene == "sea" else "back")
+	b_back.text = "◀" if portrait else G.t("backStreet" if scene == "sea" or scene == "grove" else "back")
 	b_skip.text = G.t("skip")
 	b_lang.text = G.lang.to_upper()
 	b_audio.text = "♪" if portrait else "♪ " + (G.t("on") if G.audio_on else G.t("off"))
 	b_audio.modulate.a = 1.0 if G.audio_on else 0.55
+	b_shop.visible = Shop.enabled()
+	b_shop.tooltip_text = G.t("shopTitle")
+	_update_full_button(b_full)
 	b_menu.text = "☰ " + G.t("menu") if not portrait else "☰"
-	b_back.visible = scene == "room" or scene == "sea"
+	b_back.visible = scene == "room" or scene == "sea" or scene == "grove"
 	b_skip.visible = scene == "street" or scene == "living"
 	_update_mode_button(mode_badge)
 	var hk := "hintWalk"
@@ -1040,6 +1209,7 @@ func _apply_texts() -> void:
 		if modal_kind == "section": open_section(open_id, true)
 		elif modal_kind == "help": open_help(true)
 		elif modal_kind == "settings": open_settings(true)
+		elif modal_kind == "shop": open_shop(true)
 		elif modal_kind == "choose": _open_choose(true)
 		elif modal_kind == "ride": open_stop(worlds.sea.park_i, true)
 		elif modal_kind == "rideend": open_ride_end(true)
@@ -1116,6 +1286,11 @@ func _enter_sea() -> void:
 	_rebuild_sea()
 	_set_scene("sea")
 	G.set_hash("lungomare")
+
+func _enter_grove() -> void:
+	worlds.grove.enter()
+	_set_scene("grove")
+	G.set_hash("templi")
 
 ## Dal menu, una volta scoperto: si arriva dritti alla Vespa.
 func _start_ride() -> void:
@@ -1214,13 +1389,14 @@ func _process(dt: float) -> void:
 	if w == null: return
 	_follow(minf(1.0, dt * 6))
 	var blocked := busy or modal.visible
-	if scene == "street" or scene == "living" or scene == "sea":
+	if scene == "street" or scene == "living" or scene == "sea" or scene == "grove":
 		w.input_dir = 0 if blocked else _held_dir()
 		w.run = Input.is_physical_key_pressed(KEY_SHIFT)
 		w.locked = busy
 		w.update(dt)
 		if scene == "street": _update_bubbles()
 		elif scene == "sea": _update_sea()
+		elif scene == "grove": _say_box(w.text(), w.line, w.done())
 		_update_prompt(w.prompt, w.cam if scene != "living" else 0.0)
 	elif scene == "room":
 		var v := Vector2i.ZERO
@@ -1236,6 +1412,11 @@ func _process(dt: float) -> void:
 		_update_prompt(w.prompt if G.room_mode == "walk" and not modal.visible else {}, 0.0)
 	else:
 		w.update(dt)
+		if scene == "menu" and not modal.visible:
+			menu_quote_t += dt
+			if menu_quote_t > 4.5 + G.L(menu_quote, "text").length() * 0.05:
+				menu_quote_t = 0.0
+				_next_menu_quote()
 
 func _held_dir() -> int:
 	var d := 0
@@ -1296,13 +1477,17 @@ func _on_view_input(e: InputEvent) -> void:
 	if scene == "sea" and e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 		worlds.sea.tap(pos)
 		return
-	if (scene == "street" or scene == "living") and e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+	if (scene == "street" or scene == "living" or scene == "grove") and e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 		worlds[scene].tap(pos.x)
 
 func _unhandled_input(e: InputEvent) -> void:
 	if not (e is InputEventKey) or not e.pressed or e.echo and e.keycode != KEY_LEFT and e.keycode != KEY_RIGHT: return
 	if loading: return
 	var k: int = e.physical_keycode if e.physical_keycode != 0 else e.keycode
+	if k == KEY_F and not e.echo and not e.ctrl_pressed and not e.meta_pressed and not e.alt_pressed:
+		G.toggle_fullscreen()
+		get_viewport().set_input_as_handled()
+		return
 	if modal.visible:
 		if k == KEY_ESCAPE: close_modal()
 		elif modal_kind == "section" and (k == KEY_LEFT or k == KEY_RIGHT) and not e.echo:
@@ -1320,7 +1505,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			if k == KEY_DOWN: _menu_sel(menu_sel + 1); Sfx.move()
 			elif k == KEY_UP: _menu_sel(menu_sel - 1); Sfx.move()
 			elif k == KEY_ENTER or k == KEY_KP_ENTER or k == KEY_SPACE: _menu_act(menu_items[menu_sel].get_meta("act"))
-		"street", "living":
+		"street", "living", "grove":
 			if k in [KEY_E, KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_UP, KEY_W]: _do_action()
 			elif k == KEY_ESCAPE: _to_menu()
 			elif (k == KEY_DOWN or k == KEY_S) and scene == "street" and worlds.street.prompt.has("down"): _do_action()
@@ -1430,6 +1615,7 @@ func open_section(id: String, silent := false) -> void:
 	var s: Dictionary = G.by_id[id]
 	open_id = id
 	G.mark_explored(id)
+	Shop.earn("section:" + id)
 	var ids: Array = worlds.room.order()
 	if ids.is_empty():
 		for x in G.sections: ids.append(x.id)
@@ -1531,6 +1717,7 @@ func open_stop(i: int, silent := false) -> void:
 
 ## Fine del giro, al belvedere.
 func open_ride_end(silent := false) -> void:
+	Shop.earn("ride_end")
 	var sea = worlds.sea
 	var n: int = sea.seen_count()
 	var v := UI.vbox(16)
@@ -1546,6 +1733,30 @@ func open_ride_end(silent := false) -> void:
 	v.add_child(bits)
 	_open_modal("rideend", v, null, _title_row("finestra", "", G.t("rideEndTitle")), 760)
 	if not silent: Sfx.open()
+
+func open_shop(silent := false) -> void:
+	if not Shop.enabled(): return
+	if not silent:
+		ShopUI.getting = false
+		ShopUI.msg = ""
+	var keep := 0
+	if modal.visible and modal_kind == "shop":
+		var old: ScrollContainer = _panel.find_child("Scroll", true, false)
+		if old: keep = old.scroll_vertical
+	_open_modal("shop", ShopUI.build(self), null, _title_row("", "", G.t("shopTitle")), 1080)
+	if not silent:
+		Sfx.open()
+		if await Shop.sync(): Shop.earn("daily")
+	elif keep > 0:
+		var sc: ScrollContainer = _panel.find_child("Scroll", true, false)
+		await get_tree().process_frame
+		if is_instance_valid(sc): sc.scroll_vertical = keep
+
+## Il tema scelto nel negozio: colora il mondo e gli accenti dell'interfaccia.
+func _apply_theme() -> void:
+	view.material = Shop.theme_material()
+	G.gold = Shop.accent()
+	if scene != "loading": _apply_texts()
 
 func open_help(silent := false) -> void:
 	var v := UI.vbox(14)
@@ -1587,6 +1798,8 @@ func open_settings(silent := false) -> void:
 	var v := UI.vbox(20)
 	v.add_child(_row(G.t("language"), _seg([["en", "ENGLISH"], ["it", "ITALIANO"]], G.lang, func(x): Sfx.select(); G.set_lang(x))))
 	v.add_child(_row(G.t("audio"), _seg([["on", G.t("on")], ["off", G.t("off")]], "on" if G.audio_on else "off", func(x): Sfx.set_enabled(x == "on"); Sfx.select(); open_settings(true))))
+	if G.can_fullscreen():
+		v.add_child(_row(G.t("full"), _seg([["on", G.t("on")], ["off", G.t("off")]], "on" if G.is_fullscreen() else "off", func(x): Sfx.select(); if (x == "on") != G.is_fullscreen(): G.toggle_fullscreen())))
 	if not G.touch:
 		var mode := _seg([["walk", G.t("walk")], ["point", G.t("point")]], G.room_mode, func(x): _set_mode(x))
 		v.add_child(_row(G.t("roomMode"), mode))

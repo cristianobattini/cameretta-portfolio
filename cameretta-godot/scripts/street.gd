@@ -3,7 +3,10 @@ extends Node2D
 
 signal go_inside
 signal go_sea
+signal go_grove
 
+const MAX_BUBBLES := 12        # quante bolle stanno in strada senza accavallarsi
+const GROVE_X := 640.0         # il sentiero che porta ai templi
 const FORK_X := 866.0          # il sentiero che scende al mare
 
 var P: Player
@@ -19,6 +22,8 @@ var input_dir := 0
 var run := false
 var locked := false
 var prompt: Dictionary = {}
+var down_x := FORK_X
+var _left := false             # la scena sta già cambiando
 var down := 0.0                # >0: sta scendendo il sentiero
 var back_l: Layer
 var glow_l: Layer
@@ -52,22 +57,48 @@ func enter() -> void:
 func build_bubbles() -> void:
 	bub.clear()
 	var s: Dictionary = G.J.street
-	var n := G.bubbles.size()
+	var list := _with_quotes(G.bubbles)
+	var n := list.size()
 	if n == 0: return
 	var x0 := 210.0
 	var x1 := float(s.stop) - 200.0
 	var step := (x1 - x0) / (n - 1) if n > 1 else 0.0
 	for i in n:
-		bub.append({"x": x0 + i * step, "top": 196.0 if i % 2 else 128.0, "data": G.bubbles[i], "state": "idle", "shown": 0, "t": 0.26})
+		bub.append({"x": x0 + i * step, "top": 196.0 if i % 2 else 128.0, "data": list[i], "state": "idle", "shown": 0, "t": 0.26})
+
+## Tra una bolla e l'altra infila citazioni di fisici, sempre diverse, finché c'è posto in strada.
+func _with_quotes(src: Array) -> Array:
+	var gaps := src.size() - 1
+	var add := clampi(MAX_BUBBLES - src.size(), 0, maxi(gaps, 0))
+	var texts: Array = src.map(func(b): return str(b.get("text", "")))
+	var out: Array = []
+	var put := 0
+	for i in src.size():
+		out.append(src[i])
+		if i < gaps and put < add and (i + 1) * add / gaps > put:
+			var q := Quotes.next()
+			while texts.has(q.text) or q.text.length() > 105 or q.text_en.length() > 105: q = Quotes.next()   # corte: non devono coprire l'omino
+			out.append({"kind": "quote", "text": q.text, "text_en": q.text_en, "author": q.author, "author_en": q.get("author_en", q.author)})
+			put += 1
+	return out
 
 func update(dt: float) -> void:
 	time += dt
 	var s: Dictionary = G.J.street
 	if down > 0:                   # sta scendendo verso il mare
-		down += dt
-		P.x = move_toward(P.x, FORK_X, 50 * dt)
+		# prima raggiunge il sentiero di corsa, girandosi dalla parte giusta; poi scende
+		var off := down_x - P.x
+		if absf(off) > 1.0:
+			P.dir = 1 if off > 0 else -1
+			P.x = move_toward(P.x, down_x, 115 * dt)
+		else:
+			down += dt
+			if not _left:
+				_left = true
+				if down_x == FORK_X: go_sea.emit()
+				else: go_grove.emit()
 		P.moving = true
-		P.animate(dt, false, Sfx.step_snow)
+		P.animate(dt, absf(off) > 1.0, Sfx.step_snow)
 	else:
 		P.update(dt, input_dir, run, 14, s.stop, Sfx.step_snow, locked)
 	Sfx.near_sea(clampf(1.0 - absf(P.x - FORK_X) / 150.0, 0, 1))
@@ -90,6 +121,8 @@ func update(dt: float) -> void:
 		prompt = {"x": float(s.door.x) - cam, "y": float(s.door.y) - 26, "label": G.t("enterHouse"), "action": func(): go_inside.emit()}
 	elif absf(P.x - FORK_X) < 34 and down <= 0:
 		prompt = {"x": FORK_X - cam, "y": 108.0, "label": G.t("toSea"), "action": take_path, "down": true}
+	elif absf(P.x - GROVE_X) < 34 and down <= 0:
+		prompt = {"x": GROVE_X - cam, "y": 108.0, "label": G.t("toGrove"), "action": take_grove, "down": true}
 	else:
 		prompt = {}
 	# fumo dal comignolo
@@ -131,8 +164,16 @@ func enter_at(px: float) -> void:
 func take_path() -> void:
 	if down > 0: return
 	down = 0.001
+	_left = false
+	down_x = FORK_X
 	P.target = -1.0
-	go_sea.emit()
+
+func take_grove() -> void:
+	if down > 0: return
+	down = 0.001
+	_left = false
+	down_x = GROVE_X
+	P.target = -1.0
 
 ## Rifinisce le bolle già comparse quando cambia la lingua.
 func finish_bubbles() -> void:
@@ -151,7 +192,7 @@ func _snow(ci: CanvasItem, dx: float, front: bool) -> void:
 		if f.x < -4: f.x += 328
 		if f.x > 324: f.x -= 328
 		var big: bool = f.z > 1
-		ci.draw_rect(Rect2(roundf(f.x), roundf(f.y), 2 if big else 1, 2 if big else 1), Color(1, 1, 1, 0.95) if big else Color(0.86, 0.9, 1, 0.6))
+		ci.draw_rect(Rect2(roundf(f.x), roundf(f.y), 2 if big else 1, 2 if big else 1), Shop.flake(big))
 
 func _draw_back(ci: CanvasItem) -> void:
 	var s: Dictionary = G.J.street
@@ -162,6 +203,7 @@ func _draw_back(ci: CanvasItem) -> void:
 	_snow(ci, dcam * 0.4, false)
 	ci.draw_texture(G.tex.near, Vector2(-c, 0))
 	_draw_fork(ci, c)
+	_draw_grove_path(ci, c)
 	for p in smoke:
 		ci.draw_circle(Vector2(roundf(p.x - c), roundf(p.y)), p.r, Color(0.82, 0.84, 0.93, maxf(0, p.a)))
 
@@ -176,6 +218,17 @@ func _draw_fork(ci: CanvasItem, c: float) -> void:
 		var ay := 160.0 + roundf(sin(time * 4) * 2)
 		for k in 4: ci.draw_rect(Rect2(roundf(sx) - 3 + k, ay + k * 2, 7 - k * 2, 2), G.gold)
 
+func _draw_grove_path(ci: CanvasItem, c: float) -> void:
+	var sx := GROVE_X - c
+	if sx < -80 or sx > 400: return
+	var f: Array = G.J.sea.rects.fork
+	ci.draw_texture_rect_region(G.tex.sea_props, Rect2(roundf(sx - 42), 155, f[2], f[3]), Rect2(f[0], f[1], f[2], f[3]))
+	var r: Array = G.J.grove.rects.signgrove
+	ci.draw_texture_rect_region(G.tex.grove_props, Rect2(roundf(sx - 76), 106, r[2], r[3]), Rect2(r[0], r[1], r[2], r[3]))
+	if sin(time * 4) > -0.2:
+		var ay := 160.0 + roundf(sin(time * 4) * 2)
+		for k in 4: ci.draw_rect(Rect2(roundf(sx) - 3 + k, ay + k * 2, 7 - k * 2, 2), Color("c8a0ff"))
+
 func _draw_glow(ci: CanvasItem) -> void:
 	var s: Dictionary = G.J.street
 	var c := roundf(cam)
@@ -185,6 +238,7 @@ func _draw_glow(ci: CanvasItem) -> void:
 		var a := 0.07 + 0.02 * sin(time * 2 + float(l.x))
 		Layer.glow(ci, Vector2(x, 64), 24, Color(1, 0.82, 0.55, a * 2.2))
 	Layer.glow(ci, Vector2(FORK_X - c, 178), 40, Color(1, 0.8, 0.5, 0.2 + 0.04 * sin(time * 2)))
+	Layer.glow(ci, Vector2(GROVE_X - c, 178), 40, Color(0.75, 0.55, 1, 0.22 + 0.04 * sin(time * 2)))
 	for w in s.windows:
 		var x := float(w[0]) - c
 		if x > -40 and x < 360:

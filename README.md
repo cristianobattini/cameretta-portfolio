@@ -24,6 +24,20 @@ La musica di sottofondo si carica dall'admin e vale per entrambe.
 
 Tutti i contenuti stanno in un database **SQLite locale** e si gestiscono da una **dashboard admin**.
 
+Lungo la strada ci sono due deviazioni: il **lungomare** con il giro in Vespa e i **templi** (omaggi a Star Wars, Harry Potter e Dune, arte originale) dove ci si siede a pregare. `F` = schermo intero.
+
+## Il negozio
+
+Le monete si guadagnano giocando oppure donando su Buy Me a Coffee; servono per temi, vestiti, Vespa, arredi e potenziamenti. Il catalogo (nomi, prezzi, colori) è `cameretta-godot/store/catalog.json`: lo leggono sia il gioco sia il server, quindi dopo averlo cambiato si riesporta il gioco e si riavvia il server.
+
+Per attivare le donazioni:
+
+1. In **Admin → Negozio** incolla l'indirizzo della tua pagina Buy Me a Coffee.
+2. Su Buy Me a Coffee crea un webhook (`donation.created`, `donation.refunded`) verso `https://www.cristianobattini.com/api/bmc/webhook`.
+3. Avvia il server con `CAMERETTA_BMC_SECRET` uguale al segreto del webhook (mai nelle impostazioni: quelle sono pubbliche).
+
+Ogni visitatore ha un portafoglio anonimo (`CRI-XXXX-XXXX`): chi dona incolla il codice nel messaggio. Non si salvano nomi né email.
+
 ## Avvio
 
 **macOS**: doppio clic su `avvia.command`. Se macOS lo blocca, tasto destro → Apri.

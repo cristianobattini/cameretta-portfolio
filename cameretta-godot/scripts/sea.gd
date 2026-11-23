@@ -35,6 +35,8 @@ var state := "walk"            # walk, helmet, mount, start, ride, parking, park
 var st := 0.0                  # secondi nello stato corrente
 var x := VESPA_X               # centro della Vespa
 var sit_bump := 0.0
+var _quiet := 0.0               # da quanto la voce tace
+var _quotes_n := 0
 var v := 0.0
 var dist := 0.0
 var cam := 0.0
@@ -201,7 +203,7 @@ func enter() -> void:
 	v = 0; dist = 0; cam = 0; last_cam = 0
 	engine = false; _helmet_on = false; _snow_on = true; _kick_n = 0; _end_lines = false
 	cur_chapter = -1; park_i = -1; target_x = -1; target_stop = -1
-	narr = {}; _said.clear(); _puffs.clear()
+	narr = {}; _quiet = 0.0; _said.clear(); _puffs.clear()
 	for s in stops:
 		s.state = "hidden"; s.t = 0.0
 		s.seen = G.ride_seen.has(str(s.it.id))
@@ -388,16 +390,16 @@ func _up_ride(dt: float) -> void:
 				stop_at(i)
 				return
 			target_x = -1
-	var top := TURBO_V if run else MAX_V
+	var top := (TURBO_V if run else MAX_V) * (1.24 if Shop.up("up_marmitta") else 1.0)
 	_brake = false
 	if d > 0:
-		v += (72.0 if v < 60 else 46.0) * dt * (1.35 if run else 1.0)
+		v += (72.0 if v < 60 else 46.0) * (1.5 if Shop.up("up_gomme") else 1.0) * dt * (1.35 if run else 1.0)
 		if v > top: v = maxf(top, v - 60 * dt)
 	elif d < 0:
 		if v > 2:
 			if v > 55 and not _brake and fmod(time, 0.5) < dt: Sfx.play("brake_snow", 0.4, randf_range(0.9, 1.1), "Steps")
 			_brake = true
-			v = maxf(0, v - 165 * dt)
+			v = maxf(0, v - (290 if Shop.up("up_gomme") else 165) * dt)
 		else:
 			v = maxf(-24, v - 40 * dt)      # indietro si spinge coi piedi
 	else:
@@ -420,6 +422,7 @@ func _up_ride(dt: float) -> void:
 			cur_chapter = i
 			chapter.emit(i)
 			say("ch_" + str(ch.id), G.t("rideStory").get(ch.id, [G.L(ch.sec, "intro")]), 1.7)
+	_ride_quote(dt)
 	# belvedere
 	if x > end_x - 70:
 		prompt = {"x": end_x + 46 - cam, "y": 112.0, "label": G.t("rideDawn"), "action": look_dawn}
@@ -427,6 +430,19 @@ func _up_ride(dt: float) -> void:
 	var n := near_stop()
 	if n >= 0:
 		prompt = {"x": x - cam - 28, "y": 104.0, "label": G.t("rideStop"), "action": stop_at.bind(n)}
+
+## Quando la strada è libera e la voce tace, torna in mente una frase di un fisico.
+func _ride_quote(dt: float) -> void:
+	if not narr.is_empty() or v < 24 or x > end_x - 420:
+		_quiet = 0.0
+		return
+	_quiet += dt
+	if _quiet < 2.8: return
+	for ch in chapters:
+		if float(ch.x0) > x and float(ch.x0) - x < 480: return     # sta per cominciare un capitolo
+	_quiet = 0.0
+	_quotes_n += 1
+	say("quote_%d" % _quotes_n, [Quotes.line(Quotes.next(true))], 0.1)
 
 func near_stop() -> int:
 	var best := -1
@@ -468,6 +484,7 @@ func _up_parking(dt: float) -> void:
 			var s: Dictionary = stops[park_i]
 			s.seen = true
 			G.ride_seen[str(s.it.id)] = true
+			Shop.earn("stop:%d" % int(s.it.id))
 			G.save_prefs()
 			open_stop.emit(park_i)
 		else:
@@ -508,6 +525,8 @@ func horn() -> void:
 	if not (riding() and state in ["ride", "parking"]) or _horn_t > 0: return
 	_horn_t = 0.45
 	Sfx.play("horn", 0.6, randf_range(0.98, 1.02))
+	if Shop.up("up_clacson"):
+		for k in 34: _puff(x + 18 + randf_range(-4, 4), 140, randf_range(-70, 90), randf_range(-95, -20), 1.5, Color.from_hsv(randf(), 0.7, 1.0), 95.0)
 	for g in _gulls:
 		if g.st == "sit" and absf(g.x - x) < 260: _fly(g)
 
@@ -556,6 +575,8 @@ func _particles(dt: float) -> void:
 		_puff(x - 37, 178, -10 - v * 0.15 + randf_range(-5, 2), randf_range(-9, -3), 0.42, Color(0.82, 0.84, 0.93), -3)
 	if v > 40 and randf() < dt * v * 0.35:              # la neve alzata dalla ruota dietro
 		_puff(x - 24, 181, -randf_range(10, 40), -randf_range(8, 30), 0.85, Color("e6edfc"), 110.0)
+	if Shop.up("up_scia") and v > 55 and randf() < dt * v * 0.4:
+		_puff(x - 26, randf_range(140, 176), -v * 0.35 + randf_range(-8, 8), randf_range(-10, 6), 1.3, Color.from_hsv(randf_range(0.08, 0.18) if randf() < 0.7 else 0.55, 0.4, 1.0), 6.0)
 	if _brake and v > 30 and randf() < dt * 40: _puff(x + 22, 181, randf_range(10, 50), -randf_range(4, 18), 0.8, Color("e6edfc"), 110.0)
 	_breath -= dt
 	if _breath <= 0:
@@ -576,7 +597,7 @@ func _particles(dt: float) -> void:
 	else:
 		_shoot_wait -= dt
 		if _shoot_wait <= 0:
-			_shoot_wait = randf_range(6, 13)
+			_shoot_wait = randf_range(0.1, 0.8) if Shop.up("up_comete") else randf_range(6, 13)
 			if progress() < 0.6: _shoot = {"t": 0.0, "x": randf_range(30, 250), "y": randf_range(16, 40)}
 
 func _fly(g: Dictionary) -> void:
@@ -626,6 +647,7 @@ func _draw_back(ci: CanvasItem) -> void:
 	var hz: int = _J.horizon
 	ci.draw_texture_rect_region(G.tex.sea_sky, Rect2(0, 0, 320, sh), Rect2(0, i * sh, 320, sh))
 	if p - i > 0.004: ci.draw_texture_rect_region(G.tex.sea_sky, Rect2(0, 0, 320, sh), Rect2(0, (i + 1) * sh, 320, sh), Color(1, 1, 1, p - i))
+	if Shop.up("up_aurora"): _draw_aurora(ci, clampf(1.0 - (p - 0.8) / 1.4, 0, 1))
 	# stelle (Orione tramonta a ovest)
 	var na := clampf(1.0 - (p - 0.6) / 1.5, 0, 1)
 	if na > 0.02:
@@ -902,6 +924,7 @@ func _draw_vespa(ci: CanvasItem, vx: float, rider: String, lift := 0.0) -> void:
 	var fro: Array = J.front
 	_spr(ci, "wheel%d" % fr, left + float(rear[0]) - 9, top + float(rear[1]) - 9)
 	_spr(ci, "wheel%d" % fr, left + float(fro[0]) - 9, top + float(fro[1]) - 9)
+	Shop.draw_cargo(ci, left, top + bob)
 	var dip := clampf(roundf(_dip), -1, 1)                # in frenata il muso si abbassa
 	_spr(ci, "vespa", left, top + bob)
 	if state in ["walk", "helmet", "mount"]:
@@ -913,6 +936,7 @@ func _draw_vespa(ci: CanvasItem, vx: float, rider: String, lift := 0.0) -> void:
 	var rt := top + float(J.rider_dy) + bob + lift
 	var R: Dictionary = _J.riders[rider]
 	var lean := 1.0 if dip > 0 else 0.0
+	var sc := Shop.scarf_cols()
 	# la sciarpa che vola: più si corre più si tende
 	var sp := clampf(v / MAX_V, 0, 1.2)
 	var nk := Vector2(left + float(R.neck[0]) + 2 + lean, rt + float(R.neck[1]) + 1)
@@ -925,8 +949,8 @@ func _draw_vespa(ci: CanvasItem, vx: float, rider: String, lift := 0.0) -> void:
 		var t := k / 10.0
 		var px := nk.x - k * lerpf(1.0, 2.1, sp)
 		var py := nk.y + k * lerpf(1.7, 0.12, sp) + sin(time * lerpf(2.5, 15, sp) - k * 0.75) * (0.4 + 2.3 * sp) * t
-		ci.draw_rect(Rect2(roundf(px), roundf(py), 2, 3), Color("eeba52") if k in [4, 5, 8] else Color("c84638"))
-		ci.draw_rect(Rect2(roundf(px), roundf(py) + 2, 2, 1), Color("9c322a"))
+		ci.draw_rect(Rect2(roundf(px), roundf(py), 2, 3), sc[2] if k in [4, 5, 8] else sc[0])
+		ci.draw_rect(Rect2(roundf(px), roundf(py) + 2, 2, 1), sc[1])
 	_spr(ci, "rider_" + rider, left + lean, rt)
 	_spr(ci, "helmet_back" if rider == "sea" else "helmet", left + float(R.head[0]) + lean, rt + float(R.head[1]))
 	if _brake: ci.draw_rect(Rect2(left + float(J.tail[0]), top + float(J.tail[1]) - 1 + bob, 3, 4), Color(1, 0.35, 0.3))
@@ -940,13 +964,26 @@ func _draw_glow_front(ci: CanvasItem) -> void:
 	if _flicker > 0: k *= 0.15 if int(_flicker * 22) % 2 == 0 else 1.0
 	k *= 0.94 + 0.06 * sin(time * 31)
 	if state in ["parked", "ending"]: k *= 0.55
-	var c0 := Color(1, 0.92, 0.66, 0.23 * k)
-	ci.draw_polygon(PackedVector2Array([lp + Vector2(0, -2), lp + Vector2(150, -16), lp + Vector2(165, 44), lp + Vector2(0, 3)]), PackedColorArray([c0, Color(c0, 0), Color(c0, 0), c0]))
+	var fw := 1.45 if Shop.up("up_faro") else 1.0
+	var c0 := Color(1, 0.92, 0.66, 0.23 * k * fw)
+	ci.draw_polygon(PackedVector2Array([lp + Vector2(0, -2), lp + Vector2(150, -16) * fw, lp + Vector2(165, 44) * fw, lp + Vector2(0, 3)]), PackedColorArray([c0, Color(c0, 0), Color(c0, 0), c0]))
 	Layer.glow(ci, lp, 13, Color(1, 0.94, 0.74, 0.75 * k))
 	ci.draw_set_transform(Vector2(lp.x + 76, 182), 0, Vector2(1, 0.15))
 	Layer.glow(ci, Vector2.ZERO, 72, Color(1, 0.9, 0.62, 0.26 * k))
 	ci.draw_set_transform(Vector2.ZERO)
 	Layer.glow(ci, Vector2(left + float(J.tail[0]) + 1, 133 + float(J.tail[1])), 14 if _brake else 8, Color(1, 0.2, 0.15, 0.8 if _brake else 0.4))
+
+## Tende di luce verde e viola (potenziamento del negozio).
+func _draw_aurora(ci: CanvasItem, a: float) -> void:
+	if a <= 0.02: return
+	for b in 2:
+		for sx in range(0, 320, 2):
+			var u := (sx + cam * 0.01) * 0.02
+			var y0 := 18.0 + b * 14 + sin(u * 1.3 + time * 0.22 + b * 2.0) * 9 + sin(u * 3.1 - time * 0.31) * 4
+			var h := 26.0 + sin(u * 2.2 + time * 0.5 + b) * 12
+			var k := (0.5 + 0.5 * sin(u * 4.0 + time * 0.8 + b * 1.7)) * a
+			for j in 5:
+				ci.draw_rect(Rect2(sx, y0 + h * j / 5.0, 2, h / 5.0 + 1), Color(Color("5cf0a8").lerp(Color("a060f0"), (4 - j) / 4.0 if b == 0 else j / 5.0), 0.17 * k * (0.35 + 0.65 * sin((j + 0.5) / 5.0 * PI))))
 
 func _draw_fore(ci: CanvasItem) -> void:
 	var fx := -fposmod(roundf(cam * 1.22), 512)
@@ -966,5 +1003,5 @@ func _snow(ci: CanvasItem, front: bool) -> void:
 		if f.y > 200:
 			f.y = -4; f.x = randf_range(0, 320)
 		f.x = fposmod(f.x + 4, 328) - 4
-		if front: ci.draw_rect(Rect2(roundf(f.x), roundf(f.y), 2 + int(clampf(v / 70.0, 0, 2)), 2), Color(1, 1, 1, 0.9))
-		else: ci.draw_rect(Rect2(roundf(f.x), roundf(f.y), 1, 1), Color(0.9, 0.93, 1, 0.6))
+		if front: ci.draw_rect(Rect2(roundf(f.x), roundf(f.y), 2 + int(clampf(v / 70.0, 0, 2)), 2), Shop.flake(true))
+		else: ci.draw_rect(Rect2(roundf(f.x), roundf(f.y), 1, 1), Shop.flake(false))

@@ -1,0 +1,1226 @@
+{
+ "categories": [
+  {
+   "id": "theme",
+   "name": "Temi",
+   "name_en": "Themes"
+  },
+  {
+   "id": "vespa",
+   "name": "Vespa",
+   "name_en": "Vespa"
+  },
+  {
+   "id": "seat",
+   "name": "Sella",
+   "name_en": "Saddle"
+  },
+  {
+   "id": "helmet",
+   "name": "Casco",
+   "name_en": "Helmet"
+  },
+  {
+   "id": "hood",
+   "name": "Felpa",
+   "name_en": "Hoodie"
+  },
+  {
+   "id": "pants",
+   "name": "Pantaloni",
+   "name_en": "Trousers"
+  },
+  {
+   "id": "scarf",
+   "name": "Sciarpa",
+   "name_en": "Scarf"
+  },
+  {
+   "id": "cargo",
+   "name": "Portapacchi",
+   "name_en": "Rack"
+  },
+  {
+   "id": "rug",
+   "name": "Tappeto",
+   "name_en": "Rug"
+  },
+  {
+   "id": "wall",
+   "name": "Pareti",
+   "name_en": "Walls"
+  },
+  {
+   "id": "curtain",
+   "name": "Tende",
+   "name_en": "Curtains"
+  },
+  {
+   "id": "corner",
+   "name": "Angolo della camera",
+   "name_en": "Room corner"
+  },
+  {
+   "id": "poster",
+   "name": "Alla parete",
+   "name_en": "On the wall"
+  },
+  {
+   "id": "up",
+   "name": "Potenziamenti",
+   "name_en": "Upgrades"
+  }
+ ],
+ "items": [
+  {
+   "id": "th_neve",
+   "cat": "theme",
+   "name": "Notte di neve",
+   "name_en": "Snowy night",
+   "price": 0,
+   "desc": "Com'è nata la cameretta.",
+   "desc_en": "How the room was born."
+  },
+  {
+   "id": "th_alba",
+   "cat": "theme",
+   "name": "Alba rosa",
+   "name_en": "Pink dawn",
+   "price": 150,
+   "desc": "Neve che diventa petali, luce di prima mattina.",
+   "desc_en": "Snow turns to petals, early morning light.",
+   "ramp": [
+    "2a1638",
+    "8a3f6e",
+    "f08a7a",
+    "ffe6c4"
+   ],
+   "mix": 0.38,
+   "sat": 1.05,
+   "flake": "ffc4d6",
+   "accent": "ff9e8a"
+  },
+  {
+   "id": "th_aurora",
+   "cat": "theme",
+   "name": "Notte polare",
+   "name_en": "Polar night",
+   "price": 150,
+   "desc": "Verde e viola, come sotto l'aurora.",
+   "desc_en": "Green and violet, as under the aurora.",
+   "ramp": [
+    "06122a",
+    "14506a",
+    "3fc7a0",
+    "e8fff0"
+   ],
+   "mix": 0.42,
+   "sat": 1.1,
+   "flake": "b8ffe0",
+   "accent": "5fe0b0"
+  },
+  {
+   "id": "th_estate",
+   "cat": "theme",
+   "name": "Sera d'agosto",
+   "name_en": "August evening",
+   "price": 180,
+   "desc": "Niente neve: lucciole, e un caldo color miele.",
+   "desc_en": "No snow: fireflies, and honey-coloured heat.",
+   "ramp": [
+    "2a1420",
+    "7a3a2a",
+    "e0964a",
+    "fff0c0"
+   ],
+   "mix": 0.36,
+   "sat": 1.15,
+   "flake": "ffe27a",
+   "accent": "ffb040"
+  },
+  {
+   "id": "th_cristalli",
+   "cat": "theme",
+   "name": "Cristalli verdi",
+   "name_en": "Green crystals",
+   "price": 200,
+   "desc": "Quattro verdi soltanto, da schermo tascabile.",
+   "desc_en": "Only four greens, like a pocket screen.",
+   "ramp": [
+    "0f2818",
+    "2f6038",
+    "7aa83a",
+    "d8e88a"
+   ],
+   "mix": 1,
+   "sat": 0,
+   "flake": "d8e88a",
+   "accent": "b8d860"
+  },
+  {
+   "id": "th_seppia",
+   "cat": "theme",
+   "name": "Vecchia fotografia",
+   "name_en": "Old photograph",
+   "price": 120,
+   "desc": "Trovata in un cassetto.",
+   "desc_en": "Found in a drawer.",
+   "ramp": [
+    "20140e",
+    "6a4a34",
+    "b8946a",
+    "f6ead0"
+   ],
+   "mix": 0.92,
+   "sat": 0,
+   "flake": "f6ead0",
+   "accent": "d8b080"
+  },
+  {
+   "id": "th_neon",
+   "cat": "theme",
+   "name": "Neon",
+   "name_en": "Neon",
+   "price": 220,
+   "desc": "Magenta e ciano, notte elettrica.",
+   "desc_en": "Magenta and cyan, electric night.",
+   "ramp": [
+    "0a0420",
+    "5a1a8a",
+    "e83a9a",
+    "6af0ff"
+   ],
+   "mix": 0.5,
+   "sat": 1.3,
+   "flake": "6af0ff",
+   "accent": "ff5ac0"
+  },
+  {
+   "id": "th_noir",
+   "cat": "theme",
+   "name": "Noir",
+   "name_en": "Noir",
+   "price": 120,
+   "desc": "Bianco e nero, neve e silenzio.",
+   "desc_en": "Black and white, snow and silence.",
+   "ramp": [
+    "08080c",
+    "3c3c46",
+    "9a9aa4",
+    "ffffff"
+   ],
+   "mix": 1,
+   "sat": 0,
+   "flake": "ffffff",
+   "accent": "e8e8e8"
+  },
+  {
+   "id": "ve_menta",
+   "cat": "vespa",
+   "name": "Menta",
+   "name_en": "Mint",
+   "price": 0,
+   "desc": "",
+   "desc_en": ""
+  },
+  {
+   "id": "ve_rosso",
+   "cat": "vespa",
+   "name": "Rosso corsa",
+   "name_en": "Racing red",
+   "price": 80,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "c83a36",
+    "ffc0a8",
+    "e46450",
+    "942630",
+    "641a28"
+   ]
+  },
+  {
+   "id": "ve_mare",
+   "cat": "vespa",
+   "name": "Azzurro mare",
+   "name_en": "Sea blue",
+   "price": 80,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "5a9ad8",
+    "d4ecff",
+    "84bcec",
+    "3a6ea8",
+    "264a78"
+   ]
+  },
+  {
+   "id": "ve_limone",
+   "cat": "vespa",
+   "name": "Giallo limone",
+   "name_en": "Lemon",
+   "price": 80,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "e8c846",
+    "fff6c0",
+    "f4de78",
+    "b4922e",
+    "7c6222"
+   ]
+  },
+  {
+   "id": "ve_crema",
+   "cat": "vespa",
+   "name": "Panna",
+   "name_en": "Cream",
+   "price": 80,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "ece0c4",
+    "fffcf0",
+    "f6eeda",
+    "bca88a",
+    "86745c"
+   ]
+  },
+  {
+   "id": "ve_rosa",
+   "cat": "vespa",
+   "name": "Confetto",
+   "name_en": "Candy pink",
+   "price": 100,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "ec9ab4",
+    "ffe4ec",
+    "f6bccc",
+    "b86a88",
+    "804664"
+   ]
+  },
+  {
+   "id": "ve_nera",
+   "cat": "vespa",
+   "name": "Nero notte",
+   "name_en": "Midnight black",
+   "price": 140,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "34343e",
+    "9aa0b4",
+    "50505e",
+    "222229",
+    "16161c"
+   ]
+  },
+  {
+   "id": "ve_viola",
+   "cat": "vespa",
+   "name": "Viola imperiale",
+   "name_en": "Imperial violet",
+   "price": 140,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "8258b4",
+    "e0ccff",
+    "a47ed0",
+    "5c3a88",
+    "3e2662"
+   ]
+  },
+  {
+   "id": "ve_oro",
+   "cat": "vespa",
+   "name": "Oro",
+   "name_en": "Gold",
+   "price": 400,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "e0ac3c",
+    "fff8c8",
+    "f4d070",
+    "a87420",
+    "744a18"
+   ]
+  },
+  {
+   "id": "se_cuoio",
+   "cat": "seat",
+   "name": "Cuoio",
+   "name_en": "Leather",
+   "price": 0,
+   "desc": "",
+   "desc_en": ""
+  },
+  {
+   "id": "se_nera",
+   "cat": "seat",
+   "name": "Nera",
+   "name_en": "Black",
+   "price": 40,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "2c2a34",
+    "54505e",
+    "1c1a22"
+   ]
+  },
+  {
+   "id": "se_rossa",
+   "cat": "seat",
+   "name": "Rossa",
+   "name_en": "Red",
+   "price": 40,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "b03a3a",
+    "d86858",
+    "7a2430"
+   ]
+  },
+  {
+   "id": "se_panna",
+   "cat": "seat",
+   "name": "Panna",
+   "name_en": "Cream",
+   "price": 40,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "e0d0b0",
+    "f6ecd4",
+    "b09c7c"
+   ]
+  },
+  {
+   "id": "se_verde",
+   "cat": "seat",
+   "name": "Verde inglese",
+   "name_en": "British green",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "2f5d48",
+    "4c8468",
+    "1e4032"
+   ]
+  },
+  {
+   "id": "ca_crema",
+   "cat": "helmet",
+   "name": "Panna e rosso",
+   "name_en": "Cream and red",
+   "price": 0,
+   "desc": "",
+   "desc_en": ""
+  },
+  {
+   "id": "ca_nero",
+   "cat": "helmet",
+   "name": "Nero e oro",
+   "name_en": "Black and gold",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "34323c",
+    "6a6676",
+    "201e26",
+    "f2b85b"
+   ]
+  },
+  {
+   "id": "ca_mare",
+   "cat": "helmet",
+   "name": "Azzurro",
+   "name_en": "Sky blue",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "6aa8dc",
+    "c8e8ff",
+    "4478aa",
+    "fff6e0"
+   ]
+  },
+  {
+   "id": "ca_verde",
+   "cat": "helmet",
+   "name": "Verde bosco",
+   "name_en": "Forest green",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "3f7a58",
+    "78b48c",
+    "2a543c",
+    "f6e9c8"
+   ]
+  },
+  {
+   "id": "ca_rosa",
+   "cat": "helmet",
+   "name": "Rosa",
+   "name_en": "Pink",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "f0a4bc",
+    "ffdce6",
+    "bc7090",
+    "ffffff"
+   ]
+  },
+  {
+   "id": "ca_stella",
+   "cat": "helmet",
+   "name": "Cosmonauta",
+   "name_en": "Cosmonaut",
+   "price": 160,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "f4f6fa",
+    "ffffff",
+    "b4bccc",
+    "e07a2c"
+   ]
+  },
+  {
+   "id": "ca_notte",
+   "cat": "helmet",
+   "name": "Cielo stellato",
+   "name_en": "Starry sky",
+   "price": 220,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "222a5c",
+    "3c4a8c",
+    "141a3e",
+    "8a6ad0"
+   ]
+  },
+  {
+   "id": "fe_nera",
+   "cat": "hood",
+   "name": "Nera",
+   "name_en": "Black",
+   "price": 0,
+   "desc": "",
+   "desc_en": ""
+  },
+  {
+   "id": "fe_rossa",
+   "cat": "hood",
+   "name": "Rossa",
+   "name_en": "Red",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "a83438",
+    "d0605a",
+    "78242e",
+    "8c2a32"
+   ]
+  },
+  {
+   "id": "fe_blu",
+   "cat": "hood",
+   "name": "Blu notte",
+   "name_en": "Navy",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "2a3c78",
+    "4c62a8",
+    "1c2850",
+    "223264"
+   ]
+  },
+  {
+   "id": "fe_bosco",
+   "cat": "hood",
+   "name": "Verde bosco",
+   "name_en": "Forest green",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "2f5d44",
+    "508664",
+    "1e4030",
+    "264e3a"
+   ]
+  },
+  {
+   "id": "fe_senape",
+   "cat": "hood",
+   "name": "Senape",
+   "name_en": "Mustard",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "c8963c",
+    "e8bc68",
+    "946a2a",
+    "ac7e32"
+   ]
+  },
+  {
+   "id": "fe_grigia",
+   "cat": "hood",
+   "name": "Grigia",
+   "name_en": "Grey",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "84868e",
+    "aaacb4",
+    "5e6068",
+    "707278"
+   ]
+  },
+  {
+   "id": "fe_lilla",
+   "cat": "hood",
+   "name": "Lilla",
+   "name_en": "Lilac",
+   "price": 80,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "9c84c4",
+    "c4b0e4",
+    "7460a0",
+    "8872b2"
+   ]
+  },
+  {
+   "id": "fe_gialla",
+   "cat": "hood",
+   "name": "Impermeabile giallo",
+   "name_en": "Yellow raincoat",
+   "price": 120,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "f0c83c",
+    "fff090",
+    "bc9428",
+    "d8ae30"
+   ]
+  },
+  {
+   "id": "pa_grigi",
+   "cat": "pants",
+   "name": "Grigi",
+   "name_en": "Grey",
+   "price": 0,
+   "desc": "",
+   "desc_en": ""
+  },
+  {
+   "id": "pa_jeans",
+   "cat": "pants",
+   "name": "Jeans",
+   "name_en": "Jeans",
+   "price": 40,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "4a6898",
+    "364e78",
+    "6a8abc"
+   ]
+  },
+  {
+   "id": "pa_neri",
+   "cat": "pants",
+   "name": "Neri",
+   "name_en": "Black",
+   "price": 40,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "3a3842",
+    "2a2830",
+    "54525e"
+   ]
+  },
+  {
+   "id": "pa_beige",
+   "cat": "pants",
+   "name": "Sabbia",
+   "name_en": "Sand",
+   "price": 40,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "c8ac80",
+    "a08660",
+    "e0c8a0"
+   ]
+  },
+  {
+   "id": "pa_verdi",
+   "cat": "pants",
+   "name": "Militari",
+   "name_en": "Army green",
+   "price": 50,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "66704a",
+    "4c5436",
+    "848e64"
+   ]
+  },
+  {
+   "id": "pa_rossi",
+   "cat": "pants",
+   "name": "Mattone",
+   "name_en": "Brick",
+   "price": 50,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "9c5040",
+    "763a30",
+    "b86c58"
+   ]
+  },
+  {
+   "id": "sc_rossa",
+   "cat": "scarf",
+   "name": "Rossa e oro",
+   "name_en": "Red and gold",
+   "price": 0,
+   "desc": "",
+   "desc_en": ""
+  },
+  {
+   "id": "sc_verde",
+   "cat": "scarf",
+   "name": "Verde e argento",
+   "name_en": "Green and silver",
+   "price": 50,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "2f7a56",
+    "1f5a3e",
+    "d0d6dc"
+   ]
+  },
+  {
+   "id": "sc_blu",
+   "cat": "scarf",
+   "name": "Blu e bronzo",
+   "name_en": "Blue and bronze",
+   "price": 50,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "3458a8",
+    "24407c",
+    "c08a50"
+   ]
+  },
+  {
+   "id": "sc_gialla",
+   "cat": "scarf",
+   "name": "Gialla e nera",
+   "name_en": "Yellow and black",
+   "price": 50,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "ecc03c",
+    "b89028",
+    "2c2830"
+   ]
+  },
+  {
+   "id": "sc_bianca",
+   "cat": "scarf",
+   "name": "Bianca",
+   "name_en": "White",
+   "price": 50,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "f0f0f4",
+    "c4c8d4",
+    "8a94b0"
+   ]
+  },
+  {
+   "id": "sc_arancio",
+   "cat": "scarf",
+   "name": "Arancione",
+   "name_en": "Orange",
+   "price": 50,
+   "desc": "",
+   "desc_en": "",
+   "pal": [
+    "e8843c",
+    "b4602a",
+    "fff0d0"
+   ]
+  },
+  {
+   "id": "po_regalo",
+   "cat": "cargo",
+   "name": "Pacco regalo",
+   "name_en": "Gift box",
+   "price": 0,
+   "desc": "",
+   "desc_en": ""
+  },
+  {
+   "id": "po_gatto",
+   "cat": "cargo",
+   "name": "Gatto copilota",
+   "name_en": "Cat co-pilot",
+   "price": 180,
+   "desc": "Non paga la benzina.",
+   "desc_en": "Doesn't chip in for petrol.",
+   "spr": "po_gatto"
+  },
+  {
+   "id": "po_libri",
+   "cat": "cargo",
+   "name": "Pila di libri",
+   "name_en": "Stack of books",
+   "price": 60,
+   "desc": "Da leggere a Pisa.",
+   "desc_en": "To read in Pisa.",
+   "spr": "po_libri"
+  },
+  {
+   "id": "po_chitarra",
+   "cat": "cargo",
+   "name": "Chitarra",
+   "name_en": "Guitar",
+   "price": 90,
+   "desc": "Custodia compresa.",
+   "desc_en": "Case included.",
+   "spr": "po_chitarra"
+  },
+  {
+   "id": "po_telescopio",
+   "cat": "cargo",
+   "name": "Telescopio",
+   "name_en": "Telescope",
+   "price": 120,
+   "desc": "Se il cielo si apre.",
+   "desc_en": "In case the sky clears.",
+   "spr": "po_telescopio"
+  },
+  {
+   "id": "po_surf",
+   "cat": "cargo",
+   "name": "Tavola da surf",
+   "name_en": "Surfboard",
+   "price": 100,
+   "desc": "A gennaio. Ottimista.",
+   "desc_en": "In January. Optimistic.",
+   "spr": "po_surf"
+  },
+  {
+   "id": "po_pianta",
+   "cat": "cargo",
+   "name": "Pianta grassa",
+   "name_en": "Cactus",
+   "price": 60,
+   "desc": "Viaggia bene.",
+   "desc_en": "Travels well.",
+   "spr": "po_pianta"
+  },
+  {
+   "id": "ta_classico",
+   "cat": "rug",
+   "name": "Pesca",
+   "name_en": "Peach",
+   "price": 0,
+   "desc": "",
+   "desc_en": ""
+  },
+  {
+   "id": "ta_blu",
+   "cat": "rug",
+   "name": "Blu oltremare",
+   "name_en": "Ultramarine",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "hsv": [
+    205,
+    1.2,
+    0.85
+   ]
+  },
+  {
+   "id": "ta_verde",
+   "cat": "rug",
+   "name": "Salvia",
+   "name_en": "Sage",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "hsv": [
+    110,
+    0.8,
+    0.95
+   ]
+  },
+  {
+   "id": "ta_viola",
+   "cat": "rug",
+   "name": "Viola",
+   "name_en": "Violet",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "hsv": [
+    265,
+    1.0,
+    0.9
+   ]
+  },
+  {
+   "id": "ta_rosso",
+   "cat": "rug",
+   "name": "Persiano",
+   "name_en": "Persian",
+   "price": 90,
+   "desc": "",
+   "desc_en": "",
+   "hsv": [
+    -12,
+    1.9,
+    0.8
+   ]
+  },
+  {
+   "id": "pr_classico",
+   "cat": "wall",
+   "name": "Crema",
+   "name_en": "Cream",
+   "price": 0,
+   "desc": "",
+   "desc_en": ""
+  },
+  {
+   "id": "pr_blu",
+   "cat": "wall",
+   "name": "Blu polvere",
+   "name_en": "Powder blue",
+   "price": 120,
+   "desc": "",
+   "desc_en": "",
+   "hsv": [
+    180,
+    0.9,
+    0.95
+   ]
+  },
+  {
+   "id": "pr_verde",
+   "cat": "wall",
+   "name": "Salvia",
+   "name_en": "Sage",
+   "price": 120,
+   "desc": "",
+   "desc_en": "",
+   "hsv": [
+    70,
+    0.9,
+    0.95
+   ]
+  },
+  {
+   "id": "pr_rosa",
+   "cat": "wall",
+   "name": "Rosa antico",
+   "name_en": "Dusty rose",
+   "price": 120,
+   "desc": "",
+   "desc_en": "",
+   "hsv": [
+    -38,
+    0.95,
+    1.0
+   ]
+  },
+  {
+   "id": "pr_notte",
+   "cat": "wall",
+   "name": "Notte",
+   "name_en": "Night",
+   "price": 180,
+   "desc": "",
+   "desc_en": "",
+   "hsv": [
+    200,
+    1.1,
+    0.62
+   ]
+  },
+  {
+   "id": "te_classico",
+   "cat": "curtain",
+   "name": "Pesca",
+   "name_en": "Peach",
+   "price": 0,
+   "desc": "",
+   "desc_en": ""
+  },
+  {
+   "id": "te_rosse",
+   "cat": "curtain",
+   "name": "Teatro",
+   "name_en": "Theatre red",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "hsv": [
+    -18,
+    1.9,
+    0.75
+   ]
+  },
+  {
+   "id": "te_blu",
+   "cat": "curtain",
+   "name": "Blu",
+   "name_en": "Blue",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "hsv": [
+    195,
+    1.1,
+    0.85
+   ]
+  },
+  {
+   "id": "te_verdi",
+   "cat": "curtain",
+   "name": "Bosco",
+   "name_en": "Forest",
+   "price": 60,
+   "desc": "",
+   "desc_en": "",
+   "hsv": [
+    105,
+    1.1,
+    0.75
+   ]
+  },
+  {
+   "id": "an_vuoto",
+   "cat": "corner",
+   "name": "Libero",
+   "name_en": "Empty",
+   "price": 0,
+   "desc": "",
+   "desc_en": ""
+  },
+  {
+   "id": "an_telescopio",
+   "cat": "corner",
+   "name": "Telescopio",
+   "name_en": "Telescope",
+   "price": 140,
+   "desc": "",
+   "desc_en": "",
+   "spr": "an_telescopio"
+  },
+  {
+   "id": "an_monstera",
+   "cat": "corner",
+   "name": "Monstera",
+   "name_en": "Monstera",
+   "price": 90,
+   "desc": "",
+   "desc_en": "",
+   "spr": "an_monstera"
+  },
+  {
+   "id": "an_lava",
+   "cat": "corner",
+   "name": "Lampada lava",
+   "name_en": "Lava lamp",
+   "price": 110,
+   "desc": "",
+   "desc_en": "",
+   "spr": "an_lava"
+  },
+  {
+   "id": "an_giradischi",
+   "cat": "corner",
+   "name": "Giradischi",
+   "name_en": "Record player",
+   "price": 150,
+   "desc": "",
+   "desc_en": "",
+   "spr": "an_giradischi"
+  },
+  {
+   "id": "an_gatto",
+   "cat": "corner",
+   "name": "Gatto sul cuscino",
+   "name_en": "Cat on a cushion",
+   "price": 180,
+   "desc": "",
+   "desc_en": "",
+   "spr": "an_gatto"
+  },
+  {
+   "id": "mu_vuoto",
+   "cat": "poster",
+   "name": "Libera",
+   "name_en": "Empty",
+   "price": 0,
+   "desc": "",
+   "desc_en": ""
+  },
+  {
+   "id": "mu_neon",
+   "cat": "poster",
+   "name": "Neon E = mc²",
+   "name_en": "E = mc² neon",
+   "price": 160,
+   "desc": "",
+   "desc_en": "",
+   "spr": "mu_neon"
+  },
+  {
+   "id": "mu_mappa",
+   "cat": "poster",
+   "name": "Mappa delle stelle",
+   "name_en": "Star map",
+   "price": 90,
+   "desc": "",
+   "desc_en": "",
+   "spr": "mu_mappa"
+  },
+  {
+   "id": "mu_chitarra",
+   "cat": "poster",
+   "name": "Chitarra appesa",
+   "name_en": "Hanging guitar",
+   "price": 110,
+   "desc": "",
+   "desc_en": "",
+   "spr": "mu_chitarra"
+  },
+  {
+   "id": "mu_onda",
+   "cat": "poster",
+   "name": "Equazioni di Maxwell",
+   "name_en": "Maxwell's equations",
+   "price": 140,
+   "desc": "",
+   "desc_en": "",
+   "spr": "mu_onda"
+  },
+  {
+   "id": "up_marmitta",
+   "cat": "up",
+   "name": "Marmitta da rally",
+   "name_en": "Rally exhaust",
+   "price": 200,
+   "desc": "La Vespa va più forte.",
+   "desc_en": "The Vespa goes faster.",
+   "toggle": true
+  },
+  {
+   "id": "up_gomme",
+   "cat": "up",
+   "name": "Gomme chiodate",
+   "name_en": "Studded tyres",
+   "price": 120,
+   "desc": "Frena e riparte in un attimo.",
+   "desc_en": "Brakes and pulls away in no time.",
+   "toggle": true
+  },
+  {
+   "id": "up_faro",
+   "cat": "up",
+   "name": "Faro allo iodio",
+   "name_en": "Iodine headlight",
+   "price": 120,
+   "desc": "Un fascio largo il doppio.",
+   "desc_en": "A beam twice as wide.",
+   "toggle": true
+  },
+  {
+   "id": "up_clacson",
+   "cat": "up",
+   "name": "Clacson a coriandoli",
+   "name_en": "Confetti horn",
+   "price": 100,
+   "desc": "Suona e festeggia.",
+   "desc_en": "Honks and celebrates.",
+   "toggle": true
+  },
+  {
+   "id": "up_scia",
+   "cat": "up",
+   "name": "Scia di stelle",
+   "name_en": "Stardust trail",
+   "price": 160,
+   "desc": "Da una certa velocità in su.",
+   "desc_en": "Above a certain speed.",
+   "toggle": true
+  },
+  {
+   "id": "up_aurora",
+   "cat": "up",
+   "name": "Aurora sul mare",
+   "name_en": "Aurora over the sea",
+   "price": 250,
+   "desc": "Non si è mai vista a Livorno. Quasi mai.",
+   "desc_en": "Never seen in Livorno. Almost never.",
+   "toggle": true
+  },
+  {
+   "id": "up_comete",
+   "cat": "up",
+   "name": "Pioggia di stelle cadenti",
+   "name_en": "Meteor shower",
+   "price": 180,
+   "desc": "Esprimi parecchi desideri.",
+   "desc_en": "Make plenty of wishes.",
+   "toggle": true
+  }
+ ],
+ "earn": {
+  "stop": 2,
+  "ride_end": 30,
+  "section": 3,
+  "daily": 5,
+  "pray": 3
+ }
+}

@@ -218,6 +218,7 @@ func _draw_base(ci: CanvasItem) -> void:
 			p.y += 0.5
 			ci.draw_rect(Rect2(roundf(m[0] + sin(p.y / 2.5 + p.p) * 1.3), roundf(m[1] - 2 - p.y), 1, 1), Color(0.98, 0.98, 1, maxf(0, 1 - p.y / 16) * 0.8))
 		rsteam = rsteam.filter(func(p): return p.y < 16)
+	if G.default_room: Shop.draw_room_items(ci, time)
 	if hover != "" and dims.has(hover):
 		ci.draw_texture(dims[hover], Vector2.ZERO)
 		ci.draw_texture(rings[hover], Vector2.ZERO)
@@ -226,6 +227,7 @@ func _draw_glow(ci: CanvasItem) -> void:
 	var an: Dictionary = G.J.anim
 	if G.default_room and not an.is_empty():
 		var fl := 0.10 + 0.025 * sin(time / 0.19) + (0.03 if randf() < 0.04 else 0.0)
+		Shop.draw_room_glow(ci, time)
 		Layer.glow(ci, Vector2(an.lamp[0], an.lamp[1]), 46, Color(1, 0.84, 0.55, fl * 1.6))
 
 func _draw_top(ci: CanvasItem) -> void:

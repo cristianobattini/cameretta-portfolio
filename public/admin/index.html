@@ -76,6 +76,7 @@ dialog .df{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;borde
     <button class="tab" role="tab" data-tab="sections" aria-selected="false">Sezioni e voci</button>
     <button class="tab" role="tab" data-tab="bubbles" aria-selected="false">Strada</button>
     <button class="tab" role="tab" data-tab="media" aria-selected="false">File</button>
+    <button class="tab" role="tab" data-tab="store" aria-selected="false">Negozio</button>
     <button class="tab" role="tab" data-tab="backup" aria-selected="false">Backup</button>
   </nav>
   <a class="btn" href="/game/" target="_blank" rel="noopener">Apri il sito ↗</a>
@@ -406,6 +407,28 @@ async function viewMedia(){
   };
 }
 
+/* ---------------- tab: negozio ---------------- */
+async function viewStore(){
+  const s = await api('/api/settings'), d = await api('/api/store/donations');
+  const st = {ok:'accreditata', da_assegnare:'senza codice', prova:'prova', rimborsata:'rimborsata'};
+  $('#view').innerHTML = `<form id="sForm"><div class="card"><h2>Negozio</h2>
+    <label class="inline"><input type="checkbox" name="store_enabled" ${s.store_enabled !== '0' ? 'checked' : ''}> Negozio aperto</label>
+    <div class="grid" style="margin-top:12px"><label>Pagina Buy Me a Coffee<input name="bmc_url" type="url" value="${esc(s.bmc_url)}" placeholder="https://buymeacoffee.com/…"></label>
+    <label>Monete per ogni unità donata (1 € o 1 $)<input name="coins_per_unit" type="number" min="1" max="10000" value="${esc(s.coins_per_unit || '100')}"></label></div>
+    <p class="muted" style="margin-top:8px">Finché la pagina è vuota il pulsante per donare non compare: le monete si guadagnano solo giocando.</p>
+    <div class="row"><button class="btn pri">Salva</button></div></div></form>
+  <div class="card"><h2>Accredito automatico: ${d.configured ? 'attivo' : 'da configurare'}</h2>
+    <p class="muted">Su Buy Me a Coffee → Integrations → Webhooks crea un webhook per <code>donation.created</code> e <code>donation.refunded</code> verso <code>${esc(location.origin)}/api/bmc/webhook</code>, poi avvia il server con il segreto nella variabile d'ambiente <code>CAMERETTA_BMC_SECRET</code>. Chi dona incolla il codice del portafoglio nel messaggio. Non si salvano nomi né email.</p>
+    <p>Portafogli: <b>${d.wallets}</b></p></div>
+  <div class="card"><h2>Donazioni (${d.donations.length})</h2>${d.donations.length ? `<table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left"><th>Data</th><th>Importo</th><th>Monete</th><th>Portafoglio</th><th>Stato</th><th></th></tr></thead><tbody>${d.donations.map(x => `<tr><td>${new Date(x.created_at*1000).toLocaleString('it-IT')}</td><td>${esc(x.amount)} ${esc(x.currency)}</td><td>${esc(x.coins)}</td><td><code>${esc(x.wallet || '—')}</code></td><td>${esc(st[x.status] || x.status)}</td><td>${x.status === 'da_assegnare' ? `<button class="btn sm" data-tx="${esc(x.tx)}">Assegna…</button>` : ''}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Ancora nessuna.</p>'}</div>
+  <form id="gift"><div class="card"><h2>Regala monete</h2><div class="row" style="align-items:flex-end"><label>Codice<input name="code" placeholder="CRI-XXXX-XXXX" required></label><label style="width:120px">Monete<input name="coins" type="number" min="1" max="100000" value="100" required></label><button class="btn">Regala</button></div></div></form>`;
+  $('#sForm').onsubmit = async e => { e.preventDefault(); const f = fields(e.target);
+    try{ await api('/api/settings', {method:'PUT', json:{store_enabled: f.store_enabled.checked ? '1' : '0', bmc_url: f.bmc_url.value.trim(), coins_per_unit: f.coins_per_unit.value}}); toast('Salvato'); }catch(err){ toast(err.message, true); } };
+  $('#gift').onsubmit = async e => { e.preventDefault(); const f = fields(e.target);
+    try{ const w = await api('/api/store/gift', {method:'POST', json:{code: f.code.value, coins: +f.coins.value}}); toast(`Fatto: ora ha ${w.balance} monete`); }catch(err){ toast(err.message, true); } };
+  $('#view').querySelectorAll('button[data-tx]').forEach(b => b.onclick = () => openDialog('Assegna la donazione', `<label>Codice del portafoglio<input id="asg" placeholder="CRI-XXXX-XXXX"></label>`, [{label:'Assegna', pri:true, run: async () => { await api('/api/store/assign', {method:'POST', json:{tx: b.dataset.tx, code: $('#asg').value}}); toast('Assegnata'); viewStore(); }}]));
+}
+
 /* ---------------- tab: backup ---------------- */
 async function viewBackup(){
   $('#view').innerHTML = `<div class="card"><h2>Backup</h2><p class="muted">Il database è il file <code>data/cameretta.db</code> e i file caricati sono in <code>data/uploads/</code>: copiare la cartella <code>data</code> basta a salvare tutto. Qui sotto puoi anche scaricare i contenuti in JSON (testi, sezioni, voci).</p>
@@ -432,7 +455,7 @@ async function viewBackup(){
 }
 
 /* ---------------- navigazione ---------------- */
-const VIEWS = {general: viewGeneral, sections: viewSections, bubbles: viewBubbles, media: viewMedia, backup: viewBackup};
+const VIEWS = {general: viewGeneral, sections: viewSections, bubbles: viewBubbles, media: viewMedia, store: viewStore, backup: viewBackup};
 async function go(tab){
   document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab === tab));
   try{ await VIEWS[tab](); }catch(e){ $('#view').innerHTML = `<div class="card"><p>${esc(e.message)}</p><button class="btn" onclick="location.reload()">Riprova</button></div>`; }
