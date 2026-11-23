@@ -962,7 +962,9 @@ def all_stars():
 def approve_star(sid: int, data: dict):
     with db() as con:
         if data.get("ok"):
-            con.execute("UPDATE stars SET ok = 1 WHERE id = ?", (sid,))
+            # si approva il nome che l'admin ha letto, non quello che c'è adesso: potrebbe essere cambiato nel frattempo
+            if not con.execute("UPDATE stars SET ok = 1 WHERE id = ? AND name = ? AND name <> ''", (sid, str(data.get("name", "")))).rowcount:
+                raise HTTPException(409, "Il nome è cambiato: rileggilo prima di approvare")
         else:
             con.execute("UPDATE stars SET ok = 0, name = '' WHERE id = ?", (sid,))
     return {"ok": True}

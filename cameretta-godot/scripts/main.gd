@@ -43,6 +43,9 @@ var place_bar: HFlowContainer
 var place_host: Control
 var place_labels: Array = []
 var place_from := "street"
+var paused_scene := ""          # dove si era quando si è aperto il menu
+var paused_x := 0.0
+var paused_dirty := false
 var ghosts
 var secrets
 var photo
@@ -709,7 +712,8 @@ func _rebuild_menu() -> void:
 	var col := UI.vbox(8)
 	col.mouse_filter = MOUSE_FILTER_IGNORE
 	back.add_child(col)
-	if not compact: col.add_child(UI.label(G.L(S, "menu_kicker"), 22, G.C_SKY, UI.f_ui))
+	var roomy := not compact and paused_scene == ""      # in pausa c'è una voce in più: via le scritte decorative
+	if roomy: col.add_child(UI.label(G.L(S, "menu_kicker"), 22, G.C_SKY, UI.f_ui))
 	var site := str(S.get("site_name", "CRI's CAMERETTA"))
 	var avail := (size.x - 48) if portrait else 520.0
 	var fs := 64 if portrait or compact else 96
@@ -720,7 +724,7 @@ func _rebuild_menu() -> void:
 	nm.add_theme_constant_override("shadow_offset_y", 6)
 	col.add_child(nm)
 	col.add_child(UI.label(G.L(S, "menu_subtitle"), 28, G.gold, UI.f_ui, true))
-	if not compact:
+	if roomy:
 		col.add_child(UI.label(G.L(S, "menu_tagline"), 24, G.C_MUTED, null, true))
 		var gap := Control.new()
 		gap.custom_minimum_size.y = 14
@@ -742,6 +746,9 @@ func _rebuild_menu() -> void:
 		["audio", G.t("audio").to_upper(), G.t("on") if G.audio_on else G.t("off")],
 		["help", G.t("help"), ""],
 	]
+	if paused_scene != "":
+		items[0][1] = G.t("restart")
+		items.push_front(["resume", G.t("resume"), str(_place_label(paused_scene))])
 	if not Shop.enabled(): items = items.filter(func(q): return q[0] != "shop")
 	# schermi bassi: lingua e audio stanno già nelle impostazioni, così il resto rimane grande
 	if compact: items = items.filter(func(q): return q[0] != "lang" and q[0] != "audio" and q[0] != "help")
@@ -764,7 +771,7 @@ func _rebuild_menu() -> void:
 		nv.add_child(b)
 		menu_items.append(b)
 	_menu_sel(menu_sel)
-	if not G.touch and not compact:
+	if not G.touch and roomy:
 		var press := UI.label(G.L(S, "press_text"), 20, G.C_DIM, UI.f_ui, true)
 		col.add_child(press)
 	# modalità della cameretta: sempre indicata
@@ -855,6 +862,7 @@ func _menu_sel(i: int) -> void:
 
 func _menu_act(a: String) -> void:
 	match a:
+		"resume": resume_game()
 		"enter": _start_game(false)
 		"room": _start_game(true)
 		"ride": _start_ride()
@@ -1341,7 +1349,9 @@ func toast(msg: String) -> void:
 	tw.tween_callback(func(): toast_node.visible = false)
 
 # ================================================================== scene
-func _set_scene(sc: String) -> void:
+## `resume`: si torna da una pausa, quindi niente si azzera e il titolo non ricompare.
+func _set_scene(sc: String, resume := false) -> void:
+	if sc != "menu" and not visit.visible: paused_scene = ""     # si è ripartiti: la pausa è finita
 	scene = sc
 	for k in worlds: worlds[k].visible = k == sc
 	view.visible = not (sc == "menu" and G.custom_sky)
@@ -1357,8 +1367,9 @@ func _set_scene(sc: String) -> void:
 	prompt_action = Callable()
 	pad_dir = 0
 	Sfx.scene(sc)
-	if sc == "room": worlds.room.enter()
+	if sc == "room" and not resume: worlds.room.enter()
 	_apply_texts()
+	if resume: return
 	if sc != "menu" and sc != "loading": _show_title(G.t("streetTitles")[Season.now()] if sc == "street" else str(G.t("places")[sc]).to_upper() if sc in PLACES else G.t("titles")[sc])
 	else: title_lbl.modulate.a = 0
 
@@ -1391,6 +1402,10 @@ func _goto(id: String) -> void:
 	if id == "starname": open_star()
 	elif id in LAB: _transition(_enter_place.bind(id, "lab"))
 	else: _transition(_enter_place.bind(id, scene))
+
+func _place_label(sc: String) -> String:
+	if sc in PLACES or sc in ["street", "room", "grove"]: return G.t("places")[sc]
+	return G.t("places")["ride"] if sc == "sea" else G.t("living") if sc == "living" else ""
 
 func place_name() -> String:
 	if scene in PLACES or scene in ["street", "room", "grove"]: return G.t("places")[scene]
@@ -1678,6 +1693,10 @@ func _to_menu() -> void:
 	if scene == "menu" or busy: return
 	close_modal(true)
 	busy = true
+	# il menu è una pausa: il mondo si ferma com'è e ci si può tornare
+	paused_scene = scene
+	paused_x = worlds[scene].P.x if "P" in worlds[scene] else 0.0
+	paused_dirty = false
 	var tw := create_tween()
 	tw.tween_property(fade_rect, "color:a", 1.0, 0.4)
 	await tw.finished
@@ -1686,6 +1705,33 @@ func _to_menu() -> void:
 	create_tween().tween_property(fade_rect, "color:a", 0.0, 0.4)
 	busy = false
 	_menu_sel(0)
+
+## Riprende esattamente da dove si era.
+func resume_game() -> void:
+	if scene != "menu" or busy or paused_scene == "": return
+	var sc := paused_scene
+	Sfx.start()
+	Sfx.start_music()
+	busy = true
+	var tw := create_tween()
+	tw.tween_property(fade_rect, "color:a", 1.0, 0.25)
+	await tw.finished
+	close_modal(true)
+	if sc == "street" and paused_dirty:           # la visita in 60 secondi è passata di qui
+		worlds.street.enter_at(paused_x)
+		_rebuild_bubbles()
+	if sc == "room" and paused_dirty:
+		worlds.room.enter()
+		worlds.room.set_hover("")
+	_set_scene(sc, true)
+	if sc in PLACES: _rebuild_bar()
+	G.set_hash({"street": "strada", "living": "salotto", "room": "stanza", "sea": "lungomare", "grove": "templi"}.get(sc, sc))
+	create_tween().tween_property(fade_rect, "color:a", 0.0, 0.3)
+	busy = false
+	# se in Vespa si era fermi a leggere, la scheda si riapre
+	if sc == "sea":
+		if worlds.sea.state == "parked": open_stop(worlds.sea.park_i, true)
+		elif worlds.sea.state == "end": open_ride_end(true)
 
 # ================================================================== loop
 func _process(dt: float) -> void:
@@ -1861,6 +1907,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		"menu":
 			if k == KEY_DOWN: _menu_sel(menu_sel + 1); Sfx.move()
 			elif k == KEY_UP: _menu_sel(menu_sel - 1); Sfx.move()
+			elif k == KEY_ESCAPE: resume_game()
 			elif k == KEY_ENTER or k == KEY_KP_ENTER or k == KEY_SPACE: _menu_act(menu_items[menu_sel].get_meta("act"))
 		"street", "living", "grove":
 			if k in [KEY_E, KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_UP, KEY_W]: _do_action()

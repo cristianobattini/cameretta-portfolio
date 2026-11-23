@@ -54,6 +54,10 @@ func _run() -> void:
 		await _addons_check()
 		get_tree().quit()
 		return
+	if OS.get_environment("CAMERETTA_RIDE") == "pause":
+		await _pause_check()
+		get_tree().quit()
+		return
 	if OS.get_environment("CAMERETTA_RIDE") == "menu":
 		await _menu_check()
 		get_tree().quit()
@@ -720,3 +724,64 @@ func _addons_check() -> void:
 	await key(KEY_R); ok(Sfx.station == 0, "spenta"); m.pad_dir = 0
 	m.open_settings(); await wait(0.3); await shot("impostazioni"); ok(m._panel.size.y <= m.size.y, "impostazioni nello schermo"); m.close_modal()
 	print("ADDONS DONE")
+
+## Il menu come pausa: CAMERETTA_RIDE=pause
+func _pause_check() -> void:
+	G.set_lang("it"); G.room_mode = "walk"; G.real_weather = false
+	m._apply_texts(); await wait(0.3)
+	ok(not m.menu_items.any(func(b): return b.get_meta("act") == "resume"), "all'inizio niente CONTINUA")
+	var pause := func() -> void:
+		m._to_menu(); await until(func(): return m.scene == "menu" and not m.busy, 5); await wait(0.4)
+	var back := func(sc: String) -> bool:
+		await key(KEY_ESCAPE); return await until(func(): return m.scene == sc and not m.busy, 5)
+	# strada: posizione e bolle
+	m._start_game(false); await until(func(): return m.scene == "street" and not m.busy)
+	var st = m.worlds.street
+	st.P.x = 720; await wait(3.0)
+	var read: int = st.bub.filter(func(b): return b.state != "idle").size()
+	var txt: Array = st.bub.map(func(b): return b.data.text)
+	await pause.call(); await shot("pausa_strada")
+	ok(m.menu_items[0].get_meta("act") == "resume" and m.menu_sel == 0, "CONTINUA e' la prima voce")
+	var cl: Control = m.menu_ui.get_node("Col")
+	ok(cl.scale.x > 0.88 or m.compact, "menu leggibile (%.2f)" % cl.scale.x)
+	ok(cl.position.y + cl.size.y * cl.scale.y <= m.size.y + 1 and (not m.portrait or cl.position.y + cl.size.y <= m.menu_ui.get_node("Foot").position.y + 1), "menu senza sovrapposizioni")
+	await wait(1.0)
+	print("X prima ", st.P.x, " letti ", read)
+	var bk: bool = await back.call("street"); print("X ", st.P.x, " scena ", m.scene, " ", bk, " letti ", st.bub.filter(func(b): return b.state != "idle").size(), " testi ", st.bub.map(func(b): return b.data.text) == txt)
+	ok(bk and absf(st.P.x - 720) < 1 and st.bub.filter(func(b): return b.state != "idle").size() >= read and st.bub.map(func(b): return b.data.text) == txt, "strada: stesso punto, stesse bolle")
+	await wait(0.5); await shot("ripresa_strada")
+	# dopo la visita in 60 secondi
+	await pause.call(); m._menu_act("visit"); await wait(0.8); await key(KEY_RIGHT); await wait(0.5); await key(KEY_ESCAPE); await wait(0.4)
+	ok(m.menu_items[0].get_meta("act") == "resume", "dopo la visita si puo' ancora continuare")
+	ok(await back.call("street") and absf(st.P.x - 720) < 1, "e si torna allo stesso punto")
+	# cambio lingua in pausa
+	await pause.call(); G.set_lang("en"); await wait(0.3); m._menu_act("resume"); ok(await until(func(): return m.scene == "street" and not m.busy, 5), "CONTINUA con un clic, in inglese"); G.set_lang("it")
+	# mentre scende un sentiero non si va in pausa a meta'
+	# cameretta
+	m._enter_room(); await wait(0.4); m.worlds.room.P.x = 120; m.worlds.room.py = 180.0; await wait(0.2)
+	await pause.call(); ok(await back.call("room") and absf(m.worlds.room.P.x - 120) < 1 and absf(m.worlds.room.py - 180) < 1, "cameretta: stesso punto")
+	m._enter_living(false); await wait(0.3); m.worlds.living.P.x = 150; await pause.call(); ok(await back.call("living") and absf(m.worlds.living.P.x - 150) < 2, "salotto: stesso punto")
+	m._enter_grove(); await wait(0.3); m.worlds.grove.P.x = 730; await wait(0.3); await pause.call(); ok(await back.call("grove") and absf(m.worlds.grove.P.x - 730) < 1, "templi: stesso punto")
+	# in Vespa, in corsa
+	m._enter_sea(); await wait(0.4); var sea = m.worlds.sea
+	sea.take_helmet(); await until(func(): return sea.state == "ride", 20)
+	m.pad_dir = 1; await wait(3.0); m.pad_dir = 0
+	var x0: float = sea.x; var v0: float = sea.v
+	await pause.call(); var xp: float = sea.x; await wait(1.5)
+	ok(absf(sea.x - xp) < 0.01, "in pausa la Vespa non si muove")
+	ok(await back.call("sea") and sea.state == "ride" and sea.engine and absf(sea.x - xp) < 90, "in Vespa: stesso tratto (x %.0f -> %.0f, v %.0f)" % [xp, sea.x, v0])
+	await wait(0.3); await shot("ripresa_vespa")
+	# fermo a una tappa
+	var s: Dictionary = sea.stops[0]; sea.x = float(s.x) - 60; sea.v = 0; s.state = "up"; await wait(0.3); sea.stop_at(0)
+	await until(func(): return m.modal.visible and m.modal_kind == "ride", 10)
+	sea.state = "parked"; m.close_modal(true); sea.state = "parked"
+	m._to_menu(); await until(func(): return m.scene == "menu" and not m.busy, 5); await wait(0.3)
+	ok(await back.call("sea") and await until(func(): return m.modal_kind == "ride", 3), "fermo a una tappa: la scheda si riapre"); m.close_modal(); ok(sea.state == "ride", "e si riparte")
+	# luoghi: il laboratorio dentro un esperimento
+	m._enter_place("lab"); m.worlds.lab.at = 90.0; m._goto("field"); await until(func(): return m.scene == "field" and not m.busy, 5); await wait(0.5)
+	m.worlds.field.tap(Vector2(60, 60)); await wait(0.2); await pause.call(); await shot("pausa_campi")
+	ok(await back.call("field") and m.worlds.field.Q.size() == 3 and m.place_bar.visible, "campi: le cariche restano, i comandi pure")
+	m.b_back.pressed.emit(); ok(await until(func(): return m.scene == "lab" and not m.busy, 5), "e indietro porta al laboratorio")
+	# ricominciare davvero
+	await pause.call(); m._menu_act("enter"); ok(await until(func(): return m.scene == "street" and not m.busy, 6) and m.worlds.street.P.x < 60 and m.paused_scene == "", "RICOMINCIA riparte dall'inizio")
+	print("PAUSE DONE")

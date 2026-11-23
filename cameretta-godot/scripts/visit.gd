@@ -42,16 +42,18 @@ func start() -> void:
 	build()
 	main.close_modal(true)
 	visible = true
+	main.paused_dirty = true
 	paused = false
 	i = -1
 	go(0)
 
 func stop() -> void:
 	if not visible: return
-	visible = false
-	main.stage.visible = true
 	for c in get_children(): c.queue_free()
 	main._set_scene("menu")
+	visible = false
+	main.stage.visible = true
+	main._layout()
 	G.set_hash("")
 
 func go(n: int) -> void:
