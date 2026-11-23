@@ -5,6 +5,10 @@ var _snd: Dictionary = {}
 var _pool: Array[AudioStreamPlayer] = []
 var _scene := "menu"
 var music: AudioStreamPlayer
+var engine: AudioStreamPlayer
+var waves: AudioStreamPlayer
+var _engine_v := 0.0
+var _sea_near := 0.0
 var fire: AudioStreamPlayer
 var tv_voice: AudioStreamPlayer
 var tv_static: AudioStreamPlayer
@@ -41,6 +45,8 @@ func _ready() -> void:
 	fire = _loop_player("Ambience", "fire_loop")
 	tv_voice = _loop_player("Ambience", "tv_voices")
 	tv_static = _loop_player("Ambience", "tv_static")
+	engine = _loop_player("SFX", "engine_loop")
+	waves = _loop_player("Ambience", "waves_loop")
 
 func _loop_player(bus: String, name := "") -> AudioStreamPlayer:
 	var p := AudioStreamPlayer.new()
@@ -126,7 +132,21 @@ func scene(name: String) -> void:
 		if not fire.playing: fire.play(randf() * 10.0)
 		if not tv_voice.playing: tv_voice.play(randf() * 8.0)
 		if not tv_static.playing: tv_static.play()
+	_engine_v = 0.0
+	if name == "sea" and not waves.playing: waves.play(randf() * 12.0)
 	_gust_t = randf_range(2.0, 5.0)
+
+## Vicino al sentiero si sente già il mare.
+func near_sea(p: float) -> void:
+	_sea_near = 0.4 * p
+	if p > 0 and not waves.playing: waves.play(randf() * 12.0)
+
+## Motore della Vespa: level 0 = minimo, 1 = gas; quiet = fermi a guardare.
+func ride(on: bool, level: float, quiet: bool) -> void:
+	_engine_v = 0.0 if not on else 0.07 if quiet else 0.13 + 0.15 * clampf(level, 0, 1)
+	if on and not engine.playing: engine.play()
+	var p := 0.72 + 0.85 * clampf(level, 0, 1.4)
+	engine.pitch_scale = lerpf(engine.pitch_scale, p, 0.08)
 
 func proximity(fire_p: float, tv_p: float) -> void:
 	_prox.fire = fire_p
@@ -149,6 +169,9 @@ func _process(dt: float) -> void:
 	if _static_burst > 0:
 		_static_burst -= dt
 		stv = maxf(stv, 0.5)
+	_fade_to(engine, _engine_v if _scene == "sea" else 0.0, dt)
+	if engine.playing and _engine_v == 0.0 and engine.volume_db < -70: engine.stop()
+	_fade_to(waves, 0.6 if _scene == "sea" else _sea_near if _scene == "street" else 0.0, dt)
 	_fade_to(fire, fv, dt)
 	_fade_to(tv_voice, tvv, dt)
 	_fade_to(tv_static, stv, dt * 3)
@@ -156,7 +179,7 @@ func _process(dt: float) -> void:
 	_gust_t -= dt
 	if _gust_t <= 0:
 		_gust_t = randf_range(7.0, 14.0)
-		var gv := {"street": 0.55, "menu": 0.3, "living": 0.08, "room": 0.06}.get(_scene, 0.0) as float
+		var gv := {"street": 0.55, "sea": 0.4, "menu": 0.3, "living": 0.08, "room": 0.06}.get(_scene, 0.0) as float
 		if gv > 0: play("wind_gust", gv * randf_range(0.7, 1.0), randf_range(0.8, 1.1), "Ambience")
 	# orologio a pendolo del salotto
 	if _scene == "living":

@@ -13,6 +13,7 @@ Registrazioni originali, poi tagliate, filtrate e mixate da `tools/build_sounds.
 | `wind_gust` | Ben Burnes (Abstraction) — *2HTC Samples Vol 4*, "Snow Day – Windy", CC0 |
 | `fire_loop` | schiocchi di legno da *100 CC0 wood & metal SFX* (raccolta lavenderdotpet/CC0-Public-Domain-Sounds) su un ruggito di rumore filtrato |
 | `tv_voices`, `tv_static` | generati (rumore filtrato a sillabe / statico) |
+| `engine_loop`, `vespa_*`, `horn`, `helmet`, `waves_loop`, `gull`, `stop_pop`, `brake_snow` | sintetizzati da `tools/build_sea_sounds.py` (nessuna registrazione) |
 
 Le licenze sono in `licenses/`.
 

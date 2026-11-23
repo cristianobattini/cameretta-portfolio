@@ -39,11 +39,28 @@ const T := {
 		"hintRoom": "click an object · [k]←[/k][k]→[/k] choose · [k]ENTER[/k] open · [k]ESC[/k] back",
 		"hintRoomWalk": "[k]←[/k][k]→[/k] walk · [k]E[/k] open · click an object to walk there · [k]ESC[/k] back",
 		"enterHouse": "Go inside", "tv": "Change channel", "fire": "Warm your hands", "door": "Enter my room", "warm": "Ahh, much better.", "open": "Open",
+		"toSea": "Take the path to the sea", "sea": "the seafront", "backStreet": "◀ Street", "rideMenu": "VESPA RIDE",
+		"hintSeaWalk": "[k]←[/k][k]→[/k] walk · [k]E[/k] put on the helmet · [k]ESC[/k] menu",
+		"hintRide": "[k]→[/k] throttle · [k]←[/k] brake · [k]SHIFT[/k] faster · [k]E[/k] stop and look · [k]H[/k] horn · [k]ESC[/k] menu",
+		"rideHelmet": "Put on the helmet", "rideStop": "Stop and look", "rideDawn": "Look at the dawn", "rideStops": "STOPS", "rideStopN": "STOP %d OF %d", "rideGoOn": "Ride on ▶", "rideChapter": "CHAPTER %d",
+		"ridePlaces": {"libreria": "Rosignano", "letto": "Castiglioncello", "scrivania": "Quercianella", "lavagna": "Livorno", "finestra": "Marina di Pisa"},
+		"rideTitles": {"libreria": "THE BOOKS", "letto": "THE WORDS", "scrivania": "THE THINGS I BUILD", "lavagna": "THE QUESTIONS", "finestra": "THE ROAD"},
+		"rideIntro": ["Listen: the sea.", "Someone left a Vespa here, under the snow. The helmet is on the saddle."],
+		"rideGo": ["Third kick and she starts. She's always been like that.", "From here to Pisa it's one road, with the sea on the left. Stop whenever something catches your eye."],
+		"rideStory": {
+			"libreria": ["Rosignano. The newsstand is still lit, and every road starts with something you've read.", "These are some of my books."],
+			"letto": ["Castiglioncello. The beach huts are closed for the winter, but somebody left a light on.", "They're the things I write in the evening, when the desk is off."],
+			"scrivania": ["Quercianella. In the little harbour they mend boats even at night.", "I do the same with code: I write it, I break it, I put it back on its feet."],
+			"lavagna": ["Livorno. The lighthouse flashes, and that flash is an electromagnetic wave.", "At some point making things work isn't enough: you want to know why they work."],
+			"finestra": ["Marina di Pisa. The moon is setting on the sea, and the sun is rising behind us.", "This is the road so far, and the one ahead."],
+		},
+		"rideEnd": ["See that pink band over the sea? It's called the Belt of Venus. The blue strip beneath it is the shadow of the Earth.", "It's a whole planet's shadow, and it's sinking below the horizon while you watch.", "Thanks for the ride. Now home: it's warm inside."],
+		"rideEndTitle": "The road goes on", "rideEndSeen": "You stopped %d times out of %d.", "rideEndAll": "You saw every stop. Really, all of them. Thank you.", "rideEndSome": "The others will be there, under the snow, whenever you feel like another ride.", "rideHome": "Go home ▶", "rideAgain": "Ride again",
 		"back": "◀ Living room", "skip": "Skip ▸", "menu": "Menu", "explored": "OBJECTS EXPLORED", "sheet": "What do you want to explore?", "close": "CLOSE",
 		"empty": "Nothing here yet. Come back soon.", "find": "Where to find me", "cv": "Open my CV", "openLink": "open ↗", "details": "details ↗", "physics": "physics",
-		"titles": {"street": "A SNOWY NIGHT", "living": "HOME, SWEET HOME", "room": "MY LITTLE ROOM"},
+		"titles": {"sea": "BY THE SEA", "street": "A SNOWY NIGHT", "living": "HOME, SWEET HOME", "room": "MY LITTLE ROOM"},
 		"helpTitle": "How to play",
-		"helpItems": ["Walk down the snowy street with [k]←[/k] [k]→[/k] (or [k]A[/k] [k]D[/k]). Hold [k]SHIFT[/k] to run. On a phone, use the arrows or tap where you want to go.", "Read the bubbles along the way: they tell you who I am.", "At the house, and near the TV, the fireplace and the glowing door, press [k]E[/k] (or the yellow button).", "In my room every object opens a part of my portfolio. You can walk around or point and click: the current mode is always shown at the top, and you can switch it in Settings.", "[k]ESC[/k] goes back."],
+		"helpItems": ["Walk down the snowy street with [k]←[/k] [k]→[/k] (or [k]A[/k] [k]D[/k]). Hold [k]SHIFT[/k] to run. On a phone, use the arrows or tap where you want to go.", "Read the bubbles along the way: they tell you who I am.", "Halfway down the street a lit path goes down to the sea. There's a Vespa: put on the helmet and ride, [k]→[/k] throttle, [k]←[/k] brake, [k]E[/k] to stop and look, [k]H[/k] for the horn.", "At the house, and near the TV, the fireplace and the glowing door, press [k]E[/k] (or the yellow button).", "In my room every object opens a part of my portfolio. You can walk around or point and click: the current mode is always shown at the top, and you can switch it in Settings.", "[k]ESC[/k] goes back."],
 		"noServer": "Offline copy: start the server to load fresh content",
 	},
 	"it": {
@@ -60,11 +77,28 @@ const T := {
 		"hintRoom": "clicca un oggetto · [k]←[/k][k]→[/k] scegli · [k]INVIO[/k] apri · [k]ESC[/k] indietro",
 		"hintRoomWalk": "[k]←[/k][k]→[/k] cammina · [k]E[/k] apri · clicca un oggetto per andarci · [k]ESC[/k] indietro",
 		"enterHouse": "Entra in casa", "tv": "Cambia canale", "fire": "Scaldati le mani", "door": "Entra in cameretta", "warm": "Ahh, molto meglio.", "open": "Apri",
+		"toSea": "Prendi il sentiero per il mare", "sea": "il lungomare", "backStreet": "◀ Strada", "rideMenu": "GIRO IN VESPA",
+		"hintSeaWalk": "[k]←[/k][k]→[/k] cammina · [k]E[/k] mettiti il casco · [k]ESC[/k] menu",
+		"hintRide": "[k]→[/k] gas · [k]←[/k] freno · [k]SHIFT[/k] più veloce · [k]E[/k] fermati · [k]H[/k] clacson · [k]ESC[/k] menu",
+		"rideHelmet": "Mettiti il casco", "rideStop": "Fermati a guardare", "rideDawn": "Guarda l'alba", "rideStops": "TAPPE", "rideStopN": "TAPPA %d DI %d", "rideGoOn": "Riparti ▶", "rideChapter": "CAPITOLO %d",
+		"ridePlaces": {"libreria": "Rosignano", "letto": "Castiglioncello", "scrivania": "Quercianella", "lavagna": "Livorno", "finestra": "Marina di Pisa"},
+		"rideTitles": {"libreria": "I LIBRI", "letto": "LE PAROLE", "scrivania": "LE COSE COSTRUITE", "lavagna": "LE DOMANDE", "finestra": "LA STRADA"},
+		"rideIntro": ["Senti? Il mare.", "Qualcuno ha lasciato una Vespa, qui sotto la neve. Il casco è sulla sella."],
+		"rideGo": ["Alla terza pedalata parte. Ha sempre fatto così.", "Da qui a Pisa è una strada sola, col mare a sinistra. Fermati quando qualcosa ti incuriosisce."],
+		"rideStory": {
+			"libreria": ["Rosignano. L'edicola è ancora accesa, e ogni strada comincia da qualcosa che hai letto.", "Questi sono alcuni dei miei libri."],
+			"letto": ["Castiglioncello. Le cabine sono chiuse per l'inverno, ma qualcuno ha lasciato la luce accesa.", "Sono le cose che scrivo la sera, quando la scrivania è spenta."],
+			"scrivania": ["Quercianella. Al porticciolo si aggiustano le barche anche di notte.", "Io faccio lo stesso col codice: lo scrivo, lo rompo, lo rimetto in piedi."],
+			"lavagna": ["Livorno. Il faro manda un lampo, e quel lampo è un'onda elettromagnetica.", "A un certo punto far funzionare le cose non basta più: vuoi sapere perché funzionano."],
+			"finestra": ["Marina di Pisa. La luna tramonta sul mare, e il sole sta sorgendo alle nostre spalle.", "Questa è la strada fatta finora, e quella che ho davanti."],
+		},
+		"rideEnd": ["La vedi quella fascia rosa sul mare? Si chiama cintura di Venere. La striscia blu lì sotto è l'ombra della Terra.", "È l'ombra di un pianeta intero, e sta scendendo sotto l'orizzonte mentre la guardi.", "Grazie per il passaggio. Adesso a casa: dentro fa caldo."],
+		"rideEndTitle": "La strada continua", "rideEndSeen": "Tappe viste: %d su %d.", "rideEndAll": "Le hai viste tutte. Davvero tutte. Grazie.", "rideEndSome": "Le altre restano lì, sotto la neve, per quando avrai voglia di un altro giro.", "rideHome": "Torna a casa ▶", "rideAgain": "Rifai il giro",
 		"back": "◀ Salotto", "skip": "Salta ▸", "menu": "Menu", "explored": "OGGETTI ESPLORATI", "sheet": "Cosa vuoi esplorare?", "close": "CHIUDI",
 		"empty": "Qui non c'è ancora niente. Torna presto.", "find": "Dove trovarmi", "cv": "Apri il CV", "openLink": "apri ↗", "details": "scheda ↗", "physics": "fisica",
-		"titles": {"street": "UNA NOTTE DI NEVE", "living": "CASA, DOLCE CASA", "room": "LA MIA CAMERETTA"},
+		"titles": {"sea": "IL LUNGOMARE", "street": "UNA NOTTE DI NEVE", "living": "CASA, DOLCE CASA", "room": "LA MIA CAMERETTA"},
 		"helpTitle": "Come si gioca",
-		"helpItems": ["Percorri la strada innevata con [k]←[/k] [k]→[/k] (o [k]A[/k] [k]D[/k]). Tieni [k]SHIFT[/k] per correre. Da telefono usa le frecce o tocca dove vuoi andare.", "Leggi le bolle lungo la strada: ti raccontano chi sono.", "Davanti a casa, e vicino a TV, camino e porta luminosa, premi [k]E[/k] (o il pulsante giallo).", "In cameretta ogni oggetto apre una parte del portfolio. Puoi camminare o puntare e cliccare: la modalità attuale è sempre indicata in alto e la cambi nelle Impostazioni.", "[k]ESC[/k] torna indietro."],
+		"helpItems": ["Percorri la strada innevata con [k]←[/k] [k]→[/k] (o [k]A[/k] [k]D[/k]). Tieni [k]SHIFT[/k] per correre. Da telefono usa le frecce o tocca dove vuoi andare.", "Leggi le bolle lungo la strada: ti raccontano chi sono.", "A metà strada un sentiero illuminato scende al mare. C'è una Vespa: metti il casco e parti, [k]→[/k] gas, [k]←[/k] freno, [k]E[/k] per fermarti a guardare, [k]H[/k] per il clacson.", "Davanti a casa, e vicino a TV, camino e porta luminosa, premi [k]E[/k] (o il pulsante giallo).", "In cameretta ogni oggetto apre una parte del portfolio. Puoi camminare o puntare e cliccare: la modalità attuale è sempre indicata in alto e la cambi nelle Impostazioni.", "[k]ESC[/k] torna indietro."],
 		"noServer": "Copia offline: avvia il server per caricare i contenuti aggiornati",
 	},
 }
@@ -92,6 +126,8 @@ var room_mode := ""               # "walk" | "point" | "" (non ancora scelta)
 var music_user := 1.0
 var effects_user := 1.0
 var tv_channel := 0
+var ride_seen: Dictionary = {}     # tappe del giro in Vespa già viste (id delle voci)
+var ride_found := false            # il giro è stato scoperto: compare nel menu
 
 var is_web := false
 var touch := false
@@ -106,6 +142,8 @@ func _ready() -> void:
 	music_user = prefs.get_value("p", "music_user", 1.0)
 	effects_user = prefs.get_value("p", "effects_user", 1.0)
 	tv_channel = prefs.get_value("p", "tv", 0)
+	for k in prefs.get_value("p", "ride_seen", []): ride_seen[k] = true
+	ride_found = prefs.get_value("p", "ride_found", false)
 	if is_web:
 		base_url = str(JavaScriptBridge.eval("location.origin", true))
 	else:
@@ -118,6 +156,8 @@ func save_prefs() -> void:
 	prefs.set_value("p", "music_user", music_user)
 	prefs.set_value("p", "effects_user", effects_user)
 	prefs.set_value("p", "tv", tv_channel)
+	prefs.set_value("p", "ride_seen", ride_seen.keys())
+	prefs.set_value("p", "ride_found", ride_found)
 	prefs.set_value("p", "audio", audio_on)
 	prefs.set_value("p", "lang", lang)
 	prefs.save(PREFS)
@@ -191,12 +231,13 @@ func load_all() -> void:
 	_pending = 0
 	progress = 0.0
 	# dati di base inclusi nel gioco
-	for k in ["anim", "menu", "street", "living", "player"]:
-		var f := {"anim": "anim", "menu": "menu_anim", "street": "street", "living": "living", "player": "player"}[k] as String
+	for k in ["anim", "menu", "street", "living", "player", "sea"]:
+		var f := {"anim": "anim", "menu": "menu_anim", "street": "street", "living": "living", "player": "player", "sea": "sea"}[k] as String
 		J[k] = JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/%s.json" % f))
 	for k in ["room", "mask", "far", "mid", "near", "living", "player", "menu_sky"]:
 		var f := {"room": "room", "mask": "mask", "far": "street_far", "mid": "street_mid", "near": "street_near", "living": "living", "player": "player", "menu_sky": "menu_sky"}[k] as String
 		tex[k] = load("res://assets/img/%s.png" % f)
+	for k in ["sea_sky", "sea_near", "sea_fore", "sea_beach", "sea_props", "sea_emblems"]: tex[k] = load("res://assets/img/%s.png" % k)
 	_step(6)
 	var d = await fetch_json("/api/public")
 	if typeof(d) != TYPE_DICTIONARY:

@@ -12,10 +12,12 @@ I contenuti arrivano sempre dal server FastAPI del portfolio (`/api/public`): la
   - **Cammina**: l'omino si muove sul pavimento in prospettiva (frecce/WASD, oppure tocca un punto o un oggetto) e con **E** apri l'oggetto vicino;
   - **Punta e clicca**: passa sopra gli oggetti e cliccali (frecce + Invio da tastiera).
   La modalità attiva è **sempre indicata**: badge in alto nell'HUD (cliccabile per cambiarla) e nel menu.
+- **Bonus, il giro in Vespa**: a metà strada un sentiero scende al mare. Casco, tre pedalate e via sul lungomare innevato, da Rosignano verso Pisa, dalla notte all'alba. Cinque capitoli (uno per oggetto della cameretta) e una tappa per ogni voce dell'admin: spunta dalla neve e ci si ferma a guardarla. Una volta scoperto compare nel menu.
+- **Formato 16:9** (come 1920×1080): sugli schermi più larghi il gioco resta centrato, con due bande ai lati.
 - **Schede delle sezioni** che scorrono con rotella, trascinamento e dito (provato su telefono emulato).
 - **Impostazioni**: lingua EN/IT, audio on/off, modalità cameretta, volume musica ed effetti (salvati nel browser).
 - **Telefono in verticale**: barra in alto, mondo ingrandito che segue l'omino, riquadro grande per le bolle, pulsanti ◀ ▶ ★, elenco degli oggetti sotto la cameretta.
-- Link diretti: `#strada`, `#salotto`, `#stanza`, `#scrivania`, `#finestra`, …
+- Link diretti: `#strada`, `#lungomare`, `#salotto`, `#stanza`, `#scrivania`, `#finestra`, …
 
 ## Aprire e modificare
 
@@ -31,6 +33,7 @@ Dove mettere le mani:
 | `scripts/g.gd` | testi EN/IT, dati dal server, preferenze salvate |
 | `scripts/sfx.gd` | suoni, bus audio (Music, Ambience, Steps, SFX), ambiente per scena |
 | `scripts/street.gd`, `living.gd`, `room.gd`, `menu.gd` | le quattro scene (disegnate a 320×200) |
+| `scripts/sea.gd` | il giro in Vespa: luoghi, tappe, guida, cielo (testi in `g.gd`: `rideStory`, `rideIntro`, `rideEnd`…) |
 | `scripts/player.gd` | l'omino (animazione, passi, ombra, scala in prospettiva) |
 | `scripts/panels.gd` | contenuto delle schede (card, timeline, libreria, lavagna) |
 | `scripts/ui.gd` | font, riquadri pixel, pulsanti, icone |
@@ -47,6 +50,12 @@ Dove mettere le mani:
 Da riga di comando: `godot --headless --export-release "Web" build/web/index.html`.
 
 Il file `index.wasm` pesa ~40 MB non compresso (~9 MB con gzip): nel `Caddyfile` aggiungi `encode zstd gzip` dentro il blocco del sito.
+
+## Prove automatiche
+
+`CAMERETTA_TOUR=/cartella godot --path .` fa il giro del gioco e salva gli screenshot (`CAMERETTA_SIZE=1920x1080` per la finestra). Con `CAMERETTA_RIDE=it` fa solo il giro in Vespa, con `CAMERETTA_RIDE=check` esegue i controlli.
+
+Pixel art e suoni del lungomare si rigenerano con `tools/build_sea.py` (nella cartella del portfolio) e `cameretta-godot/tools/build_sea_sounds.py`.
 
 ## Contenuti offline
 

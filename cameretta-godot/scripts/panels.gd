@@ -202,3 +202,38 @@ static func books(items: Array) -> Control:
 static func _load_into(tr: TextureRect, url: String) -> void:
 	var tx = await G.fetch_texture(url)
 	if tx and is_instance_valid(tr): tr.texture = tx
+
+## Una voce sola, in grande: la tappa del giro in Vespa.
+static func item_body(it: Dictionary, chalk := false) -> VBoxContainer:
+	var v := UI.vbox(14)
+	if str(it.get("image", "")) != "" and G.safe_url(str(it.image)):
+		var tr := TextureRect.new()
+		tr.custom_minimum_size = Vector2(0, 240)
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		tr.clip_contents = true
+		tr.mouse_filter = Control.MOUSE_FILTER_PASS
+		v.add_child(tr)
+		_load_into(tr, str(it.image))
+	var top := HFlowContainer.new()
+	top.add_theme_constant_override("h_separation", 12)
+	if G.L(it, "kicker") != "": top.add_child(UI.label(G.L(it, "kicker"), 24, G.gold, UI.f_ui))
+	if G.L(it, "status") != "":
+		var bp := PanelContainer.new()
+		bp.add_theme_stylebox_override("panel", UI.box(G.C_TERRA, Color(0, 0, 0, 0), 0, 8, 2))
+		bp.add_child(UI.label(G.L(it, "status"), 20, G.C_INK))
+		bp.mouse_filter = Control.MOUSE_FILTER_PASS
+		top.add_child(bp)
+	if top.get_child_count() > 0: v.add_child(top)
+	if G.L(it, "description") != "": v.add_child(UI.rich(G.esc_bb(G.L(it, "description")), 27, G.C_CREAM))
+	elif G.L(it, "grp") != "": v.add_child(UI.label(G.L(it, "grp"), 24, G.C_MUTED))
+	var tg := _tags(it, chalk)
+	if tg: v.add_child(tg)
+	if G.safe_url(str(it.get("url", ""))):
+		var u: String = it.url
+		var lab := G.L(it, "link_label")
+		var b := UI.button(lab if lab != "" else G.t("openLink"), func(): G.open_url(u), "solid", 24)
+		b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		v.add_child(b)
+	return v

@@ -2,6 +2,9 @@ extends Node2D
 ## La strada innevata: parallasse, neve, lampioni, fumo dal comignolo, bolle che si scrivono.
 
 signal go_inside
+signal go_sea
+
+const FORK_X := 866.0          # il sentiero che scende al mare
 
 var P: Player
 var cam := 0.0
@@ -16,6 +19,7 @@ var input_dir := 0
 var run := false
 var locked := false
 var prompt: Dictionary = {}
+var down := 0.0                # >0: sta scendendo il sentiero
 var back_l: Layer
 var glow_l: Layer
 var front_l: Layer
@@ -42,6 +46,7 @@ func enter() -> void:
 	last_cam = 0
 	smoke.clear()
 	puffs.clear()
+	down = 0.0
 	build_bubbles()
 
 func build_bubbles() -> void:
@@ -58,7 +63,14 @@ func build_bubbles() -> void:
 func update(dt: float) -> void:
 	time += dt
 	var s: Dictionary = G.J.street
-	P.update(dt, input_dir, run, 14, s.stop, Sfx.step_snow, locked)
+	if down > 0:                   # sta scendendo verso il mare
+		down += dt
+		P.x = move_toward(P.x, FORK_X, 50 * dt)
+		P.moving = true
+		P.animate(dt, false, Sfx.step_snow)
+	else:
+		P.update(dt, input_dir, run, 14, s.stop, Sfx.step_snow, locked)
+	Sfx.near_sea(clampf(1.0 - absf(P.x - FORK_X) / 150.0, 0, 1))
 	cam = clampf(P.x - 120, 0, float(s.world) - 320)
 	for B in bub:
 		if B.state == "idle" and P.x > B.x - 150:
@@ -76,6 +88,8 @@ func update(dt: float) -> void:
 				B.t += 0.22 if ".!?".contains(ch) else 0.12 if ",;:".contains(ch) else randf_range(0.024, 0.046)
 	if absf(P.x - float(s.door.x)) < 26:
 		prompt = {"x": float(s.door.x) - cam, "y": float(s.door.y) - 26, "label": G.t("enterHouse"), "action": func(): go_inside.emit()}
+	elif absf(P.x - FORK_X) < 34 and down <= 0:
+		prompt = {"x": FORK_X - cam, "y": 108.0, "label": G.t("toSea"), "action": take_path, "down": true}
 	else:
 		prompt = {}
 	# fumo dal comignolo
@@ -101,6 +115,24 @@ func update(dt: float) -> void:
 	back_l.queue_redraw(); glow_l.queue_redraw(); front_l.queue_redraw()
 
 var _dt := 0.0
+
+## Rientra in strada in un punto preciso (tornando dal mare): le bolle già passate restano lette.
+func enter_at(px: float) -> void:
+	enter()
+	P.x = px
+	cam = clampf(P.x - 120, 0, float(G.J.street.world) - 320)
+	last_cam = roundf(cam)
+	for B in bub:
+		if px > B.x - 150:
+			B.state = "done"
+			B.shown = G.L(B.data, "text").length()
+
+## Scende per il sentiero (animazione), poi si cambia scena.
+func take_path() -> void:
+	if down > 0: return
+	down = 0.001
+	P.target = -1.0
+	go_sea.emit()
 
 ## Rifinisce le bolle già comparse quando cambia la lingua.
 func finish_bubbles() -> void:
@@ -129,8 +161,20 @@ func _draw_back(ci: CanvasItem) -> void:
 	ci.draw_texture(G.tex.mid, Vector2(-roundf(c * float(s.pmid)), 0))
 	_snow(ci, dcam * 0.4, false)
 	ci.draw_texture(G.tex.near, Vector2(-c, 0))
+	_draw_fork(ci, c)
 	for p in smoke:
 		ci.draw_circle(Vector2(roundf(p.x - c), roundf(p.y)), p.r, Color(0.82, 0.84, 0.93, maxf(0, p.a)))
+
+func _draw_fork(ci: CanvasItem, c: float) -> void:
+	var sx := FORK_X - c
+	if sx < -80 or sx > 400: return
+	for n in [["fork", sx - 42, 155.0], ["signpost", sx - 76, 106.0]]:
+		var r: Array = G.J.sea.rects[n[0]]
+		ci.draw_texture_rect_region(G.tex.sea_props, Rect2(roundf(n[1]), n[2], r[2], r[3]), Rect2(r[0], r[1], r[2], r[3]))
+	# freccia che invita a scendere
+	if sin(time * 4) > -0.2:
+		var ay := 160.0 + roundf(sin(time * 4) * 2)
+		for k in 4: ci.draw_rect(Rect2(roundf(sx) - 3 + k, ay + k * 2, 7 - k * 2, 2), G.gold)
 
 func _draw_glow(ci: CanvasItem) -> void:
 	var s: Dictionary = G.J.street
@@ -140,6 +184,7 @@ func _draw_glow(ci: CanvasItem) -> void:
 		if x < -40 or x > 360: continue
 		var a := 0.07 + 0.02 * sin(time * 2 + float(l.x))
 		Layer.glow(ci, Vector2(x, 64), 24, Color(1, 0.82, 0.55, a * 2.2))
+	Layer.glow(ci, Vector2(FORK_X - c, 178), 40, Color(1, 0.8, 0.5, 0.2 + 0.04 * sin(time * 2)))
 	for w in s.windows:
 		var x := float(w[0]) - c
 		if x > -40 and x < 360:
@@ -148,7 +193,8 @@ func _draw_glow(ci: CanvasItem) -> void:
 func _draw_front(ci: CanvasItem) -> void:
 	var s: Dictionary = G.J.street
 	var c := roundf(cam)
-	P.draw(ci, P.x - c, float(s.feet))
+	var dy := minf(down, 1.6) * 30.0
+	P.draw(ci, P.x - c, float(s.feet) + dy)
 	for p in puffs:
 		if p.d > 0: continue
 		ci.draw_rect(Rect2(roundf(p.x - c), roundf(p.y), 1, 1), Color(0.94, 0.96, 1, p.a))

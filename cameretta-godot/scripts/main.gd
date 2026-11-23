@@ -1,6 +1,9 @@
 extends Control
 ## Regia del gioco: caricamento, menu, scene, HUD, schede, input (tastiera, mouse, touch).
 
+## Proporzione massima del gioco: 16:9 come 1920x1080.
+const MAX_ASPECT := 16.0 / 9.0
+
 var sv: SubViewport
 var view: TextureRect
 var sky_custom: TextureRect
@@ -40,6 +43,12 @@ var sheet: PanelContainer
 var sheet_box: VBoxContainer
 var bubbles_host: Control
 var bubble_nodes: Array = []
+var sea_host: Control
+var sea_labels: Array = []
+var sea_signs: Array = []
+var narr_node: PanelContainer
+var narr_txt: RichTextLabel
+var route: Control
 var prompt_node: Button
 var prompt_action: Callable
 var sign_node: Control
@@ -61,6 +70,7 @@ func _ready() -> void:
 	UI.init()
 	theme = UI.theme
 	set_anchors_preset(PRESET_FULL_RECT)
+	clip_contents = true
 	mouse_filter = MOUSE_FILTER_IGNORE
 	var bg := ColorRect.new()
 	bg.color = G.C_NIGHT
@@ -80,7 +90,7 @@ func _ready() -> void:
 	sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	sv.disable_3d = true
 	add_child(sv)
-	for n in ["menu", "street", "living", "room"]:
+	for n in ["menu", "street", "living", "room", "sea"]:
 		var w := Node2D.new()
 		w.set_script(load("res://scripts/%s.gd" % n))
 		w.visible = false
@@ -124,6 +134,11 @@ func _ready() -> void:
 	G.settings_changed.connect(_apply_texts)
 	worlds.street.go_inside.connect(func(): _transition(_enter_living.bind(false), true))
 	worlds.living.go_room.connect(_go_room)
+	worlds.street.go_sea.connect(func(): get_tree().create_timer(0.55).timeout.connect(func(): if scene == "street": _transition(_enter_sea)))
+	worlds.sea.open_stop.connect(func(i): get_tree().create_timer(0.25).timeout.connect(func(): if scene == "sea" and worlds.sea.state == "parked": open_stop(i)))
+	worlds.sea.chapter.connect(_on_chapter)
+	worlds.sea.mode_changed.connect(func(): if scene == "sea": _sea_mode())
+	worlds.sea.finished.connect(func(): if scene == "sea": open_ride_end())
 	worlds.room.open_section.connect(func(id): open_section(id))
 	worlds.room.hover_changed.connect(func(_g): _render_sign())
 	_layout()
@@ -156,6 +171,7 @@ func _boot() -> void:
 		if G.by_id.has(h): open_section(h, true)
 	elif h == "salotto": _enter_living(false)
 	elif h == "strada": _enter_street()
+	elif h == "lungomare": _enter_sea()
 	if G.offline: toast(G.t("noServer"))
 	var left := 1500 - (Time.get_ticks_msec() - t0)
 	if left > 0: await get_tree().create_timer(left / 1000.0).timeout
@@ -251,6 +267,11 @@ func _build_stage() -> void:
 	prompt_node.visible = false
 	prompt_node.pressed.connect(_do_action)
 	stage.add_child(prompt_node)
+	sea_host = Control.new()
+	sea_host.mouse_filter = MOUSE_FILTER_IGNORE
+	sea_host.visible = false
+	stage.add_child(sea_host)
+	stage.move_child(sea_host, 0)
 	sign_node = Control.new()
 	sign_node.mouse_filter = MOUSE_FILTER_IGNORE
 	stage.add_child(sign_node)
@@ -259,6 +280,7 @@ func _build_stage() -> void:
 	title_lbl.add_theme_color_override("font_shadow_color", G.C_INK)
 	title_lbl.add_theme_constant_override("shadow_offset_x", 5)
 	title_lbl.add_theme_constant_override("shadow_offset_y", 5)
+	title_lbl.add_theme_constant_override("line_spacing", -26)
 	title_lbl.size = Vector2(1280, 90)
 	title_lbl.position = Vector2(0, 300)
 	title_lbl.modulate.a = 0
@@ -351,8 +373,188 @@ func _update_bubbles() -> void:
 		dialog.get_node("Inner").add_theme_stylebox_override("panel", UI.box(Color("26204a") if last_quote else G.C_CREAM, G.gold if last_quote else G.C_INK, 4, 14, 10))
 		dialog_txt.add_theme_color_override("default_color", G.C_CREAM if last_quote else G.C_INK)
 
+# ================================================================== lungomare: etichette delle tappe, narrazione, percorso
+func _rebuild_sea() -> void:
+	for n in sea_labels: n.queue_free()
+	sea_labels.clear()
+	for s in worlds.sea.stops:
+		var chalk: bool = s.sec.id == "lavagna"
+		var p := PanelContainer.new()
+		p.add_theme_stylebox_override("panel", UI.box(Color("24493a") if chalk else G.C_CREAM, Color("8a5a36") if chalk else G.C_INK, 4, 16, 8))
+		p.mouse_filter = MOUSE_FILTER_IGNORE
+		var v := UI.vbox(0)
+		var k := UI.label("", 20, Color("b9cdb5") if chalk else Color("8a5a36"), UI.f_ui)
+		k.name = "K"
+		k.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		v.add_child(k)
+		var t := UI.label("", 29, Color("f4f7ef") if chalk else G.C_INK, UI.f_head, true)
+		t.name = "T"
+		t.add_theme_constant_override("line_spacing", -14)
+		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		v.add_child(t)
+		p.add_child(v)
+		var tail := Polygon2D.new()
+		tail.polygon = PackedVector2Array([Vector2(-14, 0), Vector2(14, 0), Vector2(0, 16)])
+		tail.color = Color("8a5a36") if chalk else G.C_INK
+		tail.name = "Tail"
+		p.add_child(tail)
+		p.visible = false
+		sea_host.add_child(p)
+		sea_labels.append(p)
+	# cartelli stradali: il testo sta nel palco, così resta nitido
+	for n in sea_signs: n.queue_free()
+	sea_signs.clear()
+	for ch in worlds.sea.chapters:
+		var b := Control.new()
+		b.mouse_filter = MOUSE_FILTER_IGNORE
+		b.size = Vector2(236, 88)
+		var pl := UI.label("", 30, Color("1e1e2e"), UI.f_ui)
+		pl.name = "P"
+		pl.size = Vector2(236, 40)
+		pl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		pl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		b.add_child(pl)
+		var blue := ColorRect.new()
+		blue.color = Color("2f5fa8")
+		blue.position = Vector2(34, 44)
+		blue.size = Vector2(168, 36)
+		blue.mouse_filter = MOUSE_FILTER_IGNORE
+		b.add_child(blue)
+		var kl := UI.label("PISA  %d" % worlds.sea.km_at(ch.x0), 26, Color.WHITE, UI.f_ui)
+		kl.position = Vector2(34, 44)
+		kl.size = Vector2(168, 36)
+		kl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		kl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		b.add_child(kl)
+		for x in [pl, kl]: x.mouse_filter = MOUSE_FILTER_IGNORE
+		b.visible = false
+		sea_host.add_child(b)
+		sea_host.move_child(b, 0)
+		sea_signs.append(b)
+	_sea_texts()
+
+func _sea_texts() -> void:
+	for i in sea_signs.size():
+		var ch: Dictionary = worlds.sea.chapters[i]
+		var pl: Label = sea_signs[i].get_node("P")
+		pl.text = str(G.t("ridePlaces").get(ch.id, G.L(ch.sec, "sign_label"))).to_upper()
+		var fs := 30
+		while fs > 14 and UI.f_ui.get_string_size(pl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > 226: fs -= 1
+		pl.add_theme_font_size_override("font_size", fs)
+	for i in sea_labels.size():
+		var s: Dictionary = worlds.sea.stops[i]
+		var p: PanelContainer = sea_labels[i]
+		var k: Label = p.find_child("K", true, false)
+		var t: Label = p.find_child("T", true, false)
+		k.text = G.L(s.it, "kicker")
+		k.visible = k.text != ""
+		t.text = G.L(s.it, "title")
+		var w := UI.f_head.get_string_size(t.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 29).x + 4
+		w = maxf(w, UI.f_ui.get_string_size(k.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x + 4)
+		t.custom_minimum_size.x = clampf(w, 150, 400)
+
+func _update_sea() -> void:
+	var sea = worlds.sea
+	sea.paused = modal.visible
+	for i in sea_signs.size():
+		var cx: float = float(sea.chapters[i].x0) - roundf(sea.cam)
+		sea_signs[i].visible = cx > -40 and cx < 360
+		sea_signs[i].position = Vector2(cx * 4 - 118, 107 * 4)
+		# il cartello sta dietro alla Vespa: quando le passa davanti il testo si attenua
+		sea_signs[i].modulate = sea._mod()
+		sea_signs[i].modulate.a = clampf((absf(cx - (sea.x - sea.cam) + 2) - 34) / 22.0, 0.0, 1.0) if sea.riding() else 1.0
+	var near: int = sea.near_stop() if sea.state in ["ride", "parking", "parked"] else -1
+	for i in sea_labels.size():
+		var s: Dictionary = sea.stops[i]
+		var p: PanelContainer = sea_labels[i]
+		var sx: float = float(s.x) - sea.cam
+		var show: bool = s.state == "up" and not portrait and sx > -30 and sx < 345 and not modal.visible and sea.state != "ending" and sea.state != "end"
+		if show and not p.visible:
+			p.visible = true
+			p.reset_size()
+			p.pivot_offset = Vector2(p.size.x / 2, p.size.y)
+			p.scale = Vector2(0.4, 0.4)
+			p.modulate.a = 0
+			var tw := create_tween().set_parallel()
+			tw.tween_property(p, "scale", Vector2.ONE, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			tw.tween_property(p, "modulate:a", 1.0, 0.18)
+		elif not show: p.visible = false
+		if not p.visible: continue
+		p.reset_size()
+		p.position = Vector2(roundf(sx * 4 - p.size.x / 2), 366 - p.size.y + sin(Time.get_ticks_msec() / 420.0 + i) * 3)
+		(p.get_node("Tail") as Polygon2D).position = Vector2(p.size.x / 2, p.size.y)
+		p.self_modulate = Color.WHITE if i == near else Color(0.86, 0.86, 0.9)
+	var txt: String = sea.narr_text()
+	var on: bool = txt != "" and not modal.visible
+	if portrait:
+		narr_node.visible = false
+		var bb := G.esc_bb(txt)
+		if bb == "" and near >= 0: bb = "[color=#8a5a36]%s[/color]\n%s" % [G.esc_bb(G.L(sea.stops[near].it, "kicker")), G.esc_bb(G.L(sea.stops[near].it, "title"))]
+		if dialog_txt.text != bb:
+			dialog_txt.text = bb
+			dialog.get_node("Inner").add_theme_stylebox_override("panel", UI.box(G.C_CREAM, G.C_INK, 4, 14, 10))
+			dialog_txt.add_theme_color_override("default_color", G.C_INK)
+		dialog.visible = bb != "" and not modal.visible
+	else:
+		if on:
+			var caret := "" if sea.narr_done() else "[color=#f2b85b]▌[/color]"
+			if narr_txt.text != G.esc_bb(txt) + caret: narr_txt.text = G.esc_bb(txt) + caret
+			if not narr_node.visible:
+				narr_node.visible = true
+				narr_node.modulate.a = 0
+			# tiene il posto per tutta la battuta, così il riquadro non cresce mentre si scrive
+			var full: String = str(sea.narr.lines[sea.narr.i])
+			var nw := minf(520, size.x * 0.42)
+			narr_node.custom_minimum_size = Vector2(nw, 0)
+			var hh := UI.f_body.get_multiline_string_size(full, HORIZONTAL_ALIGNMENT_LEFT, nw - 56, 27).y
+			narr_txt.custom_minimum_size = Vector2(nw - 48, hh)
+			narr_node.reset_size()
+			narr_node.position = Vector2(14 if world_rect.position.x < 0 else world_rect.position.x + 14, 72)
+		narr_node.modulate.a = move_toward(narr_node.modulate.a, 1.0 if on else 0.0, get_process_delta_time() * 5)
+		if not on and narr_node.modulate.a <= 0.01: narr_node.visible = false
+	route.visible = sea.riding() and not modal.visible
+	route.queue_redraw()
+
+## Striscia del percorso: capitoli, tappe viste, Vespa, chilometri per Pisa.
+func _draw_route() -> void:
+	var sea = worlds.sea
+	var w := route.size.x
+	route.draw_rect(Rect2(Vector2.ZERO, route.size), G.C_INK)
+	route.draw_rect(Rect2(Vector2(3, 3), route.size - Vector2(6, 6)), G.C_PANEL)
+	var head := "%s %d/%d" % [G.t("rideStops"), sea.seen_count(), sea.stops.size()]
+	route.draw_string(UI.f_ui, Vector2(14, 24), head, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, G.C_CREAM)
+	var km := "PISA %d km" % sea.km_at(sea.x)
+	route.draw_string(UI.f_ui, Vector2(w - 14 - UI.f_ui.get_string_size(km, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x, 24), km, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, G.gold)
+	var x0 := 16.0
+	var x1 := w - 18.0
+	var at := func(wx: float) -> float: return roundf(lerpf(x0, x1, clampf((wx - sea.VESPA_X) / (sea.end_x - sea.VESPA_X), 0, 1)))
+	route.draw_rect(Rect2(x0, 43, x1 - x0, 2), G.C_LINE)
+	route.draw_rect(Rect2(x0, 43, float(at.call(sea.x)) - x0, 2), G.gold)
+	for ch in sea.chapters: route.draw_rect(Rect2(at.call(ch.x0) - 1, 36, 2, 16), G.C_SKY)
+	for s in sea.stops:
+		var sx: float = at.call(s.x)
+		route.draw_rect(Rect2(sx - 3, 41, 6, 6), G.C_INK)
+		route.draw_rect(Rect2(sx - 2, 42, 4, 4), G.C_SAGE if s.seen else G.C_MUTED)
+	var vx: float = at.call(sea.x)
+	route.draw_rect(Rect2(vx - 6, 34, 12, 12), G.C_INK)
+	route.draw_rect(Rect2(vx - 4, 36, 8, 8), Color("7ec4b0"))
+	route.draw_rect(Rect2(vx - 4, 44, 3, 3), G.C_CREAM)
+	route.draw_rect(Rect2(vx + 1, 44, 3, 3), G.C_CREAM)
+
+func _sea_mode() -> void:
+	hint.text = G.kbd(G.t("hintRide" if worlds.sea.riding() else "hintSeaWalk"))
+	_layout_hud()
+
+func _on_chapter(i: int) -> void:
+	var ch: Dictionary = worlds.sea.chapters[i]
+	_show_title((G.t("rideChapter") % int(ch.num)) + "\n" + str(G.t("rideTitles").get(ch.id, G.L(ch.sec, "title").to_upper())))
+	G.mark_explored(ch.id)
+	Sfx.page()
+
 func _show_title(text: String) -> void:
 	title_lbl.text = text
+	title_lbl.size = Vector2(1280, 90)
+	title_lbl.position.y = 300 if not text.contains("\n") else 250
 	var tw := create_tween()
 	title_lbl.modulate.a = 0
 	tw.tween_property(title_lbl, "modulate:a", 1.0, 0.3)
@@ -444,11 +646,13 @@ func _rebuild_menu() -> void:
 	var items := [
 		["enter", enter_lbl if enter_lbl != "" else G.t("start"), ""],
 		["room", G.t("room"), ""],
+		["ride", G.t("rideMenu"), "★"],
 		["settings", G.t("settings"), G.t("walk") if G.room_mode == "walk" else G.t("point") if G.room_mode == "point" else ""],
 		["lang", G.t("language").to_upper(), G.t("langName").to_upper()],
 		["audio", G.t("audio").to_upper(), G.t("on") if G.audio_on else G.t("off")],
 		["help", G.t("help"), ""],
 	]
+	if not G.ride_found: items = items.filter(func(q): return q[0] != "ride")
 	for i in items.size():
 		var it: Array = items[i]
 		var b := Button.new()
@@ -502,6 +706,7 @@ func _menu_act(a: String) -> void:
 	match a:
 		"enter": _start_game(false)
 		"room": _start_game(true)
+		"ride": _start_ride()
 		"settings": open_settings()
 		"lang":
 			Sfx.select()
@@ -518,13 +723,17 @@ func _layout_menu() -> void:
 	var col: PanelContainer = menu_ui.get_node("Col")
 	var foot: BoxContainer = menu_ui.get_node("Foot")
 	if portrait:
+		col.scale = Vector2.ONE
 		col.custom_minimum_size.x = sz.x - 48
 		col.size = Vector2(sz.x - 48, 0)
 		col.position = Vector2(24, maxf(20, (sz.y - 70 - col.get_combined_minimum_size().y) * 0.45))
 	else:
 		col.custom_minimum_size.x = 572
 		col.size = Vector2(572, 0)
-		col.position = Vector2(sz.x - 572 - maxf(30, sz.x * 0.05), maxf(20, (sz.y - col.get_combined_minimum_size().y) / 2))
+		# sugli schermi bassi il menu si rimpicciolisce invece di uscire dal bordo
+		var fit := minf(1.0, (sz.y - 40) / maxf(1, col.get_combined_minimum_size().y))
+		col.scale = Vector2(fit, fit)
+		col.position = Vector2(sz.x - 572 * fit - maxf(30, sz.x * 0.05), maxf(20, (sz.y - col.get_combined_minimum_size().y * fit) / 2))
 	foot.reset_size()
 	foot.position = Vector2(24, sz.y - foot.size.y - 12)
 
@@ -574,7 +783,10 @@ func _build_hud() -> void:
 	tools = UI.hbox(8)
 	tools.name = "Tools"
 	hud_top.add_child(tools)
-	b_back = UI.button("", func(): Sfx.select(); _transition(_enter_living.bind(true), true))
+	b_back = UI.button("", func():
+		Sfx.select()
+		if scene == "sea": _transition(_enter_street.bind(worlds.street.FORK_X + 20))
+		else: _transition(_enter_living.bind(true), true))
 	b_skip = UI.button("", func(): Sfx.select(); _transition(_enter_room, scene == "living"))
 	b_settings = UI.button("✻", func(): open_settings())
 	b_lang = UI.button("EN", func(): Sfx.select(); G.set_lang("it" if G.lang == "en" else "en"))
@@ -587,6 +799,20 @@ func _build_hud() -> void:
 	hint.add_theme_stylebox_override("normal", UI.box(Color(G.C_INK, 0.78), Color(0, 0, 0, 0), 0, 10, 4))
 	hint.mouse_filter = MOUSE_FILTER_IGNORE
 	hud.add_child(hint)
+	narr_node = UI.px_panel(Color(G.C_PANEL, 0.96), G.C_CREAM, 18)
+	narr_node.mouse_filter = MOUSE_FILTER_IGNORE
+	narr_node.get_node("Inner").mouse_filter = MOUSE_FILTER_IGNORE
+	narr_txt = UI.rich("", 27, G.C_CREAM)
+	narr_txt.mouse_filter = MOUSE_FILTER_IGNORE
+	narr_node.get_node("Inner").add_child(narr_txt)
+	narr_node.visible = false
+	hud.add_child(narr_node)
+	route = Control.new()
+	route.mouse_filter = MOUSE_FILTER_IGNORE
+	route.size = Vector2(400, 58)
+	route.visible = false
+	route.draw.connect(_draw_route)
+	hud.add_child(route)
 	prog = PanelContainer.new()
 	prog.add_theme_stylebox_override("panel", UI.box(G.C_PANEL, G.C_INK, 3, 12, 6))
 	var ph := UI.hbox(10)
@@ -649,6 +875,12 @@ func _layout() -> void:
 	else: f = clampf(minf(css.x / 1280.0, css.y / 800.0), 0.62, 2.2)
 	win.content_scale_factor = maxf(0.3, f * dpr)
 	await get_tree().process_frame
+	# schermi più larghi di 16:9: il gioco resta un 16:9 centrato (bande ai lati), altrimenti
+	# il mondo verrebbe tagliato in alto e le bolle uscirebbero dallo schermo
+	var full := get_viewport_rect().size
+	var side := maxf(0, roundf((full.x - full.y * MAX_ASPECT) / 2))
+	offset_left = side
+	offset_right = -side
 	var sz := size
 	# rettangolo del mondo 320x200
 	if scene == "menu" or scene == "loading":
@@ -661,7 +893,7 @@ func _layout() -> void:
 		world_rect = Rect2(Vector2(world_rect.position.x if world_rect.size.x > 0 else 0.0, 64), Vector2(320, 200) * s2)
 		_follow(1.0)
 	else:
-		# riempie tutta la finestra (niente bande): il mondo può uscire un po' dai bordi
+		# riempie tutto il riquadro di gioco: il mondo può uscire un po' dai bordi
 		var s3 := maxf(sz.x / 320.0, sz.y / 200.0)
 		var wsz3 := Vector2(320, 200) * s3
 		world_rect = Rect2((sz - wsz3) / 2, wsz3)
@@ -692,6 +924,7 @@ func _follow(k: float) -> void:
 	match scene:
 		"street": fx = worlds.street.P.x - worlds.street.cam
 		"living": fx = worlds.living.P.x
+		"sea": fx = worlds.sea.focus_x()
 		"room":
 			var r = worlds.room
 			if G.room_mode == "walk": fx = r.P.x
@@ -711,7 +944,7 @@ func content_scale() -> float:
 
 func _layout_hud() -> void:
 	var sz := size
-	var walk := scene == "street" or scene == "living" or (scene == "room" and G.room_mode == "walk")
+	var walk := scene == "street" or scene == "living" or scene == "sea" or (scene == "room" and G.room_mode == "walk")
 	var left: HBoxContainer = hud_top.get_node("Left")
 	if portrait:
 		left.position = Vector2(8, 8)
@@ -725,7 +958,7 @@ func _layout_hud() -> void:
 		var below := world_rect.end.y + (56 if scene == "room" else 10)
 		hint.visible = false
 		prog.visible = false
-		dialog.visible = scene == "street" and dialog_txt.text != ""
+		dialog.visible = (scene == "street" or scene == "sea") and dialog_txt.text != ""
 		dialog.position = Vector2(10, below)
 		dialog.size = Vector2(sz.x - 20, 0)
 		dialog.custom_minimum_size = Vector2(sz.x - 20, 120)
@@ -734,6 +967,8 @@ func _layout_hud() -> void:
 		pad.get_node("L").position = Vector2(14, pad_y + 8)
 		pad.get_node("R").position = Vector2(122, pad_y + 8)
 		pad_a.position = Vector2(sz.x - 124, pad_y)
+		route.size = Vector2(sz.x - 20, 58)
+		route.position = Vector2(10, pad_y - 74)
 		sheet.visible = scene == "room"
 		sheet.position = Vector2(10, below)
 		sheet.size = Vector2(sz.x - 20, maxf(160, (pad_y - 26 if walk else sz.y - 10) - below))
@@ -742,7 +977,7 @@ func _layout_hud() -> void:
 		if mode_badge.get_parent() != left:
 			mode_badge.get_parent().remove_child(mode_badge)
 			left.add_child(mode_badge)
-		mode_badge.visible = scene != "menu"
+		mode_badge.visible = scene != "menu" and scene != "sea"
 		var top := maxf(10, world_rect.position.y + 10) if compact else 14.0
 		left.position = Vector2(maxf(14, world_rect.position.x + 14), top)
 		tools.position = Vector2(minf(sz.x, world_rect.end.x) - tools.get_combined_minimum_size().x - 14, top)
@@ -754,6 +989,9 @@ func _layout_hud() -> void:
 		prog.visible = scene == "room"
 		prog.reset_size()
 		prog.position = Vector2(minf(sz.x, world_rect.end.x) - prog.size.x - 14, minf(sz.y, world_rect.end.y) - prog.size.y - 14)
+		route.size = Vector2(minf(400, sz.x * 0.36), 58)
+		route.position = Vector2(minf(sz.x, world_rect.end.x) - route.size.x - 14, minf(sz.y, world_rect.end.y) - 72)
+		if G.touch: route.position.x = (sz.x - route.size.x) / 2
 		pad.visible = walk and G.touch
 		var py := minf(sz.y, world_rect.end.y) - 120
 		pad.get_node("L").position = Vector2(world_rect.position.x + 16, py + 10)
@@ -761,6 +999,9 @@ func _layout_hud() -> void:
 		pad_a.position = Vector2(world_rect.end.x - 130, py)
 		if scene == "room": prog.position.x -= (140 if pad.visible else 0)
 	hud.visible = scene != "menu" and scene != "loading"
+	if scene != "sea":
+		route.visible = false
+		narr_node.visible = false
 	menu_ui.visible = scene == "menu"
 	if not hud.visible:
 		dialog.visible = false
@@ -773,20 +1014,23 @@ func _apply_texts() -> void:
 	if G.S.is_empty(): return
 	_rebuild_menu()
 	var name := str(G.S.get("site_name", "CRI's CAMERETTA"))
-	var sc: String = G.t("street") if scene == "street" else G.t("living") if scene == "living" else G.L(G.S, "room_crumb")
+	var sc: String = G.t("street") if scene == "street" else G.t("living") if scene == "living" else G.t("sea") if scene == "sea" else G.L(G.S, "room_crumb")
 	crumb.text = name + " · " + sc
 	crumb.get_parent().visible = not portrait
-	b_back.text = "◀" if portrait else G.t("back")
+	b_back.text = "◀" if portrait else G.t("backStreet" if scene == "sea" else "back")
 	b_skip.text = G.t("skip")
 	b_lang.text = G.lang.to_upper()
 	b_audio.text = "♪" if portrait else "♪ " + (G.t("on") if G.audio_on else G.t("off"))
 	b_audio.modulate.a = 1.0 if G.audio_on else 0.55
 	b_menu.text = "☰ " + G.t("menu") if not portrait else "☰"
-	b_back.visible = scene == "room"
+	b_back.visible = scene == "room" or scene == "sea"
 	b_skip.visible = scene == "street" or scene == "living"
 	_update_mode_button(mode_badge)
 	var hk := "hintWalk"
 	if scene == "room": hk = "hintRoomWalk" if G.room_mode == "walk" else "hintRoom"
+	if scene == "sea":
+		hk = "hintRide" if worlds.sea.riding() else "hintSeaWalk"
+		_sea_texts()
 	hint.text = G.kbd(G.t(hk))
 	_render_progress()
 	_render_sign()
@@ -797,6 +1041,8 @@ func _apply_texts() -> void:
 		elif modal_kind == "help": open_help(true)
 		elif modal_kind == "settings": open_settings(true)
 		elif modal_kind == "choose": _open_choose(true)
+		elif modal_kind == "ride": open_stop(worlds.sea.park_i, true)
+		elif modal_kind == "rideend": open_ride_end(true)
 	_layout()
 
 func _render_progress() -> void:
@@ -847,6 +1093,8 @@ func _set_scene(sc: String) -> void:
 	view.visible = not (sc == "menu" and G.custom_sky)
 	sky_custom.visible = sc == "menu" and G.custom_sky
 	bubbles_host.visible = sc == "street"
+	sea_host.visible = sc == "sea"
+	dialog_txt.text = ""
 	prompt_node.visible = false
 	prompt_action = Callable()
 	pad_dir = 0
@@ -856,11 +1104,25 @@ func _set_scene(sc: String) -> void:
 	if sc != "menu" and sc != "loading": _show_title(G.t("titles")[sc])
 	else: title_lbl.modulate.a = 0
 
-func _enter_street() -> void:
-	worlds.street.enter()
+func _enter_street(at := -1.0) -> void:
+	if at >= 0: worlds.street.enter_at(at)
+	else: worlds.street.enter()
 	_rebuild_bubbles()
 	_set_scene("street")
 	G.set_hash("strada")
+
+func _enter_sea() -> void:
+	worlds.sea.enter()
+	_rebuild_sea()
+	_set_scene("sea")
+	G.set_hash("lungomare")
+
+## Dal menu, una volta scoperto: si arriva dritti alla Vespa.
+func _start_ride() -> void:
+	if busy or scene != "menu": return
+	Sfx.start()
+	Sfx.start_music()
+	_transition(_enter_sea)
 
 func _enter_living(from_room: bool) -> void:
 	worlds.living.enter(from_room)
@@ -952,13 +1214,14 @@ func _process(dt: float) -> void:
 	if w == null: return
 	_follow(minf(1.0, dt * 6))
 	var blocked := busy or modal.visible
-	if scene == "street" or scene == "living":
+	if scene == "street" or scene == "living" or scene == "sea":
 		w.input_dir = 0 if blocked else _held_dir()
 		w.run = Input.is_physical_key_pressed(KEY_SHIFT)
 		w.locked = busy
 		w.update(dt)
 		if scene == "street": _update_bubbles()
-		_update_prompt(w.prompt, w.cam if scene == "street" else 0.0)
+		elif scene == "sea": _update_sea()
+		_update_prompt(w.prompt, w.cam if scene != "living" else 0.0)
 	elif scene == "room":
 		var v := Vector2i.ZERO
 		if not blocked and G.room_mode == "walk":
@@ -1030,6 +1293,9 @@ func _on_view_input(e: InputEvent) -> void:
 				room.set_hover(g2)
 				open_section(g2)
 		return
+	if scene == "sea" and e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+		worlds.sea.tap(pos)
+		return
 	if (scene == "street" or scene == "living") and e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 		worlds[scene].tap(pos.x)
 
@@ -1045,6 +1311,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			if i >= 0:
 				Sfx.page()
 				open_section(ids[posmod(i + (1 if k == KEY_RIGHT else -1), ids.size())])
+		elif modal_kind == "ride" and not e.echo and k in [KEY_E, KEY_ENTER, KEY_KP_ENTER, KEY_SPACE]: close_modal()
 		get_viewport().set_input_as_handled()
 		return
 	if e.echo: return
@@ -1055,6 +1322,11 @@ func _unhandled_input(e: InputEvent) -> void:
 			elif k == KEY_ENTER or k == KEY_KP_ENTER or k == KEY_SPACE: _menu_act(menu_items[menu_sel].get_meta("act"))
 		"street", "living":
 			if k in [KEY_E, KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_UP, KEY_W]: _do_action()
+			elif k == KEY_ESCAPE: _to_menu()
+			elif (k == KEY_DOWN or k == KEY_S) and scene == "street" and worlds.street.prompt.has("down"): _do_action()
+		"sea":
+			if k in [KEY_E, KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_UP, KEY_W]: _do_action()
+			elif k == KEY_H: worlds.sea.horn()
 			elif k == KEY_ESCAPE: _to_menu()
 		"room":
 			var room = worlds.room
@@ -1201,16 +1473,79 @@ func _page(id: String) -> void:
 func close_modal(quiet := false) -> void:
 	if not modal.visible: return
 	var was_section := modal_kind == "section"
+	var was_ride := modal_kind == "ride" or (modal_kind == "rideend" and not quiet)
 	modal.visible = false
 	modal_kind = ""
 	open_id = ""
 	for c in modal.get_children(): c.queue_free()
 	_panel = null
 	if was_section: G.set_hash("stanza")
+	if was_ride and scene == "sea": worlds.sea.resume()
 	if not quiet: Sfx.close()
 	_render_sign()
 	if after_choose.is_valid() and not quiet:
 		after_choose = Callable()
+
+## Tappa del giro in Vespa: una voce sola, raccontata in grande.
+func open_stop(i: int, silent := false) -> void:
+	var sea = worlds.sea
+	if i < 0 or i >= sea.stops.size(): return
+	var s: Dictionary = sea.stops[i]
+	var ch: Dictionary = sea.chapters[s.ch]
+	var place: String = G.t("ridePlaces").get(ch.id, G.L(ch.sec, "sign_label"))
+	var row := _title_row("", "%s · %s" % [G.t("rideStopN") % [i + 1, sea.stops.size()], place.to_upper()], G.L(s.it, "title"))
+	var frame := PanelContainer.new()
+	frame.add_theme_stylebox_override("panel", UI.box(Color("24493a") if ch.id == "lavagna" else G.C_INK, G.C_LINE, 3, 10))
+	frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var em := TextureRect.new()
+	em.texture = sea.emblem_tex(s.emblem)
+	em.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	em.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	em.custom_minimum_size = Vector2(80, 80) if not portrait else Vector2(48, 48)
+	frame.add_child(em)
+	row.add_child(frame)
+	row.move_child(frame, 0)
+	var foot := UI.hbox(10)
+	var cnt := UI.label("%s %d/%d" % [G.t("rideStops"), sea.seen_count(), sea.stops.size()], 20, G.C_MUTED, UI.f_ui)
+	cnt.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	foot.add_child(cnt)
+	var pips := UI.hbox(5)
+	pips.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pips.alignment = BoxContainer.ALIGNMENT_CENTER
+	for j in sea.stops.size():
+		if sea.stops[j].ch != s.ch: continue
+		var pip := ColorRect.new()
+		pip.custom_minimum_size = Vector2(12, 12)
+		pip.color = G.gold if j == i else (G.C_SAGE if sea.stops[j].seen else G.C_LINE)
+		pip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		pips.add_child(pip)
+	foot.add_child(pips)
+	foot.add_child(UI.button(G.t("rideGoOn"), func(): close_modal(), "solid", 22))
+	_open_modal("ride", Panels.item_body(s.it, ch.id == "lavagna"), foot, row, 820)
+	var bar := ColorRect.new()
+	bar.color = Color(str(ch.sec.get("color", "#f2b85b"))) if Color.html_is_valid(str(ch.sec.get("color", ""))) else G.gold
+	bar.custom_minimum_size.y = 6
+	_panel.get_node("Inner").get_child(0).add_child(bar)
+	_panel.get_node("Inner").get_child(0).move_child(bar, 0)
+	if not silent: Sfx.open()
+
+## Fine del giro, al belvedere.
+func open_ride_end(silent := false) -> void:
+	var sea = worlds.sea
+	var n: int = sea.seen_count()
+	var v := UI.vbox(16)
+	v.add_child(UI.label(G.t("rideEndSeen") % [n, sea.stops.size()], 28, G.gold, UI.f_head, true))
+	v.add_child(UI.rich(G.t("rideEndAll") if n >= sea.stops.size() else G.t("rideEndSome"), 26, G.C_CREAM))
+	var bits := HFlowContainer.new()
+	bits.add_theme_constant_override("h_separation", 10)
+	bits.add_theme_constant_override("v_separation", 10)
+	bits.add_child(UI.button(G.t("rideHome"), func(): Sfx.select(); _transition(_enter_street.bind(float(G.J.street.door.x) - 52)), "solid", 24))
+	bits.add_child(UI.button(G.t("rideAgain"), func(): Sfx.select(); _transition(_enter_sea), "ghost", 22))
+	if G.safe_url(str(G.S.get("cv_url", ""))): bits.add_child(UI.button(G.t("cv"), func(): G.open_url(str(G.S.cv_url)), "ghost", 22))
+	if G.safe_url(str(G.S.get("github_url", ""))): bits.add_child(UI.button("GitHub ↗", func(): G.open_url(str(G.S.github_url)), "ghost", 22))
+	v.add_child(bits)
+	_open_modal("rideend", v, null, _title_row("finestra", "", G.t("rideEndTitle")), 760)
+	if not silent: Sfx.open()
 
 func open_help(silent := false) -> void:
 	var v := UI.vbox(14)
