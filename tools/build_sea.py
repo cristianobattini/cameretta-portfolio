@@ -327,22 +327,30 @@ def shoe(s, x, y, far=False):
     s.r(x - 3, y, x + 4, y + 3, c); s.r(x + 4, y + 1, x + 5, y + 3, c); s.r(x - 3, y + 3, x + 5, y + 3, SOLE); s.r(x, y, x + 1, y, SOLE)
 
 def rider(kind):
-    s = Spr(RW, RH)
-    dy = {"ride0": 0, "ride1": 1, "stop": 0, "sea": 0, "horn": 0, "kick": -3}[kind]
-    lean = {"ride0": 2, "ride1": 2, "stop": 0, "sea": -1, "horn": 1, "kick": 3}[kind]
-    hx, hy = 21, 41 + dy
-    sx, sy = hx + 2 + lean, 27 + dy                        # spalle
-    # braccio e gamba lontani
-    s.limb([(sx + 2, sy + 2), (sx + 9, sy + 9), (41, 35)], 4, HOOD_SH)
-    if kind == "stop" or kind == "sea":                    # piede lontano a terra
-        s.limb([(hx + 2, hy + 1), (hx + 9, hy + 6), (hx + 8, 66)], 6, PANTS_SH); shoe(s, hx + 8, 69, True)
+    """due strati: 'back' (gamba e braccio lontani, dietro la carrozzeria) e 'front' (il resto), così sta a cavallo della sella"""
+    b, s = Spr(RW, RH), Spr(RW, RH)
+    dy = {"ride0": 0, "ride1": 1, "stop": 0, "sea": 0, "horn": 0, "kick": -5}[kind]
+    lean = {"ride0": 2, "ride1": 2, "stop": 0, "sea": -1, "horn": 1, "kick": 4}[kind]
+    hx, hy = 18 + (2 if kind == "kick" else 0), 38 + dy      # bacino: appoggia sulla sella (y 41-47), che resta visibile sotto
+    sx, sy = hx + 3 + lean, 24 + dy                        # spalle
+    # --- strato lontano
+    b.limb([(sx + 2, sy + 2), (sx + 9, sy + 9), (42, 34)], 4, HOOD_SH); b.r(41, 33, 43, 35, SKIN_SH)
+    if kind in ("stop", "sea"):                            # piede lontano a terra: spunta sotto la pedana
+        b.limb([(hx + 3, hy + 2), (hx + 15, hy + 5), (hx + 14, 66)], 6, PANTS_SH); shoe(b, hx + 15, 69, True)
+    elif kind == "kick":
+        b.limb([(hx + 2, hy + 2), (hx + 10, hy + 14), (hx + 11, 66)], 6, PANTS_SH); shoe(b, hx + 12, 69, True)
     else:
-        s.limb([(hx + 2, hy + 1), (36, 45 + dy * .5), (38, 57)], 6, PANTS_SH); shoe(s, 39, 59, True)
+        b.limb([(hx + 3, hy + 2), (37, 42 + dy * .5), (38, 56)], 6, PANTS_SH); shoe(b, 39, 58, True)
+    # --- sedere, schiacciato sulla sella
+    if kind != "kick":
+        s.ell(hx - 7, 36 + dy, hx + 7, 43, PANTS); s.r(hx - 5, 42, hx + 5, 43, PANTS_SH)
+    else:
+        s.ell(hx - 6, hy - 1, hx + 6, hy + 6, PANTS); s.limb([(hx - 4, hy + 5), (hx + 1, hy + 6)], 1, PANTS_SH)
     # busto (felpa nera oversize)
-    tm = s.curve([(hx - 6, hy + 3), (hx - 7, hy - 4), (sx - 7, sy + 3), (sx - 5, sy - 1), (sx + 4, sy - 1), (sx + 7, sy + 3), (hx + 8, hy - 4), (hx + 7, hy + 3)], HOOD)
-    s.curve([(hx - 6, hy + 3), (hx - 7, hy - 4), (sx - 7, sy + 3), (sx - 5, sy), (sx - 3, sy + 5), (hx - 4, hy - 3), (hx - 3, hy + 3)], HOOD_SH, only=tm)
-    s.limb([(sx + 6, sy + 4), (hx + 8, hy - 3)], 1.4, HOOD_HI, only=tm)
-    s.r(hx - 6, hy + 2, hx + 7, hy + 3, (46, 44, 56), only=tm)
+    tm = s.curve([(hx - 6, hy + 1), (hx - 7, hy - 4), (sx - 7, sy + 3), (sx - 5, sy - 1), (sx + 4, sy - 1), (sx + 7, sy + 3), (hx + 8, hy - 4), (hx + 7, hy + 1)], HOOD)
+    s.curve([(hx - 6, hy + 1), (hx - 7, hy - 4), (sx - 7, sy + 3), (sx - 5, sy), (sx - 3, sy + 5), (hx - 4, hy - 3), (hx - 3, hy + 1)], HOOD_SH, only=tm)
+    s.limb([(sx + 6, sy + 4), (hx + 8, hy - 4)], 1.4, HOOD_HI, only=tm)
+    s.r(hx - 6, hy, hx + 7, hy + 1, (46, 44, 56), only=tm)
     s.r(sx + 1, sy + 4, sx + 1, sy + 7, (230, 226, 220)); s.r(sx + 4, sy + 4, sx + 4, sy + 6, (230, 226, 220))
     # cappuccio
     s.ell(sx - 9, sy - 4, sx - 2, sy + 3, HOOD); s.ell(sx - 8, sy - 3, sx - 5, sy, HOOD_HI)
@@ -357,26 +365,28 @@ def rider(kind):
     # sciarpa al collo
     s.r(sx - 5, sy - 4, sx + 8, sy + 1, SCARF); s.r(sx - 5, sy + 1, sx + 8, sy + 1, SCARF_SH)
     for k in (-3, 1, 5): s.r(sx + k, sy - 2, sx + k + 1, sy - 1, SCARF_ST)
-    # gamba vicina
-    if kind == "kick":                                     # sta in piedi sulla messa in moto
-        lm = s.limb([(hx, hy + 2), (hx + 8, hy + 8), (hx + 5, 62)], 7, PANTS); shoe(s, hx + 6, 66)
-    elif kind in ("stop", "sea"):
-        lm = s.limb([(hx + 1, hy + 2), (hx + 11, hy + 5), (hx + 11, 66)], 7, PANTS); s.limb([(hx + 14, hy + 8), (hx + 14, 65)], 1.2, PANTS_SH, only=lm); shoe(s, hx + 12, 69)
+    # gamba vicina: coscia lungo la sella, piede sulla pedana
+    if kind == "kick":                                     # in piedi a cavallo, spinge la messa in moto
+        s.limb([(23, 62), (28, 69)], 1.4, CHR_SH); s.r(26, 69, 31, 69, CHR)
+        lm = s.limb([(hx, hy + 3), (hx + 9, hy + 13), (hx + 6, 60)], 7, PANTS)
+        s.limb([(hx - 2, hy + 6), (hx + 6, hy + 15), (hx + 3, 60)], 1.3, PANTS_SH, only=lm); s.limb([(hx + 3, hy + 2), (hx + 11, hy + 11)], 1.2, PANTS_HI, only=lm); shoe(s, hx + 7, 64)
     else:
-        lm = s.limb([(hx + 1, hy + 2), (34, 45 + dy * .5), (36, 56)], 7, PANTS)
-        s.limb([(hx + 2, hy + 4), (31, 48 + dy * .5)], 1.4, PANTS_SH, only=lm); s.limb([(39, 48), (39, 56)], 1.2, PANTS_SH, only=lm); s.limb([(hx + 2, hy - 1), (33, 42 + dy * .5)], 1.2, PANTS_HI, only=lm)
-        s.r(33, 51, 36, 51, PANTS_SH); s.r(34, 54, 38, 54, PANTS_SH); shoe(s, 37, 58)
-    # braccio vicino con la mano sulla manopola
-    hand = (41, 35)
-    am = s.limb([(sx, sy + 3), (sx + 7, sy + 11), (hand[0] - 2, hand[1])], 5, HOOD)
-    s.limb([(sx + 1, sy + 2), (sx + 8, sy + 9), (hand[0] - 2, hand[1] - 2)], 1.2, HOOD_HI, only=am); s.limb([(sx - 1, sy + 5), (sx + 6, sy + 13)], 1.2, HOOD_SH, only=am)
+        ky = 41 + dy * .5
+        lm = s.limb([(hx + 1, hy + 2), (33, ky), (35, 56)], 6.5, PANTS)
+        s.limb([(hx + 4, hy + 5), (30, ky + 3), (32, ky + 6)], 1.3, PANTS_SH, only=lm); s.limb([(37, 46), (38, 56)], 1.2, PANTS_SH, only=lm); s.limb([(hx + 4, hy), (32, ky - 3)], 1.2, PANTS_HI, only=lm)
+        s.r(31, 49, 34, 49, PANTS_SH); s.r(33, 53, 37, 53, PANTS_SH); shoe(s, 36, 58)
+    # braccio vicino: mano sulla manopola (verso il mare: posata sul ginocchio)
+    hand = (33, 37) if kind == "sea" else (41, 35)
+    elbow = (sx + 5, sy + 11) if kind == "sea" else (sx + 7, sy + 11)
+    am = s.limb([(sx, sy + 3), elbow, (hand[0] - 2, hand[1])], 5, HOOD)
+    s.limb([(sx + 1, sy + 2), (elbow[0] + 1, elbow[1] - 2), (hand[0] - 2, hand[1] - 2)], 1.2, HOOD_HI, only=am); s.limb([(sx - 1, sy + 5), (elbow[0] - 1, elbow[1] + 2)], 1.2, HOOD_SH, only=am)
     s.r(hand[0] - 2, hand[1] - 2, hand[0] + 1, hand[1] + 1, SKIN); s.p(hand[0] + 1, hand[1] + 1, SKIN_SH)
-    s.padl(PAD).outline()
+    s.padl(PAD).outline(); b.padl(PAD).outline()
     s.head = (ex - 3 + PAD, ey - 3); s.neck = (sx - 6 + PAD, sy - 2)
-    return s
+    return b, s
 riders = {}
 for k in ("ride0", "ride1", "stop", "sea", "horn", "kick"):
-    s = add("rider_" + k, rider(k)); riders[k] = {"head": list(s.head), "neck": list(s.neck)}
+    rb, s = rider(k); add("rider_back_" + k, rb); add("rider_" + k, s); riders[k] = {"head": list(s.head), "neck": list(s.neck)}
 
 def helmet(back=False):
     s = Spr(22, 19)

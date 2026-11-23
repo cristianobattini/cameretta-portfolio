@@ -13,7 +13,7 @@ func _ready() -> void:
 
 func shot(name: String) -> void:
 	await get_tree().process_frame
-	await get_tree().process_frame
+	RenderingServer.force_draw()       # anche se la finestra è coperta da altre
 	var img := get_viewport().get_texture().get_image()
 	n += 1
 	img.save_png("%s/%02d_%s.png" % [out, n, name])
@@ -142,8 +142,10 @@ func _ride() -> void:
 	await wait(0.6)
 	await shot("helmet_b")
 	while sea.state == "helmet": await get_tree().process_frame
-	await wait(0.25)
+	await wait(0.2)
 	await shot("mount")
+	await wait(0.2)
+	await shot("mount_sit")
 	while sea.state == "mount": await get_tree().process_frame
 	await wait(0.55)
 	await shot("kick")

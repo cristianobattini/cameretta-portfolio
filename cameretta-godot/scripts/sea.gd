@@ -10,6 +10,8 @@ signal finished
 
 const SLOT := 200.0            # passo del lungomare: un lampione ogni SLOT, una tappa a metà fra due lampioni
 const VESPA_X := 236.0
+const MOUNT_HOP := 0.34            # il saltello…
+const MOUNT_SIT := 0.3             # …e la discesa sulla sella
 const MAX_V := 118.0
 const TURBO_V := 172.0
 const ORDER := ["libreria", "letto", "scrivania", "lavagna", "finestra"]
@@ -32,6 +34,7 @@ var P: Player
 var state := "walk"            # walk, helmet, mount, start, ride, parking, parked, ending, end
 var st := 0.0                  # secondi nello stato corrente
 var x := VESPA_X               # centro della Vespa
+var sit_bump := 0.0
 var v := 0.0
 var dist := 0.0
 var cam := 0.0
@@ -341,11 +344,13 @@ func _up_mount(_d: float) -> void:
 		_snow_on = false
 		for k in 26: _puff(x - 30 + randf() * 56, 140 + randf() * 14, randf_range(-14, 14), randf_range(-26, 4), 0.95, Color("f0f5ff"), 60.0)
 		Sfx.step_snow()
-	if st > 0.5:
+	if st > MOUNT_HOP + MOUNT_SIT:
+		sit_bump = 0.14
 		_set_state("start")
 		pose = "stop"
 
-func _up_start(_d: float) -> void:
+func _up_start(d: float) -> void:
+	sit_bump = maxf(0, sit_bump - d)
 	# due pedalate a vuoto, alla terza parte
 	var times := [0.45, 1.35, 2.25]
 	pose = "stop"
@@ -843,12 +848,17 @@ func _draw_front(ci: CanvasItem) -> void:
 		P.draw(ci, P.x - c, 178.0)
 		if state == "helmet": _draw_helmet_anim(ci, c)
 	elif state == "mount":
-		_draw_vespa(ci, vx, "")
-		var k := clampf(st / 0.5, 0, 1)
-		var hx := lerpf(P.x, x - 14, k)
-		var fy := 178.0 - 12 * k - 10 * sin(k * PI)
-		P.draw(ci, hx - c, fy, Color(0, 0, 0, 0))
-		_spr(ci, "helmet", hx - c - 18 + 8, fy - 58 + 1)
+		# un saltello, gamba oltre la sella, e giù a sedere
+		var k := clampf(st / MOUNT_HOP, 0, 1)
+		if k < 1:
+			var hx := lerpf(P.x, x - 18, k)
+			var fy := 178.0 - 15 * sin(k * PI * 0.5) - 5 * sin(k * PI)
+			P.draw(ci, hx - c, fy, Color(0, 0, 0, 0))
+			_spr(ci, "helmet", hx - c - 18 + 8, fy - 58 + 1)
+			_draw_vespa(ci, vx, "")
+		else:
+			var q := clampf((st - MOUNT_HOP) / MOUNT_SIT, 0, 1)
+			_draw_vespa(ci, vx, "kick" if q < 0.6 else "stop", roundf(lerpf(-5, 0, q * q)))
 	else:
 		_draw_vespa(ci, vx, pose)
 	for p in _puffs:
@@ -869,7 +879,8 @@ func _draw_helmet_anim(ci: CanvasItem, c: float) -> void:
 	if st > 0.95: q.y = b.y + (-2.0 if st < 1.05 else 0.0)
 	_spr(ci, "helmet", q.x, q.y)
 
-func _draw_vespa(ci: CanvasItem, vx: float, rider: String) -> void:
+## `lift`: di quanto l'omino è ancora sollevato dalla sella (mentre sale).
+func _draw_vespa(ci: CanvasItem, vx: float, rider: String, lift := 0.0) -> void:
 	var J: Dictionary = _J.vespa
 	var left := vx - 38
 	var top := 133.0
@@ -881,6 +892,10 @@ func _draw_vespa(ci: CanvasItem, vx: float, rider: String) -> void:
 	for k in range(-34, 35):
 		var hh := 2.2 * sqrt(maxf(0.0, 1.0 - pow(k / 34.0, 2)))
 		ci.draw_rect(Rect2(vx + k, 182 - roundf(hh * 0.4), 1, maxf(1, roundf(hh))), Color(0.08, 0.09, 0.24, 0.4))
+	if sit_bump > 0: bob += 1.0                           # le sospensioni cedono quando si siede
+	if rider != "":
+		var bl := 1.0 if clampf(roundf(_dip), -1, 1) > 0 else 0.0
+		_spr(ci, "rider_back_" + rider, left + bl, top + float(J.rider_dy) + bob + lift)
 	_spr(ci, "vespa_back", left, top + bob)
 	var fr := int(dist / 3.4) % 4
 	var rear: Array = J.rear
@@ -889,13 +904,13 @@ func _draw_vespa(ci: CanvasItem, vx: float, rider: String) -> void:
 	_spr(ci, "wheel%d" % fr, left + float(fro[0]) - 9, top + float(fro[1]) - 9)
 	var dip := clampf(roundf(_dip), -1, 1)                # in frenata il muso si abbassa
 	_spr(ci, "vespa", left, top + bob)
-	if rider == "" and state in ["walk", "helmet", "mount"]:
+	if state in ["walk", "helmet", "mount"]:
 		_spr(ci, "stand", left + 30, top + 38)
 	if _snow_on: _spr(ci, "vespa_snow", left, top)
 	if rider == "":
 		if state == "walk": _spr(ci, "helmet", left + float(J.seat[0]), top + float(J.seat[1]))
 		return
-	var rt := top + float(J.rider_dy) + bob
+	var rt := top + float(J.rider_dy) + bob + lift
 	var R: Dictionary = _J.riders[rider]
 	var lean := 1.0 if dip > 0 else 0.0
 	# la sciarpa che vola: più si corre più si tende
