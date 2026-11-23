@@ -12,17 +12,23 @@ func _enter() -> void:
 		var sec: Dictionary = G.by_id.get(id, {})
 		for it in sec.get("items", []):
 			if id == "scrivania" or str(it.get("url", "")) != "": games.append([it, sec])
-	world = maxf(320, 90 + GAP * games.size() + 60)
+	world = maxf(320, 90 + GAP * games.size() + 110)
 	P.x = 36
 	say(G.t("arcadeHello"))
 
 func _x(i: int) -> float:
 	return 100 + i * GAP
 
+## La gettoniera in fondo alla sala: porta alle monete.
+func _coins_x() -> float:
+	return 100 + GAP * games.size() + 14
+
 func _tick(_dt: float) -> void:
 	var best := -1
 	for i in games.size():
 		if absf(P.x - _x(i)) < 30: best = i
+	if best < 0 and Shop.enabled() and absf(P.x - _coins_x()) < 30:
+		prompt = {"x": _coins_x() - cam, "y": 69.0, "label": G.t("coffeeTokens"), "action": goto.emit.bind("coins")}
 	if best >= 0:
 		var g: Array = games[best]
 		prompt = {"x": _x(best) - cam, "y": 69.0, "label": G.t("arcadePlay") + ": " + G.L(g[0], "title"), "action": func(): Sfx.play("stop_pop", 0.6); open_item.emit(g[0], g[1])}
@@ -41,6 +47,7 @@ func _draw_back(ci: CanvasItem) -> void:
 	while x < 320:
 		ci.draw_texture(G.tex.place_arcade, Vector2(x, 0))
 		x += 160
+	if Shop.enabled(): spr(ci, "tokens", _coins_x() - c - 20, 164 - 84)
 	for i in games.size():
 		var sx := _x(i) - c
 		if sx < -40 or sx > 360: continue

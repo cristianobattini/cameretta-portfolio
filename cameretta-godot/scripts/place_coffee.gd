@@ -23,6 +23,7 @@ func _load() -> void:
 
 func bar() -> Array:
 	var o := []
+	if Shop.donate_url() != "": o.append([G.t("coffeeBtn"), func(): goto.emit("kofi")])
 	if Shop.enabled(): o.append([G.t("cofName"), func(): goto.emit("starname")])
 	if not stars.is_empty(): o.append([G.t("cofNext"), next_star])
 	return o

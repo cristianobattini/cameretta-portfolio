@@ -40,3 +40,5 @@ Pixel art e codice: fatti per CRI's CAMERETTA (generatori in `cameretta-portfoli
 
 - Radio della Vespa: tre brani composti e sintetizzati da `cameretta-godot/tools/build_radio.py` (CC0).
 - Lune di Giove: formule di J. Meeus, *Astronomical Algorithms*. Meteo: [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).
+
+- Tazza con il cuore: disegnata a pixel da `tools/build_shop.py` ispirandosi al simbolo di Ko-fi, usata solo per il collegamento alla pagina Ko-fi. Ko-fi è un marchio dei rispettivi titolari.

@@ -135,6 +135,21 @@ def maxwell():
     s.p(21, 1, (200, 70, 56)); s.r(20, 2, 22, 4, (200, 70, 56)); return s
 add("mu_onda", maxwell())
 
+# ------------------------------------------------ tazza di Ko-fi a pixel (26x20): porta alla pagina delle donazioni
+def kofi():
+    K, WH, SH, RED, RH, RS = (32, 32, 40), (255, 255, 255), (222, 226, 236), (255, 90, 82), (255, 150, 140), (214, 58, 58)
+    s = Spr(26, 20)
+    s.ell(15, 5, 24, 13, K); s.ell(17, 7, 22, 11, (0, 0, 0, 0))                       # manico
+    s.r(17, 8, 21, 10, (0, 0, 0, 0)); s.r(17, 7, 20, 11, (0, 0, 0, 0))
+    s.r(2, 2, 18, 13, K); s.r(1, 3, 19, 11, K); s.r(3, 14, 17, 15, K); s.r(5, 16, 15, 16, K)
+    s.r(3, 4, 17, 11, WH); s.r(4, 12, 16, 13, WH); s.r(5, 14, 15, 14, WH); s.r(15, 4, 17, 11, SH); s.r(14, 12, 16, 13, SH)
+    for y, row in enumerate(["0110110", "1111111", "1111111", "0111110", "0011100", "0001000"]):
+        for x, v in enumerate(row):
+            if v == "1": s.p(6 + x, 6 + y, RED)
+    s.p(7, 7, RH); s.p(8, 6, RH); s.p(11, 9, RS); s.p(10, 10, RS); s.p(12, 8, RS)
+    return s.outline((255, 255, 255))        # bordo chiaro, da adesivo: si vede anche sui fondi scuri
+add("kofi", kofi(), False)
+
 # ------------------------------------------------ gatto al seguito (26x20): 0-2 cammina, 3 seduto
 def petcat(i):
     s = Spr(28, 20)

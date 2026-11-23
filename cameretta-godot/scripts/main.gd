@@ -38,6 +38,7 @@ var b_audio: Button
 var b_settings: Button
 var b_full: Button
 var b_shop: Button
+var b_cup: Button
 var b_photo: Button
 var place_bar: HFlowContainer
 var place_host: Control
@@ -165,6 +166,7 @@ func _ready() -> void:
 	worlds.street.go_inside.connect(func(): _transition(_enter_living.bind(false), true))
 	worlds.living.go_room.connect(_go_room)
 	worlds.street.go.connect(func(id): if scene == "street": _transition(_enter_path.bind(id)))
+	worlds.street.coffee.connect(func(): if scene == "street": open_coffee())
 	worlds.sea.visit.connect(_sea_visit)
 	for n in PLACES:
 		worlds[n].open_item.connect(_open_item)
@@ -780,6 +782,11 @@ func _rebuild_menu() -> void:
 	row.add_child(menu_mode_lbl)
 	menu_full = _full_button(18)
 	row.add_child(menu_full)
+	if Shop.donate_url() != "":
+		var cb := ShopUI.cup_button("" if portrait else G.t("coffeeBtn"), open_coffee, "tool", 18)
+		cb.name = "Coffee"
+		cb.tooltip_text = G.t("coffeeTitle")
+		row.add_child(cb)
 	col.add_child(row)
 	var foot: BoxContainer = UI.vbox(2) if portrait else UI.hbox(14)
 	foot.name = "Foot"
@@ -1003,12 +1010,16 @@ func _build_hud() -> void:
 	b_audio = UI.button("♪", func(): Sfx.set_enabled(not G.audio_on); Sfx.select(); _apply_texts())
 	b_menu = UI.button("", func(): Sfx.select(); _to_menu())
 	b_full = _full_button(20)
+	b_cup = UI.button("", open_coffee)
+	b_cup.icon = ShopUI.cup_icon()
+	b_cup.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	b_cup.add_theme_constant_override("icon_max_width", 26)
 	b_shop = UI.button("", func(): open_shop())
 	b_shop.icon = ShopUI.coin_icon()
 	b_shop.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	b_shop.add_theme_constant_override("icon_max_width", 24)
 	b_photo = _icon_button(func(): if scene != "menu" and not busy: photo.open(), _paint_camera)
-	for b in [b_back, b_skip, b_shop, b_settings, b_lang, b_audio, b_photo, b_full, b_menu]: tools.add_child(b)
+	for b in [b_back, b_skip, b_cup, b_shop, b_settings, b_lang, b_audio, b_photo, b_full, b_menu]: tools.add_child(b)
 	place_bar = HFlowContainer.new()
 	place_bar.alignment = FlowContainer.ALIGNMENT_CENTER
 	place_bar.add_theme_constant_override("h_separation", 8)
@@ -1275,6 +1286,9 @@ func _apply_texts() -> void:
 	b_audio.modulate.a = 1.0 if G.audio_on else 0.55
 	b_shop.visible = Shop.enabled()
 	b_shop.tooltip_text = G.t("shopTitle")
+	b_cup.visible = Shop.donate_url() != ""
+	b_cup.tooltip_text = G.t("coffeeTitle")
+	b_audio.visible = not portrait     # anche l'audio: in verticale lo spazio è poco
 	b_photo.tooltip_text = G.t("photoTitle") + " (P)"
 	b_lang.visible = not portrait      # in verticale sta nelle impostazioni
 	_update_full_button(b_full)
@@ -1300,6 +1314,7 @@ func _apply_texts() -> void:
 		elif modal_kind == "help": open_help(true)
 		elif modal_kind == "settings": open_settings(true)
 		elif modal_kind == "shop": open_shop(true)
+		elif modal_kind == "coffee": open_coffee(true)
 		elif modal_kind == "map": open_map(true)
 		elif modal_kind == "bottles": open_bottles(true)
 		elif modal_kind == "choose": _open_choose(true)
@@ -1400,6 +1415,12 @@ func _enter_path(id: String) -> void:
 ## Da un luogo a un altro.
 func _goto(id: String) -> void:
 	if id == "starname": open_star()
+	elif id == "kofi": open_coffee()
+	elif id == "coins":
+		ShopUI.cat = "theme"
+		await open_shop()
+		ShopUI.getting = true
+		open_shop(true)
 	elif id in LAB: _transition(_enter_place.bind(id, "lab"))
 	else: _transition(_enter_place.bind(id, scene))
 
@@ -1748,6 +1769,7 @@ func _process(dt: float) -> void:
 	_follow(minf(1.0, dt * 6))
 	var blocked: bool = busy or modal.visible or photo.visible or visit.visible
 	if scene == "street": Weather.poll(dt)
+	_nudge(dt, blocked)
 	if photo.visible: return
 	if scene == "street" or scene == "living" or scene == "sea" or scene == "grove" or scene in PLACES:
 		w.input_dir = 0 if blocked else _held_dir()
@@ -2137,6 +2159,7 @@ func open_ride_end(silent := false) -> void:
 	bits.add_theme_constant_override("v_separation", 10)
 	bits.add_child(UI.button(G.t("rideHome"), func(): Sfx.select(); _transition(_enter_street.bind(float(G.J.street.door.x) - 52)), "solid", 24))
 	bits.add_child(UI.button(G.t("rideAgain"), func(): Sfx.select(); _transition(_enter_sea), "ghost", 22))
+	if Shop.donate_url() != "": bits.add_child(ShopUI.cup_button(G.t("coffeeBtn"), open_coffee, "ghost", 22))
 	bits.add_child(UI.button(G.t("towerGo"), func(): Sfx.select(); _transition(_enter_place.bind("tower", "sea")), "ghost", 22))
 	if G.safe_url(str(G.S.get("cv_url", ""))): bits.add_child(UI.button(G.t("cv"), func(): G.open_url(str(G.S.cv_url)), "ghost", 22))
 	if G.safe_url(str(G.S.get("github_url", ""))): bits.add_child(UI.button("GitHub ↗", func(): G.open_url(str(G.S.github_url)), "ghost", 22))
@@ -2168,10 +2191,92 @@ func _apply_theme() -> void:
 	G.gold = Shop.accent()
 	if scene != "loading": _apply_texts()
 
+var _nudge_t := 0.0
+var nudge_node: PanelContainer
+## Dopo sei minuti di giro, un invito solo: si chiude da sé e non torna per un mese.
+func _nudge(dt: float, blocked: bool) -> void:
+	if nudge_node != null or blocked or scene in ["menu", "loading"] or Shop.donate_url() == "": return
+	_nudge_t += dt
+	if _nudge_t < 360.0: return
+	_nudge_t = -1e9
+	if Time.get_unix_time_from_system() - float(G.prefs.get_value("p", "nudge", 0.0)) < 30 * 86400: return
+	show_nudge()
+
+func show_nudge() -> void:
+	G.prefs.set_value("p", "nudge", Time.get_unix_time_from_system())
+	G.save_prefs()
+	nudge_node = UI.px_panel(Color(G.C_PANEL, 0.97), G.gold, 14)
+	var h := UI.hbox(14)
+	nudge_node.get_node("Inner").add_child(h)
+	var l := UI.label(G.t("nudge"), 22, G.C_CREAM, null, true)
+	l.add_theme_constant_override("line_spacing", -8)
+	l.custom_minimum_size.x = minf(300, size.x - 190)
+	l.size_flags_vertical = SIZE_SHRINK_CENTER
+	var b := ShopUI.cup_button("", func(): _hide_nudge(); open_coffee(), "solid", 22)
+	b.size_flags_vertical = SIZE_SHRINK_CENTER
+	var x := UI.button("✕", _hide_nudge, "flat", 22)
+	x.size_flags_vertical = SIZE_SHRINK_CENTER
+	for n in [b, l, x]: h.add_child(n)
+	add_child(nudge_node)
+	move_child(modal, -1); move_child(fade_rect, -1)
+	nudge_node.modulate.a = 0
+	await get_tree().process_frame
+	if nudge_node == null: return
+	nudge_node.reset_size()
+	var y := 74.0 if not portrait else world_rect.end.y - nudge_node.size.y - 10
+	nudge_node.position = Vector2((minf(size.x, world_rect.end.x) - nudge_node.size.x - 14) if not portrait else (size.x - nudge_node.size.x) / 2, y)
+	var tw := create_tween()
+	tw.tween_property(nudge_node, "modulate:a", 1.0, 0.4)
+	tw.tween_interval(12.0)
+	tw.tween_callback(_hide_nudge)
+	Sfx.play("stop_pop", 0.35, 1.3)
+
+func _hide_nudge() -> void:
+	if nudge_node == null: return
+	var n := nudge_node
+	nudge_node = null
+	_nudge_t = -1e9
+	var tw := create_tween()
+	tw.tween_property(n, "modulate:a", 0.0, 0.3)
+	tw.tween_callback(n.queue_free)
+
+## Offrimi un caffè: si apre da tutti gli inviti sparsi nel gioco.
+func open_coffee(silent := false) -> void:
+	if Shop.donate_url() == "": return
+	if not silent:
+		ShopUI.msg = ""
+		if Shop.enabled(): await Shop.sync()
+		Sfx.open()
+	var v := UI.vbox(16)
+	var head: BoxContainer = UI.vbox(12) if portrait else UI.hbox(22)
+	var cup := TextureRect.new()
+	cup.texture = ShopUI.cup_icon()
+	cup.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	cup.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	cup.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	cup.custom_minimum_size = Vector2(156, 120)
+	head.add_child(cup)
+	var tx := UI.rich(G.t("coffeeText"), 25, G.C_CREAM)
+	tx.size_flags_horizontal = SIZE_EXPAND_FILL
+	tx.size_flags_vertical = SIZE_SHRINK_CENTER
+	head.add_child(tx)
+	v.add_child(head)
+	if ShopUI.msg != "": v.add_child(UI.label(ShopUI.msg, 23, G.gold, null, true))
+	v.add_child(ShopUI.coffee_box(self))
+	v.add_child(UI.rich(G.t("coffeeFree"), 21, G.C_MUTED))
+	_open_modal("coffee", v, null, _title_row("", "KO-FI", G.t("coffeeTitle")), 820)
+
+## Ridisegna la finestra da cui si stava donando.
+func reopen_coffee() -> void:
+	if not modal.visible: return
+	if modal_kind == "shop": open_shop(true)
+	elif modal_kind == "coffee": open_coffee(true)
+
 func open_help(silent := false) -> void:
 	var v := UI.vbox(14)
 	for x in G.t("helpItems"):
 		v.add_child(UI.rich("[color=#f2b85b]◆[/color]  " + G.kbd(x), 23, G.C_CREAM))
+	if Shop.donate_url() != "": v.add_child(ShopUI.cup_button(G.t("coffeeBtn"), open_coffee, "ghost", 22))
 	_open_modal("help", v, null, _title_row("", "", G.t("helpTitle")), 780)
 	if not silent: Sfx.open()
 

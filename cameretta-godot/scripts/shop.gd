@@ -53,6 +53,15 @@ func save() -> void:
 	G.prefs.set_value("shop", "worn", worn)
 	G.save_prefs()
 
+## La pagina delle donazioni ("" se l'admin non l'ha messa).
+func donate_url() -> String:
+	var u := str(G.S.get("donate_url", ""))
+	return u if u.begins_with("https://") else ""
+
+## true se il server accredita davvero le monete a chi dona.
+func donate_ready() -> bool:
+	return str(G.S.get("donations_ready", "0")) == "1" and deposit != ""
+
 func enabled() -> bool:
 	return str(G.S.get("store_enabled", "1")) != "0"
 

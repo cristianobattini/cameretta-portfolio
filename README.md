@@ -49,7 +49,7 @@ Per attivare le donazioni:
 2. Su Ko-fi → *More → API → Webhooks* incolla `https://www.cristianobattini.com/api/kofi/webhook` e copia il *Verification Token* (sotto *Advanced*).
 3. Avvia il server con `CAMERETTA_KOFI_TOKEN` uguale a quel token (mai nelle impostazioni: quelle sono pubbliche).
 
-Finché manca il token il gioco mostra il link a Ko-fi senza promettere monete. Ko-fi non avvisa dei rimborsi: si stornano a mano da Admin → Negozio.
+Gli inviti (tazza in alto e nel menu, chiosco in strada, gettoniera in sala giochi, fine del giro, visita, aiuto, cielo dei caffè, contatti, e un solo promemoria dopo sei minuti, al massimo una volta al mese) spariscono tutti se la pagina è vuota. Finché manca il token il gioco mostra il link a Ko-fi senza promettere monete. Ko-fi non avvisa dei rimborsi: si stornano a mano da Admin → Negozio.
 
 Ogni visitatore ha un portafoglio anonimo con due codici: `CRI-XXXX-XXXX` è privato, come una password; `DON-XXXX-XXXX` serve solo a ricevere e si incolla nel messaggio della donazione (che su Ko-fi può essere pubblico). Non si salvano nomi né email.
 

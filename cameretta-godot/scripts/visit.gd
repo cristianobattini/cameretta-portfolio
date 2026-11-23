@@ -114,6 +114,7 @@ func _card() -> void:
 		if G.safe_url(str(S.get("cv_url", ""))): row.add_child(UI.button(G.t("cv"), func(): paused = true; G.open_url(str(S.cv_url)), "solid", 22))
 		if G.safe_url(str(S.get("github_url", ""))): row.add_child(UI.button("GitHub ↗", func(): paused = true; G.open_url(str(S.github_url)), "solid", 22))
 		if str(S.get("email", "")) != "": row.add_child(UI.button(str(S.email), func(): paused = true; G.open_url("mailto:" + str(S.email)), "ghost", 22))
+		if Shop.donate_url() != "": row.add_child(ShopUI.cup_button(G.t("coffeeBtn"), func(): stop(); main.open_coffee(), "ghost", 20))
 		row.add_child(UI.button(G.t("room"), func(): stop(); main._menu_act("room"), "ghost", 20))
 	v.add_child(row)
 	var nav := UI.hbox(8)

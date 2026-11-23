@@ -7,6 +7,43 @@ static var sel := ""
 static var getting := false        # pagina "ottieni monete"
 static var msg := ""
 
+## La tazza di Ko-fi a pixel, come icona dei pulsanti.
+static func cup_icon() -> AtlasTexture:
+	var a := AtlasTexture.new()
+	a.atlas = load("res://assets/img/shop.png")
+	a.region = Rect2(Shop._rect(Shop._rects["kofi"]))
+	return a
+
+static func cup_button(text: String, cb: Callable, kind := "solid", fs := 22) -> Button:
+	var b := UI.button(text, cb, kind, fs)
+	b.icon = cup_icon()
+	b.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	b.add_theme_constant_override("icon_max_width", 39 if fs >= 22 else 26)
+	b.add_theme_constant_override("h_separation", 10)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	return b
+
+## Come si dona: il codice da copiare, la pagina, il controllo delle monete.
+static func coffee_box(m) -> Control:
+	var v := UI.vbox(12)
+	var url := Shop.donate_url()
+	if url == "":
+		v.add_child(UI.rich(G.t("shopSoon"), 24, G.C_MUTED))
+		return v
+	if not Shop.donate_ready():
+		v.add_child(UI.rich(G.t("shopThanks"), 24, G.C_CREAM))
+		v.add_child(cup_button(G.t("shopCoffee"), func(): G.open_url(url)))
+		return v
+	v.add_child(UI.rich(G.t("shopGive") % int(float(str(G.S.get("coins_per_unit", "100")))), 24, G.C_CREAM))
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 10)
+	row.add_theme_constant_override("v_separation", 10)
+	row.add_child(UI.button("1 · " + G.t("shopCopy") % Shop.deposit, func(): Sfx.select(); DisplayServer.clipboard_set(Shop.deposit); msg = G.t("shopCopied"); m.reopen_coffee(), "ghost", 22))
+	row.add_child(cup_button("2 · " + G.t("shopCoffee"), func(): G.open_url(url)))
+	row.add_child(UI.button("3 · " + G.t("shopCheck"), func(): check(m), "ghost", 22))
+	v.add_child(row)
+	return v
+
 static func coin_icon(i := 0) -> AtlasTexture:
 	var a := AtlasTexture.new()
 	a.atlas = load("res://assets/img/shop.png")
@@ -201,28 +238,11 @@ static func _paint(c: Control, it: Dictionary, look: Dictionary, tp: Texture2D, 
 ## Come si ottengono le monete: giocando, oppure offrendo un caffè.
 static func _coins_page(m) -> Control:
 	var v := UI.vbox(14)
-	var url := str(G.S.get("donate_url", ""))
 	var e: Dictionary = Shop.CAT.earn
 	v.add_child(UI.label(G.t("shopPlayT"), 26, G.gold, UI.f_head, true))
 	v.add_child(UI.rich(G.t("shopPlay") % [int(e.daily), int(e.stop), int(e.section), int(e.ride_end), int(e.pray), int(e.fish)], 24, G.C_CREAM))
 	v.add_child(UI.label(G.t("shopGiveT"), 26, G.gold, UI.f_head, true))
-	var ready := str(G.S.get("donations_ready", "0")) == "1" and Shop.deposit != ""
-	if url.begins_with("https://") and not ready:
-		v.add_child(UI.rich(G.t("shopThanks"), 24, G.C_CREAM))
-		var b0 := UI.button(G.t("shopCoffee"), func(): G.open_url(url), "solid", 22)
-		b0.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-		v.add_child(b0)
-	elif url.begins_with("https://"):
-		v.add_child(UI.rich(G.t("shopGive") % int(float(str(G.S.get("coins_per_unit", "100")))), 24, G.C_CREAM))
-		var row := HFlowContainer.new()
-		row.add_theme_constant_override("h_separation", 10)
-		row.add_theme_constant_override("v_separation", 10)
-		row.add_child(UI.button(G.t("shopCopy") % Shop.deposit, func(): Sfx.select(); DisplayServer.clipboard_set(Shop.deposit); msg = G.t("shopCopied"); m.open_shop(true), "ghost", 22))
-		row.add_child(UI.button(G.t("shopCoffee"), func(): G.open_url(url), "solid", 22))
-		row.add_child(UI.button(G.t("shopCheck"), func(): check(m), "ghost", 22))
-		v.add_child(row)
-	else:
-		v.add_child(UI.rich(G.t("shopSoon"), 24, G.C_MUTED))
+	v.add_child(coffee_box(m))
 	v.add_child(UI.label(G.t("shopCodeT"), 26, G.gold, UI.f_head, true))
 	v.add_child(UI.rich(G.t("shopCode") % (Shop.code if Shop.code != "" else "—"), 22, G.C_MUTED))
 	var r2 := HFlowContainer.new()
@@ -256,4 +276,4 @@ static func check(m) -> void:
 	await Shop.sync()
 	msg = G.t("shopIn") % (Shop.balance - b) if Shop.balance > b else G.t("shopNotYet")
 	if Shop.balance > b: Sfx.play("stop_pop", 0.8)
-	if m.modal.visible and m.modal_kind == "shop": m.open_shop(true)
+	m.reopen_coffee()

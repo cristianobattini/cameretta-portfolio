@@ -61,6 +61,7 @@ static func section_body(s: Dictionary, narrow: bool) -> VBoxContainer:
 			bits.add_child(UI.button("GitHub ↗", func(): G.open_url(str(S.github_url)), "ghost", 20))
 		if G.safe_url(str(S.get("github_physics_url", ""))):
 			bits.add_child(UI.button("GitHub · %s ↗" % G.t("physics"), func(): G.open_url(str(S.github_physics_url)), "ghost", 20))
+		if Shop.donate_url() != "": bits.add_child(ShopUI.cup_button("KO-FI ↗", func(): G.open_url(Shop.donate_url()), "ghost", 20))
 		if str(S.get("email", "")) != "":
 			var em: String = S.email
 			bits.add_child(UI.button(em, func(): G.open_url("mailto:" + em), "ghost", 20))

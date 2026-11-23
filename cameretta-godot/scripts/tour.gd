@@ -58,6 +58,10 @@ func _run() -> void:
 		await _pause_check()
 		get_tree().quit()
 		return
+	if OS.get_environment("CAMERETTA_RIDE") == "coffee":
+		await _coffee_check()
+		get_tree().quit()
+		return
 	if OS.get_environment("CAMERETTA_RIDE") == "menu":
 		await _menu_check()
 		get_tree().quit()
@@ -785,3 +789,34 @@ func _pause_check() -> void:
 	# ricominciare davvero
 	await pause.call(); m._menu_act("enter"); ok(await until(func(): return m.scene == "street" and not m.busy, 6) and m.worlds.street.P.x < 60 and m.paused_scene == "", "RICOMINCIA riparte dall'inizio")
 	print("PAUSE DONE")
+
+## Gli inviti a offrire un caffè: CAMERETTA_RIDE=coffee
+func _coffee_check() -> void:
+	G.set_lang("it"); G.room_mode = "walk"; G.real_weather = false; G.ride_found = true
+	Shop.code = ""; Shop.deposit = ""; Shop._queue.clear(); Shop.online = false
+	m._apply_texts(); await wait(0.5); await shot("menu")
+	var cb = m.menu_ui.find_child("Coffee", true, false)
+	ok(cb != null and cb.get_global_rect().end.x <= m.get_viewport_rect().size.x, "pulsante nel menu")
+	cb.pressed.emit(); ok(await until(func(): return m.modal_kind == "coffee", 8), "si apre la finestra"); await wait(0.4); await shot("finestra")
+	ok(m._panel.size.y <= m.size.y and m._panel.size.x <= m.size.x, "finestra nello schermo"); print("pronte: ", Shop.donate_ready(), " ", Shop.deposit)
+	if Shop.donate_ready():
+		var btn = m._panel.find_children("*", "Button", true, false).filter(func(b): return b.text.begins_with("1 ·"))[0]
+		ok(btn.text.contains("DON-") and not btn.text.contains("CRI-"), "si copia il codice pubblico")
+		btn.pressed.emit(); await wait(0.2); ok(m.modal_kind == "coffee" and ShopUI.msg == G.t("shopCopied"), "copiato, resta la stessa finestra")
+	m.close_modal()
+	m._enter_street(m.worlds.street.CART_X - 30); await wait(0.6); await shot("chiosco")
+	ok(m.worlds.street.prompt.get("label", "") == G.t("coffeeBtn"), "chiosco in strada")
+	ok(m.tools.position.x >= 0, "i pulsanti in alto ci stanno (x %.0f)" % m.tools.position.x)
+	await key(KEY_E); ok(await until(func(): return m.modal_kind == "coffee", 8), "E al chiosco"); m.close_modal()
+	m._enter_place("arcade"); await wait(0.4); m.worlds.arcade.P.x = m.worlds.arcade._coins_x(); await wait(1.4); await shot("gettoniera")
+	await key(KEY_E); ok(await until(func(): return m.modal_kind == "shop" and ShopUI.getting, 8), "la gettoniera porta alle monete"); await wait(0.3); await shot("monete"); m.close_modal()
+	m._enter_place("coffee", "sky"); await wait(1.0); await shot("cielo"); ok(m.worlds.coffee.bar().any(func(q): return q[0] == G.t("coffeeBtn")), "nel cielo dei caffe'")
+	m.open_ride_end(); await wait(0.3); await shot("fine_giro"); m.close_modal(true)
+	m.open_help(); await wait(0.3); await shot("aiuto"); ok(m._panel.size.y <= m.size.y, "aiuto nello schermo"); m.close_modal(true)
+	m._enter_room(); await wait(0.4); m.open_section("finestra"); await wait(0.5); m.close_modal(true)
+	m._enter_street(300.0); await wait(0.6); m.show_nudge(); await wait(0.9); await shot("invito")
+	var r: Rect2 = m.nudge_node.get_rect(); ok(r.position.x >= 0 and r.end.x <= m.size.x + 1 and r.position.y >= 0, "invito nello schermo")
+	m._hide_nudge(); await wait(0.6); m._nudge_t = 400.0; await wait(0.3); ok(m.nudge_node == null, "l'invito non torna per un mese")
+	G.S.erase("donate_url"); m._apply_texts(); await wait(0.5)
+	ok(m.menu_ui.find_child("Coffee", true, false) == null and not m.b_cup.visible, "senza pagina non compare niente"); m.open_coffee(); await wait(0.2); ok(not m.modal.visible, "e la finestra non si apre")
+	print("COFFEE DONE")

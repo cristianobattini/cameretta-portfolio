@@ -3,7 +3,9 @@ extends Node2D
 
 signal go_inside
 signal go(id: String)
+signal coffee
 
+const CART_X := 985.0           # il chiosco del caffè
 const MAX_BUBBLES := 12        # quante bolle stanno in strada senza accavallarsi
 const GROVE_X := 640.0         # il sentiero che porta ai templi
 const FORK_X := 866.0          # il sentiero che scende al mare
@@ -133,6 +135,8 @@ func update(dt: float) -> void:
 			if absf(P.x - q[0]) < 34 and down <= 0:
 				var lb: String = G.t("toSea") if q[1] == "sea" else G.t("toGrove") if q[1] == "grove" else G.t("go")[q[1]]
 				prompt = {"x": q[0] - cam, "y": 108.0, "label": lb, "action": take.bind(q[1]), "down": true}
+		if prompt.is_empty() and Shop.donate_url() != "" and absf(P.x - CART_X) < 40:
+			prompt = {"x": CART_X - cam, "y": 104.0, "label": G.t("coffeeBtn"), "action": coffee.emit}
 	# fumo dal comignolo
 	if randf() < dt * 6:
 		smoke.append({"x": float(s.chimney.x) + randf_range(-2, 2), "y": float(s.chimney.y), "r": 1.5, "a": 0.5, "vx": randf_range(-7, -3), "vy": randf_range(-9, -6)})
@@ -223,6 +227,14 @@ func _draw_back(ci: CanvasItem) -> void:
 	_snow(ci, dcam * 0.4, false)
 	ci.draw_texture(G.tex.near, Vector2(-c, 0))
 	for q in PATHS: _draw_path(ci, c, q)
+	if Shop.donate_url() != "":
+		var cx := CART_X - c
+		if cx > -50 and cx < 370:
+			var cr: Array = G.J.places.rects.cart
+			ci.draw_texture_rect_region(G.tex.place_props, Rect2(roundf(cx - 38), 164 - float(cr[3]), cr[2], cr[3]), Rect2(cr[0], cr[1], cr[2], cr[3]))
+			for k in 4:                # il vapore della macchina
+				var u := fposmod(time * 0.5 + k * 0.25, 1.0)
+				ci.draw_rect(Rect2(roundf(cx - 12 + sin(time * 2 + k * 2) * 2), roundf(117 - u * 16), 2, 2), Color(1, 1, 1, 0.45 * (1 - u)))
 	for p in smoke:
 		ci.draw_circle(Vector2(roundf(p.x - c), roundf(p.y)), p.r, Color(0.82, 0.84, 0.93, maxf(0, p.a)))
 
@@ -247,6 +259,7 @@ func _draw_glow(ci: CanvasItem) -> void:
 		var a := 0.07 + 0.02 * sin(time * 2 + float(l.x))
 		Layer.glow(ci, Vector2(x, 64), 24, Color(1, 0.82, 0.55, a * 2.2))
 	for q in PATHS: Layer.glow(ci, Vector2(q[0] - c, 178), 40, Color(Color(str(q[4])), 0.2 + 0.04 * sin(time * 2 + q[0])))
+	if Shop.donate_url() != "": Layer.glow(ci, Vector2(CART_X - c, 112), 46, Color(1, 0.8, 0.5, 0.2))
 	for w in s.windows:
 		var x := float(w[0]) - c
 		if x > -40 and x < 360:
