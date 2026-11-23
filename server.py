@@ -77,6 +77,10 @@ CREATE TABLE IF NOT EXISTS assets (
   id INTEGER PRIMARY KEY AUTOINCREMENT, filename TEXT NOT NULL UNIQUE, original_name TEXT NOT NULL,
   mime TEXT NOT NULL DEFAULT '', size INTEGER NOT NULL DEFAULT 0, label TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL
 );
+-- bottiglie nel mare: messaggi dei visitatori, visibili solo dopo l'approvazione
+CREATE TABLE IF NOT EXISTS bottles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', ok INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL
+);
 -- negozio: nessun dato personale, solo un codice a caso per ogni portafoglio
 CREATE TABLE IF NOT EXISTS wallets (code TEXT PRIMARY KEY, created_at INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS ledger (
@@ -105,7 +109,7 @@ DEFAULT_SETTINGS = {
     "menu_tagline": "sviluppo · fisica · appunti · libri", "menu_tagline_en": "code · physics · notes · books",
     "menu_enter_label": "INIZIA", "menu_enter_label_en": "START",
     "press_text": "PREMI INVIO PER INIZIARE", "press_text_en": "PRESS ENTER TO START",
-    "footer_text": "v2.0 · fatto a mano a Rosignano", "footer_text_en": "v2.0 · handmade in Rosignano",
+    "footer_text": "v3.0 · fatto a mano a Rosignano", "footer_text_en": "v3.0 · handmade in Rosignano",
     "room_crumb": "la cameretta", "room_crumb_en": "the little room",
     "location": "Rosignano Solvay (LI), vicino a Pisa", "location_en": "Rosignano Solvay, near Pisa, Italy",
     "github_url": "https://github.com/cristianobattini",
@@ -270,6 +274,8 @@ def init_db():
                     con.execute(f"ALTER TABLE {table} ADD COLUMN {c} TEXT NOT NULL DEFAULT ''")
         for k, v in DEFAULT_SETTINGS.items():
             con.execute("INSERT OR IGNORE INTO settings(key, value) VALUES (?, ?)", (k, v))
+        # versione 3.0: aggiorna la scritta in fondo al menu, se comincia ancora con v2.0
+        con.execute("UPDATE settings SET value = 'v3.0' || substr(value, 5) WHERE key IN ('footer_text', 'footer_text_en') AND value LIKE 'v2.0%'")
         if con.execute("SELECT COUNT(*) FROM sections").fetchone()[0] == 0:
             for s in SEED_SECTIONS:
                 cols = ", ".join(s); qs = ", ".join("?" * len(s))
@@ -717,7 +723,7 @@ def earn(code: str, body: StoreIn, request: Request):
             ref = body.id
         elif body.id == "ride_end":
             ref = body.id
-        elif body.id == "daily" or (kind == "pray" and arg in ("stelle", "magia", "dune")):
+        elif body.id in ("daily", "fish") or (kind == "pray" and arg in ("stelle", "magia", "dune")):
             ref = f"{body.id}:{day}"
         else:
             raise HTTPException(400, "Premio sconosciuto")
@@ -826,6 +832,58 @@ def gift(body: GiftIn):
         wallet_out(con, code)
         ledger_add(con, code, body.coins, "gift", uuid.uuid4().hex)
         return wallet_out(con, code)
+
+
+# ---------------------------------------------------------------- bottiglie nel mare
+
+class BottleIn(BaseModel):
+    text: str
+    name: str = ""
+
+
+def clean(s, n):
+    """Una riga sola, senza caratteri di controllo, al massimo n caratteri."""
+    return re.sub(r"\s+", " ", "".join(c for c in s if c.isprintable() or c.isspace())).strip()[:n]
+
+
+@app.get("/api/bottles")
+def get_bottles(request: Request):
+    limit(request, "bottles", 60, 60)
+    with db() as con:
+        return rows(con.execute("SELECT text, name FROM bottles WHERE ok = 1 ORDER BY RANDOM() LIMIT 40"))
+
+
+@app.post("/api/bottles")
+def new_bottle(body: BottleIn, request: Request):
+    limit(request, "bottle", 5, 3600)
+    text, name = clean(body.text, 200), clean(body.name, 24)
+    if len(text) < 4:
+        raise HTTPException(400, "Messaggio troppo corto")
+    with db() as con:
+        if con.execute("SELECT COUNT(*) FROM bottles WHERE ok = 0").fetchone()[0] >= 500:
+            raise HTTPException(429, "Troppe bottiglie in attesa")
+        con.execute("INSERT INTO bottles(text, name, created_at) VALUES (?,?,?)", (text, name, int(time.time())))
+    return {"ok": True}
+
+
+@app.get("/api/bottles/all", dependencies=[Depends(require_admin)])
+def all_bottles():
+    with db() as con:
+        return rows(con.execute("SELECT * FROM bottles ORDER BY ok, created_at DESC LIMIT 600"))
+
+
+@app.put("/api/bottles/{bid}", dependencies=[Depends(require_admin)])
+def approve_bottle(bid: int, data: dict):
+    with db() as con:
+        con.execute("UPDATE bottles SET ok = ? WHERE id = ?", (1 if data.get("ok") else 0, bid))
+    return {"ok": True}
+
+
+@app.delete("/api/bottles/{bid}", dependencies=[Depends(require_admin)])
+def delete_bottle(bid: int):
+    with db() as con:
+        con.execute("DELETE FROM bottles WHERE id = ?", (bid,))
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------- importazione

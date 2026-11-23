@@ -24,7 +24,18 @@ La musica di sottofondo si carica dall'admin e vale per entrambe.
 
 Tutti i contenuti stanno in un database **SQLite locale** e si gestiscono da una **dashboard admin**.
 
-Lungo la strada ci sono due deviazioni: il **lungomare** con il giro in Vespa e i **templi** (omaggi a Star Wars, Harry Potter e Dune, arte originale) dove ci si siede a pregare. `F` = schermo intero.
+Lungo la strada ci sono due deviazioni: il **lungomare** con il giro in Vespa e i **templi** (omaggi a Star Wars, Harry Potter e Dune, arte originale) dove ci si siede a pregare. Dalla strada si raggiungono anche il **treno notturno**, l'**osservatorio** (cielo vero di Rosignano) e la **sala giochi**; dal lungomare il **molo**, il **faro** e, alla fine del giro, la **Torre di Pisa**. Sulla spiaggia ci sono le **bottiglie nel mare**: i messaggi dei visitatori si approvano in *Admin → Bottiglie*. La strada segue la stagione vera (Impostazioni → Stagione per cambiarla). La voce **Mappa** del menu porta ovunque. `F` = schermo intero.
+
+## Password dell'admin
+
+Senza password chiunque raggiunga `/admin/` può modificare il sito. Il server la legge all'avvio dalla variabile `CAMERETTA_ADMIN_TOKEN`. Con il servizio Windows (NSSM), da un prompt come amministratore:
+
+```
+C:\nssm\win64\nssm.exe get Cameretta AppEnvironmentExtra
+C:\nssm\win64\nssm.exe set Cameretta AppEnvironmentExtra CAMERETTA_ADMIN_TOKEN=una-password-lunga CAMERETTA_BMC_SECRET=segreto-del-webhook
+```
+
+`set` sostituisce tutte le variabili: se `get` ne mostra altre, riscrivile nella stessa riga. Poi `riavvia-server.bat`.
 
 ## Il negozio
 

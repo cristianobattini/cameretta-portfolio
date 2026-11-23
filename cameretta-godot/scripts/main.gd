@@ -3,6 +3,8 @@ extends Control
 
 ## Proporzione massima del gioco: 16:9 come 1920x1080.
 const MAX_ASPECT := 16.0 / 9.0
+## I luoghi costruiti sulla base comune (place.gd).
+const PLACES := ["sky", "train", "arcade", "tower", "light", "pier"]
 
 var sv: SubViewport
 var view: TextureRect
@@ -35,6 +37,10 @@ var b_audio: Button
 var b_settings: Button
 var b_full: Button
 var b_shop: Button
+var place_bar: HFlowContainer
+var place_host: Control
+var place_labels: Array = []
+var place_from := "street"
 var b_menu: Button
 var hint: RichTextLabel
 var prog: Control
@@ -95,9 +101,9 @@ func _ready() -> void:
 	sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	sv.disable_3d = true
 	add_child(sv)
-	for n in ["menu", "street", "living", "room", "sea", "grove"]:
+	for n in ["menu", "street", "living", "room", "sea", "grove"] + PLACES:
 		var w := Node2D.new()
-		w.set_script(load("res://scripts/%s.gd" % n))
+		w.set_script(load("res://scripts/%s%s.gd" % ["place_" if n in PLACES else "", n]))
 		w.visible = false
 		sv.add_child(w)
 		worlds[n] = w
@@ -139,8 +145,11 @@ func _ready() -> void:
 	G.settings_changed.connect(_apply_texts)
 	worlds.street.go_inside.connect(func(): _transition(_enter_living.bind(false), true))
 	worlds.living.go_room.connect(_go_room)
-	worlds.street.go_sea.connect(func(): if scene == "street": _transition(_enter_sea))
-	worlds.street.go_grove.connect(func(): if scene == "street": _transition(_enter_grove))
+	worlds.street.go.connect(func(id): if scene == "street": _transition(_enter_path.bind(id)))
+	worlds.sea.visit.connect(_sea_visit)
+	for n in PLACES:
+		worlds[n].open_item.connect(_open_item)
+		worlds[n].bar_changed.connect(func(): if scene == n: _rebuild_bar())
 	worlds.sea.open_stop.connect(func(i): get_tree().create_timer(0.25).timeout.connect(func(): if scene == "sea" and worlds.sea.state == "parked": open_stop(i)))
 	worlds.sea.chapter.connect(_on_chapter)
 	worlds.sea.mode_changed.connect(func(): if scene == "sea": _sea_mode())
@@ -165,6 +174,7 @@ func _boot() -> void:
 		_ld_update()
 		await get_tree().process_frame
 	_ld_update()
+	Season.apply()
 	Shop.apply()
 	worlds.room.build()
 	Sfx.levels()
@@ -183,6 +193,7 @@ func _boot() -> void:
 	elif h == "strada": _enter_street()
 	elif h == "lungomare": _enter_sea()
 	elif h == "templi": _enter_grove()
+	elif h in PLACES: _enter_place(h, "sea" if h in ["tower", "light", "pier"] else "street")
 	if G.offline: toast(G.t("noServer"))
 	var left := 1500 - (Time.get_ticks_msec() - t0)
 	if left > 0: await get_tree().create_timer(left / 1000.0).timeout
@@ -557,11 +568,11 @@ func _say_box(txt: String, full: String, done: bool) -> void:
 		if not narr_node.visible:
 			narr_node.visible = true
 			narr_node.modulate.a = 0
-		var nw := minf(560, size.x * 0.46)
+		var nw := minf(470, size.x * 0.37) if scene in PLACES else minf(560, size.x * 0.46)
 		narr_node.custom_minimum_size = Vector2(nw, 0)
 		narr_txt.custom_minimum_size = Vector2(nw - 48, UI.f_body.get_multiline_string_size(full, HORIZONTAL_ALIGNMENT_LEFT, nw - 56, 27).y)
 		narr_node.reset_size()
-		narr_node.position = Vector2((size.x - narr_node.size.x) / 2, 66)
+		narr_node.position = Vector2(maxf(14, world_rect.position.x + 14) if scene in PLACES else (size.x - narr_node.size.x) / 2, 66)
 	narr_node.modulate.a = move_toward(narr_node.modulate.a, 1.0 if on else 0.0, get_process_delta_time() * 5)
 	if not on and narr_node.modulate.a <= 0.01: narr_node.visible = false
 
@@ -695,7 +706,7 @@ func _rebuild_menu() -> void:
 	var items := [
 		["enter", enter_lbl if enter_lbl != "" else G.t("start"), ""],
 		["room", G.t("room"), ""],
-		["ride", G.t("rideMenu"), "★"],
+		["map", G.t("map"), "★"],
 		["shop", G.t("shop"), str(Shop.balance) if Shop.code != "" else ""],
 		["settings", G.t("settings"), G.t("walk") if G.room_mode == "walk" else G.t("point") if G.room_mode == "point" else ""],
 		["lang", G.t("language").to_upper(), G.t("langName").to_upper()],
@@ -705,7 +716,6 @@ func _rebuild_menu() -> void:
 	if not Shop.enabled(): items = items.filter(func(q): return q[0] != "shop")
 	# schermi bassi: lingua e audio stanno già nelle impostazioni, così il resto rimane grande
 	if compact: items = items.filter(func(q): return q[0] != "lang" and q[0] != "audio")
-	if not G.ride_found: items = items.filter(func(q): return q[0] != "ride")
 	for i in items.size():
 		var it: Array = items[i]
 		var b := Button.new()
@@ -819,6 +829,7 @@ func _menu_act(a: String) -> void:
 		"enter": _start_game(false)
 		"room": _start_game(true)
 		"ride": _start_ride()
+		"map": open_map()
 		"shop": open_shop()
 		"settings": open_settings()
 		"lang":
@@ -932,6 +943,7 @@ func _build_hud() -> void:
 		Sfx.select()
 		if scene == "sea": _transition(_enter_street.bind(worlds.street.FORK_X + 20))
 		elif scene == "grove": _transition(_enter_street.bind(worlds.street.GROVE_X + 20))
+		elif scene in PLACES: _transition(_leave_place)
 		else: _transition(_enter_living.bind(true), true))
 	b_skip = UI.button("", func(): Sfx.select(); _transition(_enter_room, scene == "living"))
 	b_settings = UI.button("✻", func(): open_settings())
@@ -944,6 +956,15 @@ func _build_hud() -> void:
 	b_shop.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	b_shop.add_theme_constant_override("icon_max_width", 24)
 	for b in [b_back, b_skip, b_shop, b_settings, b_lang, b_audio, b_full, b_menu]: tools.add_child(b)
+	place_bar = HFlowContainer.new()
+	place_bar.alignment = FlowContainer.ALIGNMENT_CENTER
+	place_bar.add_theme_constant_override("h_separation", 8)
+	place_bar.add_theme_constant_override("v_separation", 8)
+	place_bar.visible = false
+	hud.add_child(place_bar)
+	place_host = Control.new()
+	place_host.mouse_filter = MOUSE_FILTER_IGNORE
+	stage.add_child(place_host)
 	hint = UI.rich("", 20, G.C_CREAM)
 	hint.autowrap_mode = TextServer.AUTOWRAP_OFF
 	hint.custom_minimum_size.x = 0
@@ -1013,6 +1034,8 @@ func _build_mobile() -> void:
 
 # ================================================================== layout
 var _was_full := false
+var _press_at := Vector2.ZERO
+var _dragged := 0.0
 var _shape := ""                # disposizione attuale: se cambia (telefono ruotato) i testi si ricompongono
 
 func _layout() -> void:
@@ -1092,6 +1115,10 @@ func _follow(k: float) -> void:
 		"living": fx = worlds.living.P.x
 		"sea": fx = worlds.sea.focus_x()
 		"grove": fx = worlds.grove.P.x - worlds.grove.cam
+		"train", "arcade": fx = worlds[scene].P.x - worlds[scene].cam
+		"pier": fx = 190.0
+		"light": fx = 108.0
+		"tower": fx = 205.0
 		"room":
 			var r = worlds.room
 			if G.room_mode == "walk": fx = r.P.x
@@ -1111,7 +1138,7 @@ func content_scale() -> float:
 
 func _layout_hud() -> void:
 	var sz := size
-	var walk := scene == "street" or scene == "living" or scene == "sea" or scene == "grove" or (scene == "room" and G.room_mode == "walk")
+	var walk: bool = scene == "street" or scene == "living" or scene == "sea" or scene == "grove" or (scene in PLACES and worlds[scene].walking) or (scene == "room" and G.room_mode == "walk")
 	var left: HBoxContainer = hud_top.get_node("Left")
 	if portrait:
 		left.position = Vector2(8, 8)
@@ -1125,7 +1152,7 @@ func _layout_hud() -> void:
 		var below := world_rect.end.y + (56 if scene == "room" else 10)
 		hint.visible = false
 		prog.visible = false
-		dialog.visible = (scene == "street" or scene == "sea" or scene == "grove") and dialog_txt.text != ""
+		dialog.visible = (scene == "street" or scene == "sea" or scene == "grove" or scene in PLACES) and dialog_txt.text != ""
 		dialog.position = Vector2(10, below)
 		dialog.size = Vector2(sz.x - 20, 0)
 		dialog.custom_minimum_size = Vector2(sz.x - 20, 120)
@@ -1144,7 +1171,7 @@ func _layout_hud() -> void:
 		if mode_badge.get_parent() != left:
 			mode_badge.get_parent().remove_child(mode_badge)
 			left.add_child(mode_badge)
-		mode_badge.visible = scene != "menu" and scene != "sea" and scene != "grove"
+		mode_badge.visible = scene != "menu" and scene != "sea" and scene != "grove" and not scene in PLACES
 		var top := maxf(10, world_rect.position.y + 10) if compact else 14.0
 		left.position = Vector2(maxf(14, world_rect.position.x + 14), top)
 		tools.position = Vector2(minf(sz.x, world_rect.end.x) - tools.get_combined_minimum_size().x - 14, top)
@@ -1167,8 +1194,9 @@ func _layout_hud() -> void:
 		if scene == "room": prog.position.x -= (140 if pad.visible else 0)
 	hud.visible = scene != "menu" and scene != "loading"
 	if scene != "sea": route.visible = false
-	if scene != "sea" and scene != "grove": narr_node.visible = false
+	if scene != "sea" and scene != "grove" and not scene in PLACES: narr_node.visible = false
 	menu_ui.visible = scene == "menu"
+	_layout_bar()
 	if not hud.visible:
 		dialog.visible = false
 		sheet.visible = false
@@ -1180,10 +1208,10 @@ func _apply_texts() -> void:
 	if G.S.is_empty(): return
 	_rebuild_menu()
 	var name := str(G.S.get("site_name", "CRI's CAMERETTA"))
-	var sc: String = G.t("street") if scene == "street" else G.t("living") if scene == "living" else G.t("sea") if scene == "sea" else G.t("grove") if scene == "grove" else G.L(G.S, "room_crumb")
+	var sc: String = G.t("street") if scene == "street" else G.t("living") if scene == "living" else G.t("sea") if scene == "sea" else G.t("grove") if scene == "grove" else str(G.t("places")[scene]).to_lower() if scene in PLACES else G.L(G.S, "room_crumb")
 	crumb.text = name + " · " + sc
 	crumb.get_parent().visible = not portrait
-	b_back.text = "◀" if portrait else G.t("backStreet" if scene == "sea" or scene == "grove" else "back")
+	b_back.text = "◀" if portrait else G.t("backSea" if scene in PLACES and place_from == "sea" else "backStreet" if scene == "sea" or scene == "grove" or scene in PLACES else "back")
 	b_skip.text = G.t("skip")
 	b_lang.text = G.lang.to_upper()
 	b_audio.text = "♪" if portrait else "♪ " + (G.t("on") if G.audio_on else G.t("off"))
@@ -1192,7 +1220,7 @@ func _apply_texts() -> void:
 	b_shop.tooltip_text = G.t("shopTitle")
 	_update_full_button(b_full)
 	b_menu.text = "☰ " + G.t("menu") if not portrait else "☰"
-	b_back.visible = scene == "room" or scene == "sea" or scene == "grove"
+	b_back.visible = scene == "room" or scene == "sea" or scene == "grove" or scene in PLACES
 	b_skip.visible = scene == "street" or scene == "living"
 	_update_mode_button(mode_badge)
 	var hk := "hintWalk"
@@ -1200,6 +1228,9 @@ func _apply_texts() -> void:
 	if scene == "sea":
 		hk = "hintRide" if worlds.sea.riding() else "hintSeaWalk"
 		_sea_texts()
+	if scene in PLACES:
+		hk = {"sky": "hintSky", "tower": "hintTower", "light": "hintLight", "pier": "hintPier"}.get(scene, "hintPlace")
+		_rebuild_bar()
 	hint.text = G.kbd(G.t(hk))
 	_render_progress()
 	_render_sign()
@@ -1210,6 +1241,8 @@ func _apply_texts() -> void:
 		elif modal_kind == "help": open_help(true)
 		elif modal_kind == "settings": open_settings(true)
 		elif modal_kind == "shop": open_shop(true)
+		elif modal_kind == "map": open_map(true)
+		elif modal_kind == "bottles": open_bottles(true)
 		elif modal_kind == "choose": _open_choose(true)
 		elif modal_kind == "ride": open_stop(worlds.sea.park_i, true)
 		elif modal_kind == "rideend": open_ride_end(true)
@@ -1264,6 +1297,8 @@ func _set_scene(sc: String) -> void:
 	sky_custom.visible = sc == "menu" and G.custom_sky
 	bubbles_host.visible = sc == "street"
 	sea_host.visible = sc == "sea"
+	place_host.visible = sc in PLACES
+	place_bar.visible = sc in PLACES
 	dialog_txt.text = ""
 	prompt_node.visible = false
 	prompt_action = Callable()
@@ -1271,7 +1306,7 @@ func _set_scene(sc: String) -> void:
 	Sfx.scene(sc)
 	if sc == "room": worlds.room.enter()
 	_apply_texts()
-	if sc != "menu" and sc != "loading": _show_title(G.t("titles")[sc])
+	if sc != "menu" and sc != "loading": _show_title(G.t("streetTitles")[Season.now()] if sc == "street" else str(G.t("places")[sc]).to_upper() if sc in PLACES else G.t("titles")[sc])
 	else: title_lbl.modulate.a = 0
 
 func _enter_street(at := -1.0) -> void:
@@ -1286,6 +1321,184 @@ func _enter_sea() -> void:
 	_rebuild_sea()
 	_set_scene("sea")
 	G.set_hash("lungomare")
+
+func _sea_visit(id: String) -> void:
+	if scene != "sea": return
+	if id == "bottles": open_bottles()
+	else: _transition(_enter_place.bind(id, "sea"))
+
+func _enter_path(id: String) -> void:
+	match id:
+		"sea": _enter_sea()
+		"grove": _enter_grove()
+		_: _enter_place(id, "street")
+
+func _enter_place(id: String, from := "street") -> void:
+	place_from = from
+	worlds[id].enter()
+	_set_scene(id)
+	_rebuild_bar()
+	G.set_hash(id)
+
+## Si torna da dove si era venuti.
+func _leave_place() -> void:
+	if place_from == "sea" and not worlds.sea.chapters.is_empty() and worlds.sea.riding():
+		_set_scene("sea")
+		worlds.sea.resume()
+		G.set_hash("lungomare")
+	elif scene == "tower" or place_from == "sea": _enter_sea()
+	else: _enter_street(worlds.street.path_x(scene) + 20)
+
+func _rebuild_bar() -> void:
+	for c in place_bar.get_children(): c.queue_free()
+	if not scene in PLACES: return
+	for q in worlds[scene].bar():
+		var f: Callable = q[1]
+		place_bar.add_child(UI.button(q[0], func(): f.call(); get_viewport().gui_release_focus(), "tool", 20))
+	_layout_bar.call_deferred()
+
+func _layout_bar() -> void:
+	place_bar.visible = scene in PLACES and not modal.visible
+	if not place_bar.visible: return
+	var bw := -8.0
+	for c in place_bar.get_children(): if not c.is_queued_for_deletion(): bw += c.get_combined_minimum_size().x + 8
+	place_bar.custom_minimum_size.x = minf(size.x - 24, bw + 2)
+	place_bar.reset_size()
+	var y := world_rect.end.y + 150.0 if portrait else minf(size.y, world_rect.end.y) - place_bar.get_combined_minimum_size().y - (58 if hint.visible else 14)
+	place_bar.position = Vector2((size.x - place_bar.size.x) / 2, y)
+
+## Le scritte di un luogo, in coordinate del palco.
+func _update_place() -> void:
+	var w = worlds[scene]
+	w.tall = portrait
+	_say_box(w.text(), w.line, w.done())
+	var ls: Array = w.labels() if not modal.visible else []
+	while place_labels.size() < ls.size():
+		var l := UI.label("", 24, G.C_CREAM, UI.f_ui)
+		l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+		l.add_theme_constant_override("shadow_offset_x", 2)
+		l.add_theme_constant_override("shadow_offset_y", 2)
+		l.mouse_filter = MOUSE_FILTER_IGNORE
+		place_host.add_child(l)
+		place_labels.append(l)
+	for i in place_labels.size():
+		var l: Label = place_labels[i]
+		l.visible = i < ls.size()
+		if not l.visible: continue
+		var q: Dictionary = ls[i]
+		if l.text != str(q.t): l.text = str(q.t)
+		l.add_theme_font_size_override("font_size", int(q.s))
+		l.add_theme_color_override("font_color", q.c)
+		l.reset_size()
+		l.position = Vector2(q.x * 4 - l.size.x / 2, q.y * 4 - l.size.y / 2)
+	_layout_bar()
+
+func _open_item(it: Dictionary, sec: Dictionary) -> void:
+	_open_modal("item", Panels.item_body(it, sec.id == "lavagna"), null, _title_row("", G.L(it, "kicker").to_upper(), G.L(it, "title")), 820)
+	Sfx.open()
+
+# ------------------------------------------------------------------ mappa
+func open_map(silent := false) -> void:
+	var grid := GridContainer.new()
+	grid.columns = 1 if portrait else 2
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
+	for id in ["street", "room", "ride", "grove", "train", "sky", "arcade", "light", "pier", "tower", "bottles"]:
+		var pid: String = id
+		var b := Button.new()
+		b.focus_mode = FOCUS_NONE
+		b.mouse_default_cursor_shape = CURSOR_POINTING_HAND
+		b.custom_minimum_size.y = 82 if not compact else 70
+		b.size_flags_horizontal = SIZE_EXPAND_FILL
+		b.add_theme_stylebox_override("normal", UI.box(G.C_INK, G.C_LINE, 3, 8))
+		for s in ["hover", "pressed"]: b.add_theme_stylebox_override(s, UI.box(G.C_PANEL2, G.gold, 3, 8))
+		b.pressed.connect(func(): Sfx.start(); Sfx.start_music(); close_modal(true); _go_to(pid))
+		var v := UI.vbox(0)
+		v.set_anchors_preset(PRESET_FULL_RECT)
+		v.offset_left = 14; v.offset_right = -10; v.offset_top = 8; v.offset_bottom = -6
+		v.mouse_filter = MOUSE_FILTER_IGNORE
+		for l in [UI.label(G.t("places")[id], 23, G.gold, UI.f_ui), UI.label(G.t("placeInfo")[id], 21, G.C_MUTED)]:
+			l.clip_text = true
+			l.mouse_filter = MOUSE_FILTER_IGNORE
+			v.add_child(l)
+		b.add_child(v)
+		grid.add_child(b)
+	_open_modal("map", grid, null, _title_row("", G.t("map"), G.t("mapTitle")), 940)
+	if not silent: Sfx.open()
+
+func _go_to(id: String) -> void:
+	match id:
+		"street": _transition(_enter_street)
+		"room": _transition(_enter_room)
+		"ride": _transition(_enter_sea)
+		"grove": _transition(_enter_grove)
+		"bottles": open_bottles()
+		_: _transition(_enter_place.bind(id, "sea" if id in ["tower", "light", "pier"] else "street"))
+
+# ------------------------------------------------------------------ bottiglie nel mare
+var _bottles: Array = []
+var _bottle_i := 0
+var _bottle_msg := ""
+var _bottle_on := true
+
+func open_bottles(silent := false) -> void:
+	if not silent:
+		_bottle_msg = ""
+		var r: Array = await Shop._call("/api/bottles")
+		_bottle_on = r[0] == 200 and typeof(r[1]) == TYPE_ARRAY
+		_bottles = r[1] if _bottle_on else []
+		_bottles.shuffle()
+		_bottle_i = 0
+		Sfx.open()
+	var v := UI.vbox(16)
+	if _bottle_msg != "": v.add_child(UI.label(_bottle_msg, 24, G.gold, null, true))
+	if not _bottle_on: v.add_child(UI.label(G.t("bottleOff"), 24, G.C_TERRA, null, true))
+	elif _bottles.is_empty(): v.add_child(UI.label(G.t("bottleNone"), 24, G.C_CREAM, null, true))
+	else:
+		var b: Dictionary = _bottles[_bottle_i % _bottles.size()]
+		var box := PanelContainer.new()
+		box.add_theme_stylebox_override("panel", UI.box(G.C_CREAM, Color("8a5a36"), 4, 22, 16))
+		var bv := UI.vbox(6)
+		bv.add_child(UI.rich(G.esc_bb(str(b.text)), 27, G.C_INK))
+		bv.add_child(UI.label("— " + (str(b.name) if str(b.name) != "" else G.t("bottleAnon")), 21, Color("8a5a36")))
+		box.add_child(bv)
+		v.add_child(box)
+		if _bottles.size() > 1: v.add_child(UI.button(G.t("bottleOther"), func(): Sfx.page(); _bottle_i += 1; open_bottles(true), "ghost", 22))
+	if _bottle_on:
+		v.add_child(UI.rich(G.t("bottleWrite"), 22, G.C_MUTED))
+		if G.is_web and G.touch:
+			v.add_child(UI.button(G.t("bottleSend"), func():
+				var x := str(JavaScriptBridge.eval("prompt(%s)||''" % JSON.stringify(G.t("bottleText")), true))
+				if x.strip_edges() != "": _send_bottle(x, str(JavaScriptBridge.eval("prompt(%s)||''" % JSON.stringify(G.t("bottleName")), true))), "solid", 24))
+		else:
+			var tx := _line_edit(G.t("bottleText"), 200)
+			var nm := _line_edit(G.t("bottleName"), 24)
+			v.add_child(tx)
+			var row: BoxContainer = UI.vbox(10) if portrait else UI.hbox(10)
+			nm.size_flags_horizontal = SIZE_EXPAND_FILL
+			row.add_child(nm)
+			row.add_child(UI.button(G.t("bottleSend"), func(): _send_bottle(tx.text, nm.text), "solid", 24))
+			v.add_child(row)
+	_open_modal("bottles", v, null, _title_row("", "", G.t("bottleTitle")), 860)
+
+func _line_edit(ph: String, n: int) -> LineEdit:
+	var le := LineEdit.new()
+	le.placeholder_text = ph
+	le.max_length = n
+	le.custom_minimum_size.y = 48
+	le.add_theme_font_size_override("font_size", 24)
+	le.add_theme_stylebox_override("normal", UI.box(G.C_INK, G.C_LINE, 3, 12, 6))
+	le.add_theme_stylebox_override("focus", UI.box(Color(0, 0, 0, 0), G.gold, 3, 12, 6))
+	return le
+
+func _send_bottle(tx: String, nm: String) -> void:
+	if tx.strip_edges().length() < 4:
+		_bottle_msg = G.t("bottleShort")
+	else:
+		var r: Array = await Shop._call("/api/bottles", {"text": tx, "name": nm})
+		_bottle_msg = G.t("bottleSent") if r[0] == 200 else G.t("bottleErr")
+		if r[0] == 200: Sfx.play("stop_pop", 0.7)
+	if modal.visible and modal_kind == "bottles": open_bottles(true)
 
 func _enter_grove() -> void:
 	worlds.grove.enter()
@@ -1389,14 +1602,16 @@ func _process(dt: float) -> void:
 	if w == null: return
 	_follow(minf(1.0, dt * 6))
 	var blocked := busy or modal.visible
-	if scene == "street" or scene == "living" or scene == "sea" or scene == "grove":
+	if scene == "street" or scene == "living" or scene == "sea" or scene == "grove" or scene in PLACES:
 		w.input_dir = 0 if blocked else _held_dir()
+		if scene in PLACES: w.input_up = 0 if blocked else int(Input.is_physical_key_pressed(KEY_DOWN) or Input.is_physical_key_pressed(KEY_S)) - int(Input.is_physical_key_pressed(KEY_UP) or Input.is_physical_key_pressed(KEY_W))
 		w.run = Input.is_physical_key_pressed(KEY_SHIFT)
 		w.locked = busy
 		w.update(dt)
 		if scene == "street": _update_bubbles()
 		elif scene == "sea": _update_sea()
 		elif scene == "grove": _say_box(w.text(), w.line, w.done())
+		elif scene in PLACES: _update_place()
 		_update_prompt(w.prompt, w.cam if scene != "living" else 0.0)
 	elif scene == "room":
 		var v := Vector2i.ZERO
@@ -1477,6 +1692,19 @@ func _on_view_input(e: InputEvent) -> void:
 	if scene == "sea" and e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 		worlds.sea.tap(pos)
 		return
+	if scene in PLACES:
+		var pl = worlds[scene]
+		if e is InputEventMouseButton and e.pressed:
+			if e.button_index == MOUSE_BUTTON_LEFT: _press_at = pos; _dragged = 0.0
+			elif e.button_index == MOUSE_BUTTON_WHEEL_UP: pl.zoom(1)
+			elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN: pl.zoom(-1)
+		elif e is InputEventMouseButton and not e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			if _dragged < 5.0: pl.tap(pos)
+		elif e is InputEventMouseMotion and e.button_mask & MOUSE_BUTTON_MASK_LEFT:
+			var rel: Vector2 = e.relative * 320.0 / world_rect.size.x
+			_dragged += rel.length()
+			if _dragged >= 5.0: pl.drag(rel)
+		return
 	if (scene == "street" or scene == "living" or scene == "grove") and e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 		worlds[scene].tap(pos.x)
 
@@ -1509,6 +1737,10 @@ func _unhandled_input(e: InputEvent) -> void:
 			if k in [KEY_E, KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_UP, KEY_W]: _do_action()
 			elif k == KEY_ESCAPE: _to_menu()
 			elif (k == KEY_DOWN or k == KEY_S) and scene == "street" and worlds.street.prompt.has("down"): _do_action()
+		"sky", "train", "arcade", "tower", "light", "pier":
+			if k == KEY_ESCAPE: _to_menu()
+			elif worlds[scene].press(k): pass
+			elif k in [KEY_E, KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_UP, KEY_W]: _do_action()
 		"sea":
 			if k in [KEY_E, KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_UP, KEY_W]: _do_action()
 			elif k == KEY_H: worlds.sea.horn()
@@ -1728,6 +1960,7 @@ func open_ride_end(silent := false) -> void:
 	bits.add_theme_constant_override("v_separation", 10)
 	bits.add_child(UI.button(G.t("rideHome"), func(): Sfx.select(); _transition(_enter_street.bind(float(G.J.street.door.x) - 52)), "solid", 24))
 	bits.add_child(UI.button(G.t("rideAgain"), func(): Sfx.select(); _transition(_enter_sea), "ghost", 22))
+	bits.add_child(UI.button(G.t("towerGo"), func(): Sfx.select(); _transition(_enter_place.bind("tower", "sea")), "ghost", 22))
 	if G.safe_url(str(G.S.get("cv_url", ""))): bits.add_child(UI.button(G.t("cv"), func(): G.open_url(str(G.S.cv_url)), "ghost", 22))
 	if G.safe_url(str(G.S.get("github_url", ""))): bits.add_child(UI.button("GitHub ↗", func(): G.open_url(str(G.S.github_url)), "ghost", 22))
 	v.add_child(bits)
@@ -1798,6 +2031,9 @@ func open_settings(silent := false) -> void:
 	var v := UI.vbox(20)
 	v.add_child(_row(G.t("language"), _seg([["en", "ENGLISH"], ["it", "ITALIANO"]], G.lang, func(x): Sfx.select(); G.set_lang(x))))
 	v.add_child(_row(G.t("audio"), _seg([["on", G.t("on")], ["off", G.t("off")]], "on" if G.audio_on else "off", func(x): Sfx.set_enabled(x == "on"); Sfx.select(); open_settings(true))))
+	var ss: Array = [["auto", G.t("seasonAuto")]]
+	for q in Season.IDS: ss.append([q, G.t("seasons")[q]])
+	v.add_child(_row(G.t("season"), _seg_flow(ss, G.season, func(x): Sfx.select(); _set_season(x))))
 	if G.can_fullscreen():
 		v.add_child(_row(G.t("full"), _seg([["on", G.t("on")], ["off", G.t("off")]], "on" if G.is_fullscreen() else "off", func(x): Sfx.select(); if (x == "on") != G.is_fullscreen(): G.toggle_fullscreen())))
 	if not G.touch:
@@ -1807,6 +2043,23 @@ func open_settings(silent := false) -> void:
 	v.add_child(_row(G.t("effects"), _slider(G.effects_user, func(x): G.effects_user = x; G.save_prefs(); Sfx.apply_volumes())))
 	_open_modal("settings", v, null, _title_row("", "", G.t("settings").capitalize()), 760)
 	if not silent: Sfx.open()
+
+## Come _seg, ma va a capo se non c'è posto.
+func _seg_flow(options: Array, current: String, cb: Callable) -> HFlowContainer:
+	var h := HFlowContainer.new()
+	h.add_theme_constant_override("h_separation", 8)
+	h.add_theme_constant_override("v_separation", 8)
+	for o in options:
+		var val: String = o[0]
+		h.add_child(UI.button(o[1], func(): cb.call(val), "solid" if val == current else "ghost", 20))
+	return h
+
+func _set_season(x: String) -> void:
+	G.season = x
+	G.save_prefs()
+	Season.apply()
+	Shop.apply()
+	if modal.visible and modal_kind == "settings": open_settings(true)
 
 func _set_mode(m: String) -> void:
 	Sfx.toggle()

@@ -6,6 +6,7 @@ extends Node2D
 signal open_stop(i: int)
 signal chapter(i: int)
 signal mode_changed
+signal visit(id: String)
 signal finished
 
 const SLOT := 200.0            # passo del lungomare: un lampione ogni SLOT, una tappa a metà fra due lampioni
@@ -35,6 +36,7 @@ var state := "walk"            # walk, helmet, mount, start, ride, parking, park
 var st := 0.0                  # secondi nello stato corrente
 var x := VESPA_X               # centro della Vespa
 var sit_bump := 0.0
+var spots: Array = []          # luoghi da visitare lungo la strada: [x, id]
 var _quiet := 0.0               # da quanto la voce tace
 var _quotes_n := 0
 var v := 0.0
@@ -109,7 +111,7 @@ func build() -> void:
 	_make_moon()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1909
-	chapters.clear(); stops.clear(); _props.clear()
+	chapters.clear(); stops.clear(); _props.clear(); spots.clear()
 	var ids: Array = []
 	for id in ORDER:
 		if G.by_id.has(id): ids.append(id)
@@ -137,10 +139,12 @@ func build() -> void:
 				_prop("snowman", ch.lm + 24, 163)
 			"scrivania":
 				_prop("boat0", ch.lm - 84, 141, 0.5, ch.lm, true)
+				spots.append([ch.lm + 4, "pier"])
 				_prop("boat1", ch.lm + 4, 144, 0.5, ch.lm, true)
 				_prop("boat0", ch.lm + 92, 140, 0.5, ch.lm, true)
 			"lavagna":
 				_prop("lighthouse", ch.lm + 30, 130, 0.4, ch.lm)
+				spots.append([ch.lm + 20, "light"])
 			"finestra":
 				for k in 3: _prop("pine%d" % (k % 2), ch.lm - 96 + k * 100, 153, 1.0, 0.0, false, "mid")
 		slot += 2
@@ -315,6 +319,8 @@ func _camera(dt: float) -> void:
 func _up_walk(dt: float) -> void:
 	if not _said.has("intro") and st > 0.8: say("intro", G.t("rideIntro"))
 	P.update(dt, input_dir, run, 30, VESPA_X + 70, Sfx.step_snow, locked)
+	if absf(P.x - 112) < 24:
+		prompt = {"x": 112 - cam, "y": 108.0, "label": G.t("go")["bottles"], "action": visit.emit.bind("bottles")}
 	if absf(P.x - (x - 4)) < 34:
 		prompt = {"x": x - cam, "y": 108.0, "label": G.t("rideHelmet"), "action": take_helmet}
 
@@ -430,6 +436,10 @@ func _up_ride(dt: float) -> void:
 	var n := near_stop()
 	if n >= 0:
 		prompt = {"x": x - cam - 28, "y": 104.0, "label": G.t("rideStop"), "action": stop_at.bind(n)}
+		return
+	for s in spots:
+		if absf(float(s[0]) - x - 30) < 70:
+			prompt = {"x": float(s[0]) - cam, "y": 100.0, "label": G.t("go")[s[1]], "action": _visit.bind(s[1])}
 
 ## Quando la strada è libera e la voce tace, torna in mente una frase di un fisico.
 func _ride_quote(dt: float) -> void:
@@ -498,6 +508,11 @@ func resume() -> void:
 	if state == "parked" or state == "end":
 		_set_state("ride")
 		pose = "stop"
+
+func _visit(id: String) -> void:
+	v = 0.0
+	narr = {}
+	visit.emit(id)
 
 func look_dawn() -> void:
 	if state != "ride": return
@@ -865,6 +880,9 @@ func _draw_front(ci: CanvasItem) -> void:
 		while tx < t1:
 			ci.draw_rect(Rect2(tx - (dx if tx > 0 else 0), 182, 1, 1), Color(0.8, 0.85, 0.96, 0.5))
 			tx += 3
+	for k in 3:                                      # bottiglie arenate sulla neve
+		var br: Array = G.J.places.rects.bottle
+		ci.draw_texture_rect_region(G.tex.place_props, Rect2(roundf(100 + k * 13 - c), 170 + (k % 2) * 5, br[2], br[3]), Rect2(br[0], br[1], br[2], br[3]))
 	if state in ["walk", "helmet"]:
 		_draw_vespa(ci, vx, "")
 		P.draw(ci, P.x - c, 178.0)

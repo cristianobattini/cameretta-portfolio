@@ -4,7 +4,7 @@ Uso: python tools/build_grove.py  ->  cameretta-godot/assets/img/grove_far.png, 
 import json, math, os, random
 import numpy as np
 from PIL import Image
-from pix import Spr, SNOW, SNOW2, OUT
+from pix import Spr, SNOW, SNOW2, OUT, GL, carve
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "cameretta-godot")
 rnd = random.Random(1977)
@@ -109,17 +109,6 @@ Image.fromarray(N).save(os.path.join(ROOT, "assets", "img", "grove_near.png"))
 P = {}
 def add(n, s): P[n] = s.outline()
 SAND, SAND_HI, SAND_SH, SAND_DK = (206, 170, 124), (240, 214, 166), (160, 122, 92), (112, 82, 72)
-GL = {"S": ["0111", "1000", "0110", "0001", "1110"], "T": ["11111", "00100", "00100", "00100", "00100"], "A": ["0110", "1001", "1111", "1001", "1001"], "R": ["1110", "1001", "1110", "1010", "1001"], "W": ["10001", "10001", "10101", "10101", "01010"], "H": ["1001", "1001", "1111", "1001", "1001"], "Y": ["10001", "01010", "00100", "00100", "00100"], "P": ["1110", "1001", "1110", "1000", "1000"], "O": ["0110", "1001", "1001", "1001", "0110"], "E": ["1111", "1000", "1110", "1000", "1111"], "D": ["1110", "1001", "1001", "1001", "1110"], "U": ["1001", "1001", "1001", "1001", "0110"], "N": ["1001", "1101", "1011", "1001", "1001"], "M": ["10001", "11011", "10101", "10001", "10001"], "L": ["1000", "1000", "1000", "1000", "1111"], "I": ["1", "1", "1", "1", "1"], " ": ["00", "00", "00", "00", "00"]}
-def carve(s, word, cx, y, c, sh, gap=1, big=False):
-    """scritta incisa, centrata in cx (big: tratti alti il doppio)"""
-    k = 2 if big else 1
-    w = sum(len(GL[q][0]) * k + gap * k for q in word) - gap * k; x = int(cx - w / 2)
-    for q in word:
-        for yy, row in enumerate(GL[q]):
-            for xx, v in enumerate(row):
-                if v == "1":
-                    s.r(x + xx * k + 1, y + yy * k + 1, x + xx * k + k, y + yy * k + k, sh); s.r(x + xx * k, y + yy * k, x + xx * k + k - 1, y + yy * k + k - 1, c)
-        x += len(GL[q][0]) * k + gap * k
 def stars_shrine():
     """cupola del deserto, mezza sepolta, con la porta rotonda aperta sullo spazio"""
     s = Spr(140, 124)

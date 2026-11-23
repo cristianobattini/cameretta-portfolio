@@ -2,12 +2,19 @@ extends Node2D
 ## La strada innevata: parallasse, neve, lampioni, fumo dal comignolo, bolle che si scrivono.
 
 signal go_inside
-signal go_sea
-signal go_grove
+signal go(id: String)
 
 const MAX_BUBBLES := 12        # quante bolle stanno in strada senza accavallarsi
 const GROVE_X := 640.0         # il sentiero che porta ai templi
 const FORK_X := 866.0          # il sentiero che scende al mare
+## Le deviazioni lungo la strada: [x, dove porta, cartello, atlante, colore]
+const PATHS := [
+	[400.0, "train", "sign_train", "place_props", "ff9a70"],
+	[GROVE_X, "grove", "signgrove", "grove_props", "c8a0ff"],
+	[FORK_X, "sea", "signpost", "sea_props", "ffcc80"],
+	[1100.0, "sky", "sign_sky", "place_props", "8ab4ff"],
+	[1300.0, "arcade", "sign_game", "place_props", "ff80c8"],
+]
 
 var P: Player
 var cam := 0.0
@@ -23,6 +30,7 @@ var run := false
 var locked := false
 var prompt: Dictionary = {}
 var down_x := FORK_X
+var _to := "sea"
 var _left := false             # la scena sta già cambiando
 var down := 0.0                # >0: sta scendendo il sentiero
 var back_l: Layer
@@ -95,8 +103,7 @@ func update(dt: float) -> void:
 			down += dt
 			if not _left:
 				_left = true
-				if down_x == FORK_X: go_sea.emit()
-				else: go_grove.emit()
+				go.emit(_to)
 		P.moving = true
 		P.animate(dt, absf(off) > 1.0, Sfx.step_snow)
 	else:
@@ -119,12 +126,12 @@ func update(dt: float) -> void:
 				B.t += 0.22 if ".!?".contains(ch) else 0.12 if ",;:".contains(ch) else randf_range(0.024, 0.046)
 	if absf(P.x - float(s.door.x)) < 26:
 		prompt = {"x": float(s.door.x) - cam, "y": float(s.door.y) - 26, "label": G.t("enterHouse"), "action": func(): go_inside.emit()}
-	elif absf(P.x - FORK_X) < 34 and down <= 0:
-		prompt = {"x": FORK_X - cam, "y": 108.0, "label": G.t("toSea"), "action": take_path, "down": true}
-	elif absf(P.x - GROVE_X) < 34 and down <= 0:
-		prompt = {"x": GROVE_X - cam, "y": 108.0, "label": G.t("toGrove"), "action": take_grove, "down": true}
 	else:
 		prompt = {}
+		for q in PATHS:
+			if absf(P.x - q[0]) < 34 and down <= 0:
+				var lb: String = G.t("toSea") if q[1] == "sea" else G.t("toGrove") if q[1] == "grove" else G.t("go")[q[1]]
+				prompt = {"x": q[0] - cam, "y": 108.0, "label": lb, "action": take.bind(q[1]), "down": true}
 	# fumo dal comignolo
 	if randf() < dt * 6:
 		smoke.append({"x": float(s.chimney.x) + randf_range(-2, 2), "y": float(s.chimney.y), "r": 1.5, "a": 0.5, "vx": randf_range(-7, -3), "vy": randf_range(-9, -6)})
@@ -160,20 +167,21 @@ func enter_at(px: float) -> void:
 			B.state = "done"
 			B.shown = G.L(B.data, "text").length()
 
-## Scende per il sentiero (animazione), poi si cambia scena.
-func take_path() -> void:
+static func path_x(id: String) -> float:
+	for q in PATHS:
+		if q[1] == id: return q[0]
+	return FORK_X
+
+## Prende una deviazione (animazione), poi si cambia scena.
+func take(id: String) -> void:
 	if down > 0: return
 	down = 0.001
 	_left = false
-	down_x = FORK_X
+	_to = id
+	down_x = path_x(id)
 	P.target = -1.0
 
-func take_grove() -> void:
-	if down > 0: return
-	down = 0.001
-	_left = false
-	down_x = GROVE_X
-	P.target = -1.0
+func take_path() -> void: take("sea")
 
 ## Rifinisce le bolle già comparse quando cambia la lingua.
 func finish_bubbles() -> void:
@@ -192,7 +200,7 @@ func _snow(ci: CanvasItem, dx: float, front: bool) -> void:
 		if f.x < -4: f.x += 328
 		if f.x > 324: f.x -= 328
 		var big: bool = f.z > 1
-		ci.draw_rect(Rect2(roundf(f.x), roundf(f.y), 2 if big else 1, 2 if big else 1), Shop.flake(big))
+		ci.draw_rect(Rect2(roundf(f.x), roundf(f.y), 2 if big else 1, 2 if big else 1), Season.flake(big))
 
 func _draw_back(ci: CanvasItem) -> void:
 	var s: Dictionary = G.J.street
@@ -202,32 +210,21 @@ func _draw_back(ci: CanvasItem) -> void:
 	ci.draw_texture(G.tex.mid, Vector2(-roundf(c * float(s.pmid)), 0))
 	_snow(ci, dcam * 0.4, false)
 	ci.draw_texture(G.tex.near, Vector2(-c, 0))
-	_draw_fork(ci, c)
-	_draw_grove_path(ci, c)
+	for q in PATHS: _draw_path(ci, c, q)
 	for p in smoke:
 		ci.draw_circle(Vector2(roundf(p.x - c), roundf(p.y)), p.r, Color(0.82, 0.84, 0.93, maxf(0, p.a)))
 
-func _draw_fork(ci: CanvasItem, c: float) -> void:
-	var sx := FORK_X - c
-	if sx < -80 or sx > 400: return
-	for n in [["fork", sx - 42, 155.0], ["signpost", sx - 76, 106.0]]:
-		var r: Array = G.J.sea.rects[n[0]]
-		ci.draw_texture_rect_region(G.tex.sea_props, Rect2(roundf(n[1]), n[2], r[2], r[3]), Rect2(r[0], r[1], r[2], r[3]))
-	# freccia che invita a scendere
-	if sin(time * 4) > -0.2:
-		var ay := 160.0 + roundf(sin(time * 4) * 2)
-		for k in 4: ci.draw_rect(Rect2(roundf(sx) - 3 + k, ay + k * 2, 7 - k * 2, 2), G.gold)
-
-func _draw_grove_path(ci: CanvasItem, c: float) -> void:
-	var sx := GROVE_X - c
+func _draw_path(ci: CanvasItem, c: float, q: Array) -> void:
+	var sx: float = q[0] - c
 	if sx < -80 or sx > 400: return
 	var f: Array = G.J.sea.rects.fork
 	ci.draw_texture_rect_region(G.tex.sea_props, Rect2(roundf(sx - 42), 155, f[2], f[3]), Rect2(f[0], f[1], f[2], f[3]))
-	var r: Array = G.J.grove.rects.signgrove
-	ci.draw_texture_rect_region(G.tex.grove_props, Rect2(roundf(sx - 76), 106, r[2], r[3]), Rect2(r[0], r[1], r[2], r[3]))
+	var r: Array = G.J[{"sea_props": "sea", "grove_props": "grove", "place_props": "places"}[q[3]]].rects[q[2]]
+	ci.draw_texture_rect_region(G.tex[q[3]], Rect2(roundf(sx - 76), 106, r[2], r[3]), Rect2(r[0], r[1], r[2], r[3]))
+	# freccia che invita a scendere
 	if sin(time * 4) > -0.2:
 		var ay := 160.0 + roundf(sin(time * 4) * 2)
-		for k in 4: ci.draw_rect(Rect2(roundf(sx) - 3 + k, ay + k * 2, 7 - k * 2, 2), Color("c8a0ff"))
+		for k in 4: ci.draw_rect(Rect2(roundf(sx) - 3 + k, ay + k * 2, 7 - k * 2, 2), Color(str(q[4])))
 
 func _draw_glow(ci: CanvasItem) -> void:
 	var s: Dictionary = G.J.street
@@ -237,8 +234,7 @@ func _draw_glow(ci: CanvasItem) -> void:
 		if x < -40 or x > 360: continue
 		var a := 0.07 + 0.02 * sin(time * 2 + float(l.x))
 		Layer.glow(ci, Vector2(x, 64), 24, Color(1, 0.82, 0.55, a * 2.2))
-	Layer.glow(ci, Vector2(FORK_X - c, 178), 40, Color(1, 0.8, 0.5, 0.2 + 0.04 * sin(time * 2)))
-	Layer.glow(ci, Vector2(GROVE_X - c, 178), 40, Color(0.75, 0.55, 1, 0.22 + 0.04 * sin(time * 2)))
+	for q in PATHS: Layer.glow(ci, Vector2(q[0] - c, 178), 40, Color(Color(str(q[4])), 0.2 + 0.04 * sin(time * 2 + q[0])))
 	for w in s.windows:
 		var x := float(w[0]) - c
 		if x > -40 and x < 360:

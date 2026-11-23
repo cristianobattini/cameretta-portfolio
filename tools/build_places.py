@@ -1,0 +1,152 @@
+"""I luoghi da scoprire: osservatorio, treno notturno, sala giochi, Torre di Pisa, faro, molo, bottiglie.
+Uso: python tools/build_places.py  ->  assets/img/place_*.png + store/places.json
+"""
+import json, math, os, random
+import numpy as np
+from PIL import Image
+from pix import Spr, SNOW, SNOW2, OUT, carve
+
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "cameretta-godot"); IMG = os.path.join(ROOT, "assets", "img")
+rnd = random.Random(1173)
+BAY = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) / 16.0 - 0.5
+def mix(a, b, t): return tuple(int(round(a[i] + (b[i] - a[i]) * t)) for i in range(3))
+def canvas(w, h=200): return np.zeros((h, w, 4), np.uint8)
+def sky(A, stops, y1, q=7):
+    for y in range(y1):
+        for (a, ca), (b, cb) in zip(stops, stops[1:]):
+            if a <= y <= b: c = mix(ca, cb, (y - a) / (b - a))
+        for x in range(A.shape[1]):
+            n = BAY[y % 4, x % 4] * 9; A[y, x] = [int(min(255, max(0, round((v + n) / q) * q))) for v in c] + [255]
+def R(A, x0, y0, x1, y1, c): A[max(0, int(y0)):int(y1) + 1, max(0, int(x0)):int(x1) + 1] = (*c, 255) if len(c) == 3 else c
+def put(A, s, x, y):
+    h, w = s.a.shape[:2]
+    for yy in range(h):
+        for xx in range(w):
+            if s.a[yy, xx, 3] and 0 <= y + yy < A.shape[0] and 0 <= x + xx < A.shape[1]: A[y + yy, x + xx] = s.a[yy, xx]
+def save(A, n): Image.fromarray(A).save(os.path.join(IMG, n + ".png"))
+
+# ------------------------------------------------ Piazza dei Miracoli, notte chiara
+A = canvas(320); sky(A, [(0, (14, 18, 52)), (90, (40, 52, 112)), (150, (110, 120, 178))], 150)
+for _ in range(90): A[int(100 * rnd.random() ** 1.4), rnd.randrange(320)] = (255, 250, 226, 255)
+for x in range(320):
+    h = 8 + 4 * math.sin(x * .05) + 3 * math.sin(x * .17 + 1); R(A, x, 150 - h, x, 150, (40, 46, 92))
+for x in range(320):                                                       # prato innevato
+    for y in range(148, 200):
+        v = BAY[y % 4, x % 4] * 10; c = mix((206, 218, 244), (160, 176, 218), (y - 148) / 52); A[y, x] = [int(min(255, max(0, round((q + v) / 8) * 8))) for q in c] + [255]
+for _ in range(120):
+    x, y = rnd.randrange(316), rnd.randint(154, 197); A[y, x:x + 3] = (140, 160, 206, 255)
+M, MH, MS, MD = (226, 220, 206), (248, 246, 238), (176, 172, 176), (120, 118, 138)
+T = canvas(70, 150)                                                        # torre dritta, poi la si inclina
+def floor(y0, y1, x0, x1, arches, dark=MD):
+    R(T, x0, y0, x1, y1, M); R(T, x0, y0, x0 + (x1 - x0) // 3, y1, MH); R(T, x1 - (x1 - x0) // 4, y0, x1, y1, MS)
+    R(T, x0 - 2, y0, x1 + 2, y0 + 1, MH); R(T, x0 - 2, y1, x1 + 2, y1, MS)
+    w = (x1 - x0) / arches
+    for k in range(arches):
+        cx = int(x0 + w * (k + .5)); R(T, cx - 1, y0 + 5, cx + 1, y1 - 2, dark); R(T, cx, y0 + 4, cx, y0 + 4, dark)
+R(T, 14, 120, 55, 149, M); R(T, 14, 120, 28, 149, MH); R(T, 46, 120, 55, 149, MS); R(T, 12, 120, 57, 121, MH)
+for k in range(6): R(T, 17 + k * 7, 126, 20 + k * 7, 146, MS); R(T, 18 + k * 7, 127, 19 + k * 7, 145, M)
+R(T, 31, 132, 38, 149, MD)
+for k in range(6): floor(120 - (k + 1) * 16, 119 - k * 16, 15, 54, 8)
+floor(10, 23, 21, 48, 5); R(T, 20, 9, 49, 10, MH); R(T, 34, 0, 34, 8, MD); R(T, 35, 0, 40, 4, (200, 60, 56))
+for y in range(150):
+    sh = int(round((149 - y) * 0.07)); row = T[y].copy()                   # 4 gradi: quanto pende davvero
+    for x in range(70):
+        X, Y = 118 + x + sh, y + 14
+        if row[x, 3] and 0 <= X < 320: A[Y, X] = row[x]
+for x in range(128, 188): R(A, x, 161, x, 164 + int(2 * math.sin(x)), SNOW)
+save(A, "place_pisa")
+
+# ------------------------------------------------ carrozza del treno (finestrini trasparenti)
+A = canvas(320); W1, W2, W3 = (120, 74, 58), (150, 98, 72), (84, 50, 46); G1, G2 = (44, 78, 74), (62, 104, 96)
+R(A, 0, 0, 319, 199, W1); R(A, 0, 0, 319, 22, (58, 40, 48)); R(A, 0, 22, 319, 24, (214, 176, 90)); R(A, 0, 118, 319, 120, (214, 176, 90)); R(A, 0, 121, 319, 160, W3)
+for x in range(0, 320, 16): R(A, x, 25, x, 117, W3); R(A, x + 1, 25, x + 1, 117, W2)
+for k in range(3):
+    x = 26 + k * 100; R(A, x - 4, 38, x + 71, 106, (214, 176, 90)); R(A, x - 2, 40, x + 69, 104, W3); A[42:103, x:x + 68] = 0; R(A, x + 33, 42, x + 34, 102, W3); R(A, x - 6, 106, x + 73, 109, W2)
+    R(A, x, 42, x + 8, 70, (150, 52, 52)); R(A, x + 59, 42, x + 67, 70, (150, 52, 52)); R(A, x + 2, 42, x + 3, 68, (190, 84, 76)); R(A, x + 61, 42, x + 62, 68, (190, 84, 76))
+    R(A, x - 8, 28, x + 75, 29, (160, 150, 150)); R(A, x + 6, 22, x + 26, 28, (110, 72, 52)); R(A, x + 40, 23, x + 54, 28, (52, 96, 140)); R(A, x + 14, 20, x + 18, 22, (60, 40, 36))
+for k in range(3):                                                         # sedili
+    x = 18 + k * 100
+    for d, xx in ((0, x), (1, x + 54)):
+        R(A, xx, 112, xx + 28, 160, G1); R(A, xx + 2, 112, xx + 26, 114, G2); R(A, xx + (22 if d == 0 else 0), 112, xx + (28 if d == 0 else 6), 160, (30, 54, 54)); R(A, xx - 2, 140, xx + 30, 150, G2); R(A, xx - 2, 150, xx + 30, 160, (30, 54, 54)); R(A, xx + 6, 112, xx + 20, 120, (236, 226, 206))
+    R(A, x + 36, 130, x + 46, 132, W2); R(A, x + 40, 133, x + 42, 160, W3)
+for y in range(161, 200):
+    for x in range(320): A[y, x] = (*(mix((92, 40, 48), (64, 28, 40), (y - 161) / 39) if (x // 8 + y // 8) % 2 else mix((104, 48, 54), (70, 32, 44), (y - 161) / 39)), 255)
+R(A, 0, 161, 319, 162, (214, 176, 90)); R(A, 0, 24, 5, 160, W3); R(A, 314, 24, 319, 160, W3); R(A, 5, 24, 6, 160, (214, 176, 90)); R(A, 313, 24, 314, 160, (214, 176, 90))
+save(A, "place_train")
+
+# ------------------------------------------------ sala giochi: parete e pavimento (160 px, si ripete)
+A = canvas(160); R(A, 0, 0, 159, 140, (30, 20, 56))
+for x in range(160):
+    for y in range(140):
+        if (x + y * 2) % 32 == 0 or (x - y * 2) % 32 == 0: A[y, x] = (44, 30, 78, 255)
+R(A, 0, 0, 159, 14, (18, 12, 38)); R(A, 0, 14, 159, 15, (255, 90, 190)); R(A, 0, 128, 159, 129, (90, 230, 255)); R(A, 0, 130, 159, 140, (20, 14, 42))
+for y in range(141, 200):
+    for x in range(160):
+        z = (y - 120) / 20.0; u = int((x - 80) / z * 1.0 + 800) // 16; w = int(260 / z) // 12; A[y, x] = (58, 34, 92, 255) if (u + w) % 2 else (40, 24, 70, 255)
+for _ in range(60):
+    x, y = rnd.randrange(158), rnd.randint(144, 198); A[y, x:x + 2] = ((255, 90, 190, 255), (90, 230, 255, 255), (255, 210, 90, 255))[rnd.randrange(3)]
+for x in (30, 110): R(A, x, 15, x + 1, 24, (60, 44, 90)); R(A, x - 8, 24, x + 9, 30, (90, 60, 120)); R(A, x - 6, 30, x + 7, 31, (255, 230, 150))
+save(A, "place_arcade")
+
+# ------------------------------------------------ molo di Quercianella
+A = canvas(320); sky(A, [(0, (12, 16, 46)), (96, (44, 60, 118))], 97)
+for _ in range(120): A[int(88 * rnd.random() ** 1.3), rnd.randrange(320)] = (255, 250, 226, 255) if rnd.random() < .5 else (160, 176, 224, 255)
+for y in range(96, 200):
+    for x in range(320):
+        v = BAY[y % 4, x % 4] * 8; c = mix((40, 58, 112), (14, 22, 58), (y - 96) / 104); A[y, x] = [int(min(255, max(0, round((q + v) / 7) * 7))) for q in c] + [255]
+for x in range(200, 320):                                                  # promontorio con le case
+    h = 26 * (1 - math.exp(-(x - 200) / 40)) + 3 * math.sin(x * .2); R(A, x, 98 - h, x, 98, (26, 30, 66))
+for k in range(26):
+    x, y = rnd.randint(236, 316), rnd.randint(78, 95); R(A, x, y, x + 1, y, (255, 206, 120))
+P1, P2, P3 = (126, 92, 72), (164, 124, 92), (78, 56, 54)
+R(A, 0, 168, 168, 180, P1); R(A, 0, 166, 168, 168, SNOW); R(A, 0, 169, 168, 169, P2)
+for x in range(0, 168, 12): R(A, x, 168, x, 180, P3)
+for x in (20, 70, 120, 160): R(A, x, 180, x + 6, 199, P3); R(A, x, 180, x + 1, 199, P1)
+R(A, 150, 150, 155, 168, P3); R(A, 148, 148, 157, 151, P2); R(A, 148, 146, 157, 148, SNOW)
+R(A, 10, 100, 12, 166, (40, 40, 58)); R(A, 6, 92, 16, 101, (40, 40, 58)); R(A, 8, 94, 14, 100, (255, 216, 140)); R(A, 5, 90, 17, 92, SNOW)
+save(A, "place_pier")
+
+# ------------------------------------------------ sprite
+P = {}
+def add(n, s): P[n] = s
+def sign(word, plate, c):
+    s = Spr(52, 56); s.r(24, 8, 27, 55, (104, 70, 48)); s.r(24, 8, 24, 55, (140, 98, 66))
+    s.poly([(2, 10), (42, 10), (50, 17), (42, 24), (2, 24)], (138, 92, 58)); s.r(3, 11, 41, 11, (172, 122, 80)); carve(s, word, 23, 15, (255, 240, 206), (100, 66, 46))
+    s.r(9, 27, 42, 48, c); s.r(9, 27, 42, 27, mix(c, (255, 255, 255), .35)); s.r(10, 28, 41, 47, mix(c, (0, 0, 0), .25)); plate(s)
+    s.r(4, 8, 40, 9, SNOW); s.r(8, 7, 30, 7, SNOW); s.r(9, 25, 42, 26, SNOW); s.ell(19, 50, 33, 58, SNOW); return s.outline()
+def pl_sky(s):
+    s.limb([(17, 43), (33, 32)], 5, (226, 230, 240)); s.limb([(31, 34), (36, 30)], 7, (120, 150, 220)); s.limb([(24, 39), (20, 47)], 1.4, (200, 170, 120)); s.limb([(25, 39), (30, 47)], 1.4, (200, 170, 120))
+    for x, y in ((14, 31), (38, 42), (20, 30), (35, 46)): s.p(x, y, (255, 246, 200))
+def pl_train(s):
+    s.r(15, 31, 36, 43, (200, 70, 56)); s.r(17, 33, 22, 37, (255, 226, 150)); s.r(25, 33, 30, 37, (255, 226, 150)); s.r(15, 40, 36, 41, (242, 200, 100)); s.ell(17, 42, 22, 47, (240, 244, 255)); s.ell(29, 42, 34, 47, (240, 244, 255))
+def pl_game(s):
+    s.r(19, 30, 32, 46, (240, 90, 180)); s.r(21, 32, 30, 39, (30, 20, 56)); s.p(24, 35, (255, 230, 120)); s.p(27, 36, (90, 230, 255)); s.r(21, 42, 22, 43, (255, 230, 120)); s.r(26, 42, 27, 43, (90, 230, 255)); s.r(29, 42, 30, 43, (255, 255, 255))
+add("sign_sky", sign("CIELO", pl_sky, (44, 60, 130))); add("sign_train", sign("TRENO", pl_train, (70, 62, 78))); add("sign_game", sign("GIOCHI", pl_game, (70, 34, 110)))
+def cabinet(c):
+    hi, sh = mix(c, (255, 255, 255), .35), mix(c, (0, 0, 0), .4); s = Spr(50, 92)
+    s.poly([(6, 4), (44, 4), (46, 20), (42, 24), (42, 52), (48, 62), (48, 91), (2, 91), (2, 62), (8, 52), (8, 24), (4, 20)], c); s.limb([(5, 64), (5, 89)], 3, hi); s.limb([(46, 64), (46, 89)], 3, sh)
+    s.r(7, 6, 43, 18, (255, 236, 170)); s.r(8, 7, 42, 17, hi); s.r(9, 23, 41, 53, (18, 14, 30)); s.r(11, 25, 39, 51, (8, 10, 24))
+    s.poly([(7, 56), (43, 56), (47, 64), (3, 64)], (36, 30, 50)); s.r(14, 54, 15, 59, (160, 160, 176)); s.ell(12, 51, 17, 56, (230, 60, 60))
+    for k, q in enumerate(((255, 220, 90), (90, 230, 255), (120, 240, 130))): s.ell(25 + k * 6, 57, 28 + k * 6, 60, q)
+    s.r(12, 70, 38, 86, sh); s.r(20, 74, 23, 80, (255, 200, 80)); s.r(27, 74, 30, 80, (255, 200, 80)); s.r(21, 76, 22, 77, OUT); s.r(28, 76, 29, 77, OUT); return s.outline()
+for k, c in enumerate(((196, 60, 70), (52, 104, 190), (230, 160, 50), (70, 150, 96), (140, 84, 190), (40, 160, 176))): add(f"cab{k}", cabinet(c))
+def bottle():
+    s = Spr(18, 12); s.limb([(5, 7), (12, 5)], 6, (110, 190, 160)); s.limb([(12, 5), (16, 4)], 3, (110, 190, 160)); s.p(17, 4, (170, 120, 80)); s.limb([(5, 5), (10, 4)], 1, (210, 250, 230)); s.limb([(6, 8), (10, 7)], 2, (250, 240, 210)); return s.outline()
+add("bottle", bottle())
+def fish(c):
+    s = Spr(24, 14); s.ell(5, 3, 20, 11, c); s.poly([(6, 7), (1, 2), (1, 12)], mix(c, (0, 0, 0), .25)); s.limb([(8, 5), (17, 5)], 1.2, mix(c, (255, 255, 255), .5)); s.p(17, 6, (20, 20, 30)); s.limb([(13, 5), (13, 10)], 1, mix(c, (0, 0, 0), .3)); return s.outline()
+for k, c in enumerate(((130, 150, 176), (226, 132, 70), (242, 200, 90), (150, 110, 220))): add(f"fish{k}", fish(c))
+def ball(r, c):
+    s = Spr(r * 2 + 3, r * 2 + 3); s.ell(1, 1, r * 2 + 1, r * 2 + 1, c); s.ell(2, 2, r + 1, r + 1, mix(c, (255, 255, 255), .5)); return s.outline()
+add("ball_iron", ball(5, (70, 72, 88))); add("ball_wood", ball(5, (168, 112, 66))); add("ball_cork", ball(3, (206, 160, 110)))
+f = Spr(14, 10); f.limb([(1, 8), (12, 2)], 3, (240, 240, 250)); f.limb([(1, 8), (12, 2)], 1, (170, 180, 210)); add("feather", f.outline())
+lant = Spr(60, 70); lant.r(6, 60, 53, 69, (70, 74, 100)); lant.r(6, 60, 53, 61, (120, 126, 158)); lant.r(12, 26, 47, 60, (40, 44, 66)); lant.r(15, 28, 44, 58, (255, 236, 170)); lant.r(29, 28, 30, 58, (40, 44, 66)); lant.ell(21, 32, 38, 54, (255, 250, 220)); lant.poly([(8, 26), (51, 26), (36, 10), (23, 10)], (196, 56, 60)); lant.r(28, 2, 31, 10, (120, 126, 158)); lant.r(8, 24, 51, 26, SNOW); add("lantern", lant.outline())
+
+W = 256; x = y = row = 0; rects = {}; pl = []
+for n, s in sorted(P.items(), key=lambda q: -q[1].a.shape[0]):
+    h, w = s.a.shape[:2]
+    if x + w > W: x, y, row = 0, y + row + 1, 0
+    rects[n] = [x, y, w, h]; pl.append((s, x, y)); x += w + 1; row = max(row, h)
+A = np.zeros((y + row, W, 4), np.uint8)
+for s, x, y in pl: A[y:y + s.a.shape[0], x:x + s.a.shape[1]] = s.a
+save(A, "place_props"); json.dump({"rects": rects}, open(os.path.join(ROOT, "store", "places.json"), "w")); print("ok", A.shape)

@@ -29,6 +29,30 @@ const T := {
 		"tips": ["Tip: use [k]←[/k] [k]→[/k] to walk, hold [k]SHIFT[/k] to run.", "Tip: press [k]E[/k] near a door to go inside.", "Tip: in my room, click the objects to open them.", "Tip: the lit window on the menu takes you straight in."],
 		"loading": "LOADING", "start": "START", "room": "GO STRAIGHT TO MY ROOM", "settings": "SETTINGS", "help": "HOW TO PLAY",
 		"language": "Language", "langName": "English", "audio": "Audio", "on": "ON", "off": "OFF",
+		"map": "MAP", "mapTitle": "Where to?", "season": "Season", "seasonAuto": "REAL", "seasons": {"inverno": "WINTER", "primavera": "SPRING", "estate": "SUMMER", "autunno": "AUTUMN"},
+		"streetTitles": {"inverno": "A SNOWY NIGHT", "primavera": "A NIGHT OF PETALS", "estate": "A NIGHT OF FIREFLIES", "autunno": "A NIGHT OF LEAVES"},
+		"places": {"street": "The street", "room": "My little room", "ride": "The Vespa ride", "grove": "The temples", "sky": "The observatory", "train": "The night train", "arcade": "The arcade", "tower": "The Tower of Pisa", "light": "The Livorno lighthouse", "pier": "The Quercianella pier", "bottles": "Bottles in the sea"},
+		"placeInfo": {"street": "Where it all begins.", "room": "My projects, object by object.", "ride": "The seafront, from night to dawn.", "grove": "Star Wars, Harry Potter and Dune.", "sky": "The real sky over Rosignano, tonight.", "train": "My road, one carriage at a time.", "arcade": "One cabinet per project.", "tower": "Which one lands first?", "light": "Waves, lamps and fringes.", "pier": "Fish for something to read.", "bottles": "Leave a message for whoever comes next."},
+		"go": {"train": "Board the train", "sky": "Go up to the observatory", "arcade": "Enter the arcade", "light": "Climb the lighthouse", "pier": "Go fishing", "bottles": "Look at the bottles"},
+		"backSea": "◀ Seafront", "towerGo": "To the Tower of Pisa",
+		"hintSky": "[k]←[/k][k]→[/k][k]W[/k][k]S[/k] look · [k]E[/k] what is it? · [k]Q[/k][k]R[/k] hours · [k]+[/k][k]−[/k] zoom · [k]L[/k] lines · [k]ESC[/k] menu",
+		"hintTower": "[k]E[/k] drop · [k]←[/k][k]→[/k] change object · [k]Q[/k] air or vacuum · [k]ESC[/k] menu",
+		"hintLight": "[k]←[/k][k]→[/k] wavelength · [k]W[/k][k]S[/k] distance between lamps · [k]E[/k] one or two · [k]ESC[/k] menu",
+		"hintPier": "[k]E[/k] cast, and pull when it bites · [k]ESC[/k] menu",
+		"hintPlace": "[k]←[/k][k]→[/k] walk · [k]E[/k] look · [k]ESC[/k] menu",
+		"skyHello": "This is the real sky above Rosignano. Look around, and point at whatever makes you curious.", "skyTonight": "Tonight", "skyNow": "NOW", "skyLines": "LINES", "skyNone": "Only darkness here. Almost.",
+		"skyDirs": ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"], "skyStar": "A star of magnitude %.1f.", "skyWhere": "It's towards the %s, %d° high.",
+		"skyBodies": {"sole": "Sun", "luna": "Moon", "mercurio": "Mercury", "venere": "Venus", "marte": "Mars", "giove": "Jupiter", "saturno": "Saturn"},
+		"skyWhat": {"sole": "Our star: its light takes a little over eight minutes.", "luna": "%d%% lit.", "mercurio": "The closest to the Sun: a year lasts 88 days.", "venere": "The brightest after the Moon. A day there is longer than a year.", "marte": "Red with rust: iron oxides.", "giove": "Galileo saw its four moons in January 1610.", "saturno": "Its rings are ice, wide and very thin."},
+		"towerHello": "They say Galileo dropped them from up here. Maybe it didn't quite happen, but it's the right question: which one lands first?",
+		"towerDrop": "DROP", "towerAir": "WITH AIR", "towerVoid": "IN A VACUUM", "towerObj": {"ball_iron": "iron", "ball_wood": "wood", "ball_cork": "cork", "feather": "feather"},
+		"towerTie": "%s seconds for both. Without air, mass doesn't matter: it cancels out of the equation.", "towerWin": "Iron: %s s. The other: %s s. It isn't weight in itself: it's the air, which slows down more whatever is light for its size (%s).",
+		"lightHello": "The lighthouse from above. Two lamps beat together: where the waves arrive in phase the light doubles, where they are opposite it goes out.", "lightOne": "One lamp only: no fringes. The light just spreads.", "lightTwo": "Two lamps: there are the fringes. The further apart, the tighter they get.", "lightW": "WAVE", "lightD": "DISTANCE", "lightF": "between fringes", "lightB1": "ONE LAMP", "lightB2": "TWO LAMPS",
+		"fishHello": "The pier is frozen and quiet. Cast, wait, and pull when you see the sign.", "fishCast": "CAST", "fishStop": "REEL IN", "fishPull": "PULL!", "fishEarly": "Too early: nobody was there yet.", "fishLost": "It got away. It was thinking too.",
+		"fishNames": {"fish0": "A sardine", "fish1": "A red mullet", "fish2": "A sea bream", "fish3": "A purple fish, very rare"},
+		"trainRead": "Read", "trainEmpty": "The last carriage is still empty. We'll see.",
+		"arcadeHello": "One cabinet per project. Tokens are on the house.", "arcadePlay": "Play",
+		"bottleTitle": "Bottles in the sea", "bottleNone": "No bottles yet. The first one could be yours.", "bottleOther": "ANOTHER BOTTLE", "bottleWrite": "Write a message: whoever comes by may find it. Cristiano reads it before it sets off.", "bottleText": "Your message (200 characters at most)", "bottleName": "Your name (if you like)", "bottleSend": "THROW THE BOTTLE", "bottleSent": "The bottle is off. It will surface once it's been read.", "bottleErr": "The sea brought it back. Try again later.", "bottleShort": "Write at least a few words.", "bottleAnon": "no name", "bottleOff": "The sea isn't answering tonight: try again when you're online.",
 		"grove": "the temples", "toGrove": "Go to the temples", "pray": {"stelle": "Pray", "magia": "Pray", "dune": "Pray"},
 		"temples": {
 			"stelle": "STAR WARS, the films. They've kept me company all my life: they made me look up, and wonder what lies beyond.",
@@ -42,7 +66,7 @@ const T := {
 		},
 		"shop": "SHOP", "shopTitle": "The shop", "shopGet": "GET COINS", "shopBack": "◀ Items", "shopOffline": "The till can't be reached right now: you can look and try things on, but not buy.",
 		"shopWorn": "IN USE", "shopOwned": "YOURS", "shopBuy": "BUY", "shopWear": "USE", "shopOn": "TURN ON", "shopOff": "TURN OFF", "shopGot": "It's yours: %s.", "shopPoor": "Not enough coins for this one, yet.", "shopErr": "Something went wrong, no coins were taken. Try again.", "shopWait": "One moment…",
-		"shopPlayT": "Play", "shopPlay": "Every day you drop by: %d. Each new stop on the Vespa ride: %d. Each object in the room: %d. Dawn at the end of the road: %d. A prayer at each temple, once a day: %d.",
+		"shopPlayT": "Play", "shopPlay": "Every day you drop by: %d. Each new stop on the Vespa ride: %d. Each object in the room: %d. Dawn at the end of the road: %d. A prayer at each temple, once a day: %d. The first catch of the day: %d.",
 		"shopGiveT": "Buy me a coffee", "shopGive": "1 unit donated = %d coins. Copy your wallet code and paste it in the donation message: the coins land here by themselves, usually within a minute.", "shopSoon": "Coffee donations aren't open yet. In the meantime, coins are earned by playing.",
 		"shopCopy": "COPY %s", "shopCopied": "Code copied: paste it in the donation message.", "shopCoffee": "BUY ME A COFFEE ↗", "shopCheck": "CHECK MY COINS", "shopIn": "%d coins have arrived. Thank you!", "shopNotYet": "Nothing yet. It can take a minute.",
 		"shopCodeT": "Your wallet", "shopCode": "Your code is [color=#f2b85b]%s[/color]. Keep it: it brings coins and items to any other device. No name, no email.", "shopEnter": "USE A CODE", "shopCodeOk": "Wallet found.", "shopCodeBad": "No wallet with that code.", "coinsIn": "+%d coins",
@@ -85,6 +109,30 @@ const T := {
 		"tips": ["Suggerimento: [k]←[/k] [k]→[/k] per camminare, tieni premuto [k]SHIFT[/k] per correre.", "Suggerimento: premi [k]E[/k] vicino a una porta per entrare.", "Suggerimento: in cameretta clicca gli oggetti per aprirli.", "Suggerimento: nel menu, la finestra accesa ti porta subito dentro."],
 		"loading": "CARICAMENTO", "start": "INIZIA", "room": "VAI SUBITO IN CAMERETTA", "settings": "IMPOSTAZIONI", "help": "COME SI GIOCA",
 		"language": "Lingua", "langName": "Italiano", "audio": "Audio", "on": "ON", "off": "OFF",
+		"map": "MAPPA", "mapTitle": "Dove vuoi andare?", "season": "Stagione", "seasonAuto": "VERA", "seasons": {"inverno": "INVERNO", "primavera": "PRIMAVERA", "estate": "ESTATE", "autunno": "AUTUNNO"},
+		"streetTitles": {"inverno": "UNA NOTTE DI NEVE", "primavera": "UNA NOTTE DI PETALI", "estate": "UNA NOTTE DI LUCCIOLE", "autunno": "UNA NOTTE DI FOGLIE"},
+		"places": {"street": "La strada", "room": "La cameretta", "ride": "Il giro in Vespa", "grove": "I templi", "sky": "L'osservatorio", "train": "Il treno notturno", "arcade": "La sala giochi", "tower": "La Torre di Pisa", "light": "Il faro di Livorno", "pier": "Il molo di Quercianella", "bottles": "Bottiglie nel mare"},
+		"placeInfo": {"street": "Da qui comincia tutto.", "room": "I miei progetti, oggetto per oggetto.", "ride": "Il lungomare, dalla notte all'alba.", "grove": "Star Wars, Harry Potter e Dune.", "sky": "Il cielo vero di Rosignano, stanotte.", "train": "La mia strada, una carrozza alla volta.", "arcade": "Un cabinato per ogni progetto.", "tower": "Chi arriva prima a terra?", "light": "Onde, lampade e frange.", "pier": "Pesca qualcosa da leggere.", "bottles": "Lascia un messaggio a chi verrà."},
+		"go": {"train": "Sali sul treno", "sky": "Sali all'osservatorio", "arcade": "Entra in sala giochi", "light": "Sali sul faro", "pier": "Vai a pescare", "bottles": "Guarda le bottiglie"},
+		"backSea": "◀ Lungomare", "towerGo": "Alla Torre di Pisa",
+		"hintSky": "[k]←[/k][k]→[/k][k]W[/k][k]S[/k] guarda · [k]E[/k] che cos'è? · [k]Q[/k][k]R[/k] ore · [k]+[/k][k]−[/k] zoom · [k]L[/k] linee · [k]ESC[/k] menu",
+		"hintTower": "[k]E[/k] lascia cadere · [k]←[/k][k]→[/k] cambia oggetto · [k]Q[/k] aria o vuoto · [k]ESC[/k] menu",
+		"hintLight": "[k]←[/k][k]→[/k] lunghezza d'onda · [k]W[/k][k]S[/k] distanza tra le lampade · [k]E[/k] una o due · [k]ESC[/k] menu",
+		"hintPier": "[k]E[/k] lancia, e tira quando abbocca · [k]ESC[/k] menu",
+		"hintPlace": "[k]←[/k][k]→[/k] cammina · [k]E[/k] guarda · [k]ESC[/k] menu",
+		"skyHello": "Questo è il cielo vero sopra Rosignano. Spostati, e punta quello che ti incuriosisce.", "skyTonight": "Stasera", "skyNow": "ADESSO", "skyLines": "LINEE", "skyNone": "Qui c'è solo buio. O quasi.",
+		"skyDirs": ["nord", "nord-est", "est", "sud-est", "sud", "sud-ovest", "ovest", "nord-ovest"], "skyStar": "Una stella di magnitudine %.1f.", "skyWhere": "È verso %s, a %d° di altezza.",
+		"skyBodies": {"sole": "Sole", "luna": "Luna", "mercurio": "Mercurio", "venere": "Venere", "marte": "Marte", "giove": "Giove", "saturno": "Saturno"},
+		"skyWhat": {"sole": "La nostra stella: la sua luce ci mette poco più di otto minuti.", "luna": "Illuminata al %d%%.", "mercurio": "Il più vicino al Sole: un anno dura 88 giorni.", "venere": "La più brillante dopo la Luna. Lì il giorno dura più dell'anno.", "marte": "Rosso di ruggine: ossidi di ferro.", "giove": "Galileo vide le sue quattro lune nel gennaio del 1610.", "saturno": "Gli anelli sono ghiaccio, larghi e sottilissimi."},
+		"towerHello": "Si racconta che Galileo li lasciò cadere da qui. Forse non andò proprio così, ma la domanda è quella giusta: chi arriva prima?",
+		"towerDrop": "LASCIA CADERE", "towerAir": "CON L'ARIA", "towerVoid": "NEL VUOTO", "towerObj": {"ball_iron": "ferro", "ball_wood": "legno", "ball_cork": "sughero", "feather": "piuma"},
+		"towerTie": "%s secondi tutti e due. Senza aria, la massa non conta: nell'equazione si semplifica.", "towerWin": "Ferro: %s s. L'altro: %s s. Non è il peso in sé: è l'aria, che rallenta di più chi è leggero per la sua misura (%s).",
+		"lightHello": "Il faro, visto dall'alto. Due lampade battono insieme: dove le onde arrivano in fase la luce raddoppia, dove sono opposte si spegne.", "lightOne": "Una lampada sola: niente frange. La luce si allarga e basta.", "lightTwo": "Due lampade: ecco le frange. Più le allontani, più si stringono.", "lightW": "ONDA", "lightD": "DISTANZA", "lightF": "tra le frange", "lightB1": "UNA LAMPADA", "lightB2": "DUE LAMPADE",
+		"fishHello": "Il molo è gelato e silenzioso. Lancia, aspetta, e tira quando vedi il segnale.", "fishCast": "LANCIA", "fishStop": "RITIRA", "fishPull": "TIRA!", "fishEarly": "Troppo presto: non c'era ancora nessuno.", "fishLost": "È scappato. Ci pensava anche lui.",
+		"fishNames": {"fish0": "Una sardina", "fish1": "Una triglia", "fish2": "Un'orata", "fish3": "Un pesce viola, rarissimo"},
+		"trainRead": "Leggi", "trainEmpty": "L'ultima carrozza è ancora vuota. Si vedrà.",
+		"arcadeHello": "Un cabinato per ogni progetto. Il gettone lo offre la casa.", "arcadePlay": "Gioca",
+		"bottleTitle": "Bottiglie nel mare", "bottleNone": "Nessuna bottiglia, per ora. La prima potrebbe essere la tua.", "bottleOther": "UN'ALTRA BOTTIGLIA", "bottleWrite": "Scrivi un messaggio: chi passerà di qui potrà trovarlo. Cristiano lo legge prima che prenda il largo.", "bottleText": "Il tuo messaggio (massimo 200 caratteri)", "bottleName": "Come ti chiami? (se vuoi)", "bottleSend": "LANCIA LA BOTTIGLIA", "bottleSent": "La bottiglia è partita. Tornerà a galla dopo essere stata letta.", "bottleErr": "Il mare l'ha riportata indietro. Riprova più tardi.", "bottleShort": "Scrivi almeno qualche parola.", "bottleAnon": "senza nome", "bottleOff": "Il mare stasera non risponde: riprova quando c'è rete.",
 		"grove": "i templi", "toGrove": "Vai ai templi", "pray": {"stelle": "Prega", "magia": "Prega", "dune": "Prega"},
 		"temples": {
 			"stelle": "STAR WARS, i film. Mi hanno accompagnato nella vita: mi hanno fatto alzare gli occhi al cielo, e chiedermi cosa c'è oltre.",
@@ -98,7 +146,7 @@ const T := {
 		},
 		"shop": "NEGOZIO", "shopTitle": "Il negozio", "shopGet": "OTTIENI MONETE", "shopBack": "◀ Articoli", "shopOffline": "La cassa ora non risponde: puoi guardare e provare, ma non comprare.",
 		"shopWorn": "IN USO", "shopOwned": "TUO", "shopBuy": "COMPRA", "shopWear": "USA", "shopOn": "ACCENDI", "shopOff": "SPEGNI", "shopGot": "È tuo: %s.", "shopPoor": "Per questo non bastano ancora le monete.", "shopErr": "Qualcosa è andato storto, nessuna moneta spesa. Riprova.", "shopWait": "Un attimo…",
-		"shopPlayT": "Giocando", "shopPlay": "Ogni giorno che passi di qui: %d. Ogni nuova tappa in Vespa: %d. Ogni oggetto della cameretta: %d. L'alba in fondo alla strada: %d. Una preghiera a ogni tempio, una volta al giorno: %d.",
+		"shopPlayT": "Giocando", "shopPlay": "Ogni giorno che passi di qui: %d. Ogni nuova tappa in Vespa: %d. Ogni oggetto della cameretta: %d. L'alba in fondo alla strada: %d. Una preghiera a ogni tempio, una volta al giorno: %d. Il primo pesce del giorno: %d.",
 		"shopGiveT": "Offrendo un caffè", "shopGive": "Ogni unità donata vale %d monete. Copia il codice del portafoglio e incollalo nel messaggio della donazione: le monete arrivano qui da sole, di solito entro un minuto.", "shopSoon": "Le donazioni non sono ancora aperte. Intanto le monete si guadagnano giocando.",
 		"shopCopy": "COPIA %s", "shopCopied": "Codice copiato: incollalo nel messaggio della donazione.", "shopCoffee": "OFFRIMI UN CAFFÈ ↗", "shopCheck": "CONTROLLA LE MONETE", "shopIn": "Sono arrivate %d monete. Grazie!", "shopNotYet": "Ancora niente. Può volerci un minuto.",
 		"shopCodeT": "Il tuo portafoglio", "shopCode": "Il tuo codice è [color=#f2b85b]%s[/color]. Conservalo: porta monete e acquisti su qualunque altro dispositivo. Nessun nome, nessuna email.", "shopEnter": "USA UN CODICE", "shopCodeOk": "Portafoglio trovato.", "shopCodeBad": "Nessun portafoglio con questo codice.", "coinsIn": "+%d monete",
@@ -163,6 +211,8 @@ var music_user := 1.0
 var effects_user := 1.0
 var tv_channel := 0
 var ride_seen: Dictionary = {}     # tappe del giro in Vespa già viste (id delle voci)
+var season := "auto"
+var fish: Dictionary = {}          # pescato al molo
 var prayers: Dictionary = {}       # preghiere fatte in ogni tempio
 var ride_found := false            # il giro è stato scoperto: compare nel menu
 
@@ -182,6 +232,8 @@ func _ready() -> void:
 	for k in prefs.get_value("p", "ride_seen", []): ride_seen[k] = true
 	ride_found = prefs.get_value("p", "ride_found", false)
 	prayers = prefs.get_value("p", "prayers", {})
+	fish = prefs.get_value("p", "fish", {})
+	season = prefs.get_value("p", "season", "auto")
 	if is_web:
 		base_url = str(JavaScriptBridge.eval("location.origin", true))
 	else:
@@ -197,6 +249,8 @@ func save_prefs() -> void:
 	prefs.set_value("p", "ride_seen", ride_seen.keys())
 	prefs.set_value("p", "ride_found", ride_found)
 	prefs.set_value("p", "prayers", prayers)
+	prefs.set_value("p", "fish", fish)
+	prefs.set_value("p", "season", season)
 	prefs.set_value("p", "audio", audio_on)
 	prefs.set_value("p", "lang", lang)
 	prefs.save(PREFS)
@@ -288,11 +342,12 @@ func load_all() -> void:
 	for k in ["anim", "menu", "street", "living", "player", "sea"]:
 		var f := {"anim": "anim", "menu": "menu_anim", "street": "street", "living": "living", "player": "player", "sea": "sea"}[k] as String
 		J[k] = JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/%s.json" % f))
+	J.places = JSON.parse_string(FileAccess.get_file_as_string("res://store/places.json"))
 	J.grove = JSON.parse_string(FileAccess.get_file_as_string("res://store/grove.json"))
 	for k in ["room", "mask", "far", "mid", "near", "living", "player", "menu_sky"]:
 		var f := {"room": "room", "mask": "mask", "far": "street_far", "mid": "street_mid", "near": "street_near", "living": "living", "player": "player", "menu_sky": "menu_sky"}[k] as String
 		tex[k] = load("res://assets/img/%s.png" % f)
-	for k in ["sea_sky", "sea_near", "sea_fore", "sea_beach", "sea_props", "sea_emblems", "shop", "grove_far", "grove_near", "grove_props"]: tex[k] = load("res://assets/img/%s.png" % k)
+	for k in ["sea_sky", "sea_near", "sea_fore", "sea_beach", "sea_props", "sea_emblems", "shop", "grove_far", "grove_near", "grove_props", "place_pisa", "place_train", "place_arcade", "place_pier", "place_props"]: tex[k] = load("res://assets/img/%s.png" % k)
 	_step(6)
 	var d = await fetch_json("/api/public")
 	if typeof(d) != TYPE_DICTIONARY:

@@ -239,6 +239,7 @@ func dress(look: Dictionary = {}) -> Dictionary:
 			for q in [[6, 6], [8, 12], [13, 4], [5, 10], [15, 12], [7, 3]]:
 				var px := hr.position + Vector2i(q[0], q[1])
 				if sea.get_pixelv(px) == Color("222a5c"): sea.set_pixelv(px, Color("fff0b0"))
+	Season.tint_sea(sea)
 	return {"player": pl, "sea_props": sea}
 
 func _shift(im: Image, inside: Callable, box: Rect2i, hsv: Array) -> void:

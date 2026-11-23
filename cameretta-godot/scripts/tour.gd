@@ -7,6 +7,7 @@ var n := 0
 
 func _ready() -> void:
 	m = get_parent()
+	AudioServer.set_bus_mute(0, true)      # le prove sono sempre mute
 	out = OS.get_environment("CAMERETTA_TOUR")
 	DirAccess.make_dir_recursive_absolute(out)
 	_run()
@@ -43,6 +44,10 @@ func _run() -> void:
 		return
 	if OS.get_environment("CAMERETTA_RIDE") == "grove":
 		await _grove_check()
+		get_tree().quit()
+		return
+	if OS.get_environment("CAMERETTA_RIDE") == "places":
+		await _places_check()
 		get_tree().quit()
 		return
 	if OS.get_environment("CAMERETTA_RIDE") == "menu":
@@ -294,8 +299,9 @@ func _ride_check() -> void:
 	ok(absf(m.worlds.street.P.x - m.worlds.street.FORK_X) < 40, "vicino al bivio")
 	m._to_menu()
 	ok(await until(func(): return m.scene == "menu" and not m.busy), "menu")
-	ok(m.menu_items.any(func(b): return b.get_meta("act") == "ride"), "voce GIRO IN VESPA nel menu")
-	m._menu_act("ride")
+	ok(m.menu_items.any(func(b): return b.get_meta("act") == "map"), "voce MAPPA nel menu")
+	m._menu_act("map"); await wait(0.3); m.close_modal(true)
+	m._go_to("ride")
 	ok(await until(func(): return m.scene == "sea" and not m.busy), "dal menu si va alla Vespa")
 	print("CHECK DONE")
 
@@ -486,3 +492,98 @@ func _grove_check() -> void:
 	ok(absf(m.worlds.street.P.x - m.worlds.street.GROVE_X) < 40, "vicino al bivio")
 	if Shop.code == "": ok(Shop._queue.has("pray:stelle"), "il premio aspetta il portafoglio")
 	print("GROVE DONE")
+
+## I luoghi da scoprire: CAMERETTA_RIDE=places
+func _places_check() -> void:
+	G.set_lang("it"); G.room_mode = "walk"; G.season = "auto"; G.fish = {}
+	for ch in "−◀▶·×°…é":
+		ok(UI.f_ui.has_char(ch.unicode_at(0)) and UI.f_body.has_char(ch.unicode_at(0)), "carattere " + ch)
+	m.open_map(); await wait(0.3); await shot("mappa")
+	ok(m._panel.size.y <= m.size.y, "la mappa sta nello schermo")
+	m.close_modal(true)
+	# dalla strada, a piedi
+	m._start_game(false)
+	await until(func(): return m.scene == "street" and not m.busy)
+	for id in ["train", "sky", "arcade"]:
+		m._enter_street(m.worlds.street.path_x(id) - 20); await wait(0.6)
+		await shot("strada_" + id)
+		await key(KEY_E)
+		ok(await until(func(): return m.scene == id and not m.busy, 5), "dalla strada: " + id)
+		await wait(1.8); await shot(id)
+		var w = m.worlds[id]
+		if id == "sky":
+			var t0: float = w.off
+			await key(KEY_R); ok(w.off == t0 + 1, "avanti di un'ora")
+			await key(KEY_Q)
+			var best: Dictionary = {}
+			for b in w._bodies: if b.h.y > 8 and b.id != "sole": best = b
+			if not best.is_empty():
+				w.az = best.h.x; w.alt = clampf(best.h.y, 5, 85); await wait(0.2)
+				await key(KEY_E); ok(w.sel.has("b"), "riconosce: " + w.line)
+				await wait(2.5); await shot("sky_scelto")
+			w.drag(Vector2(40, 0)); w.zoom(1)
+			w.az = 180; w.alt = 40; w.fov = 70; await wait(0.4); await shot("sky_sud")
+			w.az = 270; w.alt = 14; w.fov = 95; await wait(0.4); await shot("sky_ovest")
+			var t1 := Time.get_ticks_msec(); var fr := Engine.get_process_frames()
+			await wait(2.0); print("sky fps ", (Engine.get_process_frames() - fr) * 1000.0 / (Time.get_ticks_msec() - t1))
+		elif id == "train":
+			ok(w.cars.size() > 0 and w.world == 320.0 * (w.cars.size() + 1), "una carrozza per tappa (%d)" % w.cars.size())
+			await key(KEY_E); ok(await until(func(): return m.modal_kind == "item", 3), "si legge la tappa")
+			await wait(0.3); await shot("train_voce"); await key(KEY_ESCAPE)
+			w.P.x = w.world - 60; await wait(2.5); await shot("train_fine")
+		else:
+			ok(w.games.size() >= 6, "cabinati: %d" % w.games.size())
+			w.P.x = w._x(1); await wait(1.2); await shot("arcade_gioco")
+			await key(KEY_E); ok(await until(func(): return m.modal_kind == "item", 3), "il cabinato apre la scheda"); await key(KEY_ESCAPE)
+		m.b_back.pressed.emit()
+		ok(await until(func(): return m.scene == "street" and not m.busy, 5) and absf(m.worlds.street.P.x - m.worlds.street.path_x(id)) < 40, "si torna al cartello: " + id)
+	# dal lungomare
+	var sea = m.worlds.sea
+	m._enter_sea(); await wait(0.5)
+	sea.P.x = 112; sea.P.target = -1; await wait(0.3); await shot("bottiglie_spiaggia")
+	m._do_action(); ok(await until(func(): return m.modal_kind == "bottles", 10), "bottiglie"); await wait(0.4); await shot("bottiglie")
+	if m._bottle_on:
+		await m._send_bottle("Ciao dal futuro [b]x[/b] <i>", "Ada"); ok(m._bottle_msg == G.t("bottleSent"), "bottiglia lanciata")
+		var all: Array = await Shop._call("/api/bottles/all")
+		ok(all[1].size() == 1 and (await Shop._call("/api/bottles"))[1].is_empty(), "invisibile finche' non e' approvata")
+	m.close_modal()
+	sea.take_helmet(); await until(func(): return sea.state == "ride", 20)
+	for q in [["pier", 0], ["light", 1]]:
+		for s in sea.spots:
+			if s[1] != q[0]: continue
+			sea.x = s[0] - 20; sea.v = 0; sea.stops.map(func(z): z.state = "hidden"); await wait(0.5); await shot("sosta_" + q[0])
+			ok(sea.prompt.get("label", "") == G.t("go")[q[0]], "sosta: " + str(sea.prompt.get("label", "")))
+			m._do_action(); ok(await until(func(): return m.scene == q[0] and not m.busy, 5), "si entra: " + q[0])
+			var w = m.worlds[q[0]]
+			await wait(1.2); await shot(q[0])
+			if q[0] == "pier":
+				await key(KEY_E); ok(w.state == "wait", "lancia"); await wait(0.8); await shot("pier_attesa")
+				ok(await until(func(): return w.state == "bite", 8), "abbocca"); await shot("pier_abbocca")
+				await key(KEY_E); ok(w.state == "show" and G.fish.size() == 1, "preso: " + w.line)
+				await wait(2.5); await shot("pier_preso")
+			else:
+				var f0: float = w.fringe(); w._add(0, 16); ok(w.fringe() < f0, "piu' distanti, frange piu' strette"); await wait(0.5); await shot("light_frange")
+				await key(KEY_E); ok(not w.two, "una lampada sola"); await wait(0.5); await shot("light_una")
+			m.b_back.pressed.emit()
+			ok(await until(func(): return m.scene == "sea" and not m.busy, 5) and sea.state == "ride" and absf(sea.x - s[0]) < 60, "si torna in sella: " + q[0])
+	# la torre: i tempi devono essere quelli giusti
+	m._go_to("tower"); ok(await until(func(): return m.scene == "tower" and not m.busy, 5), "torre")
+	var w = m.worlds.tower
+	await wait(1.5); await shot("tower")
+	var free := sqrt(2 * 55.0 / 9.80665)
+	for which in 3:
+		for air in [false, true]:
+			w.which = which; w.air = air; w._reset()
+			await key(KEY_E); await wait(1.4)
+			if which == 2 and air: await shot("tower_piuma")
+			Engine.time_scale = 6.0
+			await until(func(): return w.a.end and w.b.end, 20); Engine.time_scale = 1.0
+			if not air: ok(absf(w.a.t - free) < 0.005 and absf(w.b.t - free) < 0.005, "vuoto: %.3f e %.3f (teoria %.3f)" % [w.a.t, w.b.t, free])
+			else: ok(w.b.t > w.a.t, "aria: ferro %.2f, %s %.2f" % [w.a.t, w.b.n, w.b.t])
+	await wait(2.0); await shot("tower_fine")
+	m.b_back.pressed.emit(); ok(await until(func(): return m.scene == "sea" and not m.busy, 5), "dalla torre al lungomare")
+	for s in Season.IDS:
+		m._set_season(s); m._enter_street(560.0); await wait(1.2); await shot("stagione_" + s)
+	m.open_settings(); await wait(0.3); await shot("impostazioni"); ok(m._panel.size.y <= m.size.y, "impostazioni nello schermo"); m.close_modal()
+	m._set_season("auto")
+	print("PLACES DONE")

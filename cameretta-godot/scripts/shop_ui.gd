@@ -196,7 +196,7 @@ static func _coins_page(m) -> Control:
 	var url := str(G.S.get("bmc_url", ""))
 	var e: Dictionary = Shop.CAT.earn
 	v.add_child(UI.label(G.t("shopPlayT"), 26, G.gold, UI.f_head, true))
-	v.add_child(UI.rich(G.t("shopPlay") % [int(e.daily), int(e.stop), int(e.section), int(e.ride_end), int(e.pray)], 24, G.C_CREAM))
+	v.add_child(UI.rich(G.t("shopPlay") % [int(e.daily), int(e.stop), int(e.section), int(e.ride_end), int(e.pray), int(e.fish)], 24, G.C_CREAM))
 	v.add_child(UI.label(G.t("shopGiveT"), 26, G.gold, UI.f_head, true))
 	if url.begins_with("https://") and Shop.code != "":
 		v.add_child(UI.rich(G.t("shopGive") % int(float(str(G.S.get("coins_per_unit", "100")))), 24, G.C_CREAM))

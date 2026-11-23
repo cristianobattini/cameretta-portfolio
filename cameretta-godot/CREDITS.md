@@ -32,3 +32,8 @@ Pixel art e codice: fatti per CRI's CAMERETTA (generatori in `cameretta-portfoli
 - Grafica dei templi e degli oggetti del negozio: originale, generata da `tools/build_grove.py` e `tools/build_shop.py`. I tre templi sono omaggi non ufficiali a Star Wars, Harry Potter e Dune: nessun logo, personaggio o musica delle saghe; i testi delle preghiere sono originali. I nomi appartengono ai rispettivi titolari.
 - Suoni delle preghiere: sintetizzati da `cameretta-godot/tools/build_grove_sounds.py` (CC0).
 - Citazioni: in `scripts/quotes.gd`, con autore e, dove noto, opera o anno; le traduzioni italiane sono nostre.
+
+## Luoghi
+
+- Cielo dell'osservatorio: stelle e costellazioni da [d3-celestial](https://github.com/ofrohn/d3-celestial) di Olaf Frohn (BSD 3, testo in `licenses/d3-celestial-BSD.txt`); Sole, Luna e pianeti calcolati in `scripts/astro.gd` (confrontati con astropy: errore massimo 0,07°).
+- Osservatorio, treno, sala giochi, Torre di Pisa, faro, molo e bottiglie: grafica originale da `tools/build_places.py`.
